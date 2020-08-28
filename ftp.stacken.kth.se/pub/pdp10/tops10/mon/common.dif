@@ -1,0 +1,46 @@
+File 1)	DSKB:COMMON.MAC[10,10,SYSTEM,KS,TOPSY,IPTEST]	created: 0126 27-Sep-101
+File 2)	DSKB:COMMON.MAC[10,7,MON]                    	created: 1610 05-Oct-88
+
+1)29	SUBTTL  Common memory for DEUNA/DELUA
+1)	ifn ftduna,<
+1)	IFNDEF M.DUNA,<M.DUNA==0>	;Make sure M.DUNA is defined
+1)	ifndef unappl,unappl==:4
+1)	unafst::!
+1)	IFN M.DUNA,<			;Only allocate pages if needed
+1)		BLOCK	<PAGSIZ-<.&PG.BDY>> ;Go to a page boundary
+1)	UNAPGS::BLOCK	UNAPPL * PAGSIZ	;Allocate space
+1)	>;IFN M.DUNA
+1)	unalst::!
+1)	>;ifn ftduna
+1)30		SUBTTL	COMMON MEMORY FOR PDP10/PDP11
+****
+2)29		SUBTTL	COMMON MEMORY FOR PDP10/PDP11
+**************
+1)90	ifn ftduna,<
+1)		IFN M.DUNA,<ASGSV2 UNA,\SCNCHN>
+1)	>;ifn ftduna
+1)	>; END IF2
+****
+2)89	>; END IF2
+**************
+1)208	ifn ftduna,<
+1)	SUBTTL  UNA Blocks for the DEUNA/DELUA's
+1)	IFE M.DUNA,<
+1)		UNASEC==:CPOPJ		;Dummy once/second routine.
+1)		UNAONC==:CPOPJ		;Dummy once-only routine.
+1)	>
+1)	IFN M.DUNA,<
+1)	UNAIVC::EXP	0,0,IC.UOU,.+1	;;For XPCW
+1)		EXCH	T1,UNAIVC	;;Get interrupt PC
+1)		MOVEM	T1,UNACHL	;;Save for UNASV
+1)		MOVE	T1,UNAIVC+1
+1)		MOVEM	T1,UNACHL+1
+1)		MOVE	T1,UNAIVC	;;Restore T1
+1)		JSR	UNASV		;;Preserve registers
+1)		JRST	UNAINT##	;;Process interrupt
+1)	>;IFN M.DUNA
+1)	>;ifn ftduna
+1)209	SUBTTL	MUUO PROCESSING
+****
+2)207	SUBTTL	MUUO PROCESSING
+**************

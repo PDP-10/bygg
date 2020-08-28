@@ -1,0 +1,41 @@
+universial udpsym
+.directive .nobinary
+
+phase 0
+.udfnc:	block	1	;Function code.
+.uddev:	block	1	;Device/channel.
+.udflg:	block	1	;Flags/mode bits.
+	ud.raw==1b0	;    Raw IP packets in/out
+	ud.icm==1b1	;    Read all ICMP, as raw packets.
+.udlad:	block	1	;local address.
+.udrad:	block	1	;remote address.
+.udlpr:	block	1	;local port.
+.udrpr:	block	1	;remote port.
+.udbuf:	block	1	;data block pointer.
+.udcnt:	block	1	;data byte count.
+.udlen:	block	0	;length of data block.
+dephase
+
+;* Error codes:
+
+udilf%==1		;Illegal function.
+udadc%==2		;Address check.
+udrqe%==3		;Receive queue empty.
+udnpv%==4		;Need privs for that.
+udtqf%==5		;Transmit queue full. (please wait)
+udilp%==6		;Illegal local port.
+udila%==7		;Illegal local address.
+udirp%==10		;Illegal (zero?) remote port.
+udira%==11		;Illegal (zero?) remote address.
+udnec%==12		;Not enough core.
+udnsd%==13		;No such device.
+
+;* Function codes:
+
+.udget==0		;Get parameters (local/remote port/address, flags)
+.udset==1		;Set parapeters
+.udwri==2		;Write data
+.udrea==3		;Read data
+.udchk==4		;Check input queue
+
+end

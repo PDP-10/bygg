@@ -1,0 +1,196 @@
+title	ip4sub -- common subroutines for tops-10/ip4.
+search	f, s
+search	ip4sym
+
+ip4sub::entry ip4sub
+
+	$reloc
+	$low
+
+pdused: exp     0
+wdused: exp     0
+
+	$high
+
+;***********************************************************************
+;*
+;* Routines to allocate/deallocate memory for us.  These are used so
+;* that we can keep track of how much memory is used by the IP stack
+;* at any given time.  It is also easy to patch this to use a wholly
+;* different allocation scheme.
+
+getiwd: addm    t2,wdused       ;Count words used.
+        jrst    getwds##        ;Just do it right now.
+
+giviwd:	push	p,t1		;Save a reg.
+	movn	t1,t1		;Get -number of words.
+	addm	t1,wdused	;Update count.
+	pop	p,t1		;Restore reg.
+	jrst	givwds##	;Go return the memory.
+
+;***********************************************************************
+;*
+;* Routine to allocate a packet descriptor block.  Will skip return with
+;* pointer in p1 if successful.  Will non-skip return on failure.
+;* Argument in t1 is number of octets of data to allocate.
+
+getpd::	move	p1,t1		;Save data length.
+	movei	t2,pdsize	;Size wanted.
+	pushj	p,getiwd	;Allocate.
+	 popj	p,		; No memory, sorry.
+	exch	p1,t1		;Keep pointer in p1, restore data len.
+	movei	t2,3(t1)	;Get # octets + 3, -
+	lsh	t2,-2		; divided by four.
+	movem	t1,pd.siz(p1)	;Save size in octets.
+	movem	t2,pd.all(p1)	;Save length in words.
+	setzm	pd.dst+0(p1)	;No destination yet.
+	setzm	pd.dst+1(p1)	; . . .
+	setzm	pd.via(p1)	;No special way to get there.
+	setzm	pd.alp(p1)	;No allocated data block yet.
+	setzm	pd.nxt(p1)	;No next block yet.
+	setzm	pd.llb(p1)	;Typically not broadcast.
+	setzm	pd.cbk(p1)	;No known callback.
+	jumpe	t1,cpopj1##	;If no data wanted, all done.
+	pushj	p,getiwd	;Allocate data area.
+	 jrst	givpd		; Can't, go return pd and fail.
+	movem	t1,pd.ptr(p1)	;Good, save pointer.
+	movem	t1,pd.alp(p1)	; ... and dealloc pointer.
+	jrst	cpopj1##	;Return.
+
+;***********************************************************************
+;*
+;* Routine to deallocate a packet descriptor block.  Will also deallocate
+;* data from pd.dat.  Arg in p1.
+
+givpd::	skipe	pd.cbk(p1)	;Any callback address?
+	 pushj	p,@pd.cbk(p1)	; Yes, make the call.
+	move	t1,pd.all(p1)	;Get length.
+	skipe	t2,pd.alp(p1)	;Is there a pointer?
+	 pushj	p,giviwd	; Yes, return memory.
+	movei	t1,pdsize	;Get size of pd block.
+	move	t2,p1		;Get pointer.
+	jrst	giviwd		;Return & done.
+
+;***********************************************************************
+;*
+;* Routine to copy a packet.  Call with source packet in P1.  Skip returns
+;* with new packet pointer in P1 if successful.  Non-skip return if not.
+
+repeat 0,<
+
+copypd::move	t4,p1		;Save original descriptor.
+	move	t1,pd.len(t4)	;Get length (in octets).
+	pushj	p,getpd		;Try to get another descriptor.
+	 popj	p,		; Sorry, out of memory.
+	push	p,pd.ptr(p1)	;Save pointers in new block.
+	push	p,pd.alp(p1)	; ...
+	movei	t1,pdsize	;Length in words.
+	move	t2,t4		;Source...
+	move	t3,p1		;Destination...
+	pushj	p,xblta##	;Copy data.
+	pop	p,pd.alp(p1)	;Restore pointers.
+	pop	p,pd.ptr(p1)	; ...
+	move	t1,pd.all(t4)	;Data length.
+	move	t2,pd.alp(t4)	;Data source.
+	move	t3,pd.alp(p1)	;Data destination.
+	jumpe	t2,cpopj1##	;Don't copy if no data.
+	pushj	p,xblta##	;Copy data and return.
+	jrst	cpopj1##	;Skip return.
+
+>;
+
+;***********************************************************************
+;*
+;* Routine to swap the octets of a sixteen-bit number.  Argument and return
+;* value in t1.
+
+swab::	dpb	t1,[point 8, t1, 19]
+	lsh	t1,^D-8
+	popj	p,
+
+;***********************************************************************
+;*
+;* Routine to swap the source and destination IP addresses of a datagram.
+
+swpipa::load.	t1,ih.sa,(p2)	;Swap source/dest. IP addresses.
+	load.	t2,ih.da,(p2)
+	stor.	t2,ih.sa,(p2)
+	stor.	t1,ih.da,(p2)
+	popj	p,		;All done, return.
+
+;***********************************************************************
+;*
+;* Checksumming subroutines.  Running checksum is kept in P4.
+;*
+;* Checksum a byte string, starting at (t2) containing (t1) bytes.
+;*
+
+csmbts::jumple	t1,cpopj##	;Allow stupid args.
+	pushj	p,savt##	;Save the tees.
+	move	t3,t1		;Get byte count.
+	idivi	t3,4		;Split into words/bytes.
+	addi	t2,-1(t3)	;Point to last (full) word.
+	tlo	t2,-1		;Make <-1,,ptr>
+	jumpe	t4,nopart	;No partial data at end.
+	move	t1,1(t2)	;Get final (partial) word.
+	and	t1,[		;Mask out junk.
+		xwd 776000,000000
+		xwd 777774,000000
+		xwd 777777,770000]-1(t4)
+	lsh	t1,-4		;Shift.
+	add	p4,t1		;Add.
+	tlze	p4,200000	;Check carry.
+	 addi	p4,4		; Fold.
+nopart:	idivi	t3,4		;Get # of four-word groups.
+	jrst	@[exp st0, st1, st2, st3](t4)
+
+;** XXX  The code below outsmarts itself.  It should be faster to
+;** XXX  do four MOVE T1,{0,1,2,3}(T2) plus one SUBI T2,4 since
+;** XXX  the move instruction is faster.  At least on a KS10.
+
+cbloop:	pop	t2,t1		;Get next word.
+	lsh     t1,-4           ;Right justify.
+	add     p4,t1           ;Include into checksum.
+st3:	pop	t2,t1		;Get next word.
+	lsh     t1,-4           ;Right justify.
+	add     p4,t1           ;Include into checksum.
+st2:	pop	t2,t1		;Get next word.
+	lsh     t1,-4           ;Right justify.
+	add     p4,t1           ;Include into checksum.
+st1:	pop	t2,t1		;Get next word.
+	lsh     t1,-4           ;Right justify.
+	add     p4,t1           ;Include into checksum.
+	tlze    p4,200000       ;Growing into bit 1?
+         addi   p4,4            ; Yes, fold over that bit.
+st0:	sojge	t3,cbloop	;Loop over all words.
+	popj	p,		;Done.
+
+;*
+;* Checksum a 32-bit full word, left justified.
+;* Checksum a 16 (or 32) bit word, right justified.
+;*
+
+csmfwd::lsh	t1,-4		;Right justify.
+csmhwd::add	p4,t1		;Include into checksum.
+	tlze	p4,200000	;Growing into bit 1?
+	 addi	p4,4		; Yes, fold over that bit.
+	popj	p,		;Done.
+;*
+;* Checksum done, fold to sixteen bits and complement.
+;*
+
+csmdon::push	p,t1		;Save a temp.
+	move	t1,p4		;Copy sum.
+	lsh	t1,-^D16	;Get all the overflow.
+	andi	p4,177777	;Mask down.
+	add	p4,t1		;Fold most of this.
+	pop	p,t1		;Done with the temp.
+fold.1:	caig	p4,177777	;In range?
+	 jrst	fold.2		; Yes, go give our complements.
+	subi	p4,177777	;No, fold once, -
+	jrst	fold.1		; and loop for more.
+
+fold.2:	caie	p4,177777	;Unless result is -0, -
+	 trc	p4,177777	; make one's complement.
+	popj	p,		;Done, return.
+end

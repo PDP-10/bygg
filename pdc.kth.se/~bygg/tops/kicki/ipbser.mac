@@ -1,0 +1,1669 @@
+        TITLE   IPBSER - DA28 SERVICE ROUTINE
+        SUBTTL  BARRY C. HOWARD   30 AUG 84
+        
+        SEARCH  F,S,NSP
+        $RELOC
+        $LOW
+
+        ENTRY   IPBDDB,IPBUUO,IPBINT
+        SALL
+        .HWFRMT
+        XPL     VIPBSR,^D31             ;VERSION NUMBER
+        USCID                           ;PRINT OUT VALUE OF USCNAM
+
+COMMENT \
+ VERSION        CHANGE
+    1           -ADDED CAPABITITY TO RECEIVE A REP (FN=7) CW
+                -TURN ON SCANNER AFTER RECEIVING REJECT CW
+                -JRST TO CLERR AFTER INTERRUPT ON NX UNIT ERROR
+
+    2           -SET IOXWFI BIT FOR ISYNC AFTER SENDING RESPONSE
+                        TO DATA BUFFER
+    
+    3           -RESET IPBBSZ FROM INPUT BUFFER HEADER AFTER EACH READ
+                -CLEAR IOACT AT UUO LEVEL IN ISYNC
+                -RECORD CW'S WITH BAD FUNCTION CODE IN HISTAB
+                -TURN ON PI BEFORE HIBERING USER JOB
+                -AFTER DA28 ERROR, CLEAR IPBPST
+                -AFTER DA28 ERROR, CALL SETIOD IF NO COROUTINE ACTIVE
+
+    4           -CHANGED HANDLING OF RESTART CW FROM EP; FIXED BUG WHICH
+                        ADVANCED BUFFER OF INACTIVE USER AND CAUSED IME STOPCD
+
+    5           -CLEAR PAUSE BIT (NET.PA) AFTER RECEIVING RFO CW
+
+    6           -IGNORE RFO IF NO USER ATTACHED - DON'T SEND REJECT CW
+                -PRINT DA28 REGISTER CONTENTS ON ERROR INTERRUPTS
+                -ADD $RELOC, $LOW, AND $HIGH FOR 6.02 MONITOR
+
+    7           -CLEAR IOACT IN ISYNC IF RECEIVE A RFI AFTER
+                        BEING TOLD EP HAS DATA TO SEND
+
+    8           -USE IO IN S RATHER THAN NET.IO BIT
+                -IMPLEMENT NET.PO IN LOOKUP AND AFTER INPUT BUFFER
+                -CLEAR PAUSE BIT (NET.PA) AFTER RECEIVING RST CW
+                -GIVE SKIP RETURN FROM LOOKUP ONLY IF REC'D RFO
+                -RECORD PARTIAL DATA TRANSFERS IN HISTAB
+                -CLEAR IOW BIT (SETIOD) ON ERROR INTERRUPT BEFORE
+                        CHECKING COROUTINES
+
+    9           -SET PAUSE (NET.PA) ONLY IF HAD OUTPUT BUFFER TO SEND AND
+                        THE EP SENT AN RFI
+
+   10           -ADDED IPTSK. UUO HANDLING AND EXPECT ARGUMENT LIST IN
+                        LOOKUP FOR USER-IPBSER COMMUNICATION ("DEVICE
+                        DEPENDENT" BITS IN DEVIOS ARE NO GOOD).  NOW KEEP
+                        USER DEFINED BITS IN RH (IPBPST).
+                -NO RFI SENT ON OUTPUT CLOSE - CAUSED BAD SYNC EFFECTS.
+                -CHANGED NET.PO HANDLING:  SINCE NO LOOKUP AFTER INPUT
+                        MEANS EOF ON WHEN OUTPUT DONE (SEEN BY OUTSET), NOW 
+                        SEND RFO ONLY, AND SET STRTPO IN DEVIOS TO INHIBIT
+                        CLEARING PROTOCOL STATUS IN FOLLOWING LOOKUP.
+                -MADE THE PRINTING OF ERROR MESSAGES OPTIONAL (PRNTEM)
+
+   11           -CHANGED HANDLING OF REC'D REJECT CONTROL WORDS - NOW
+                        TREATED AS A RESTART.  ALSO ADDED COUNTER FOR REJECTS.
+
+   12           -NO LONGER CLEAR INPUT BUFFER AT CWRECI SINCE NOT NEEDED AND
+                        BUFCLR## AT INTERRUPT LEVEL WITH FTVM=-1 CAUSES
+                        HANG OR ADDRESS CHECK.
+
+   13           -USER NOW PUTS OUTPUT WORD COUNT IN 3RD WORD OF LOOKUP
+                        BLOCK.  THIS COUNT IS SAVED IN A NEW DDB LOCATION,
+                        IPBRFO, AND USED IN THE NEXT TRANSMITTED RFO CW.
+                -CHECK IOBEG BIT IN LOOKUP; IF SET, GIVE PRIORITY TO USER
+                        OUTPUT (CHECK NET.RO FIRST).
+                -ERASE ALL TRACE OF REC'D RFO WHEN NO USER ATTACHED; THIS
+                        CAUSED HUNG DEVICE WHEN USER STOPPED AND STARTED.
+                -CLEAR IOACT ON HUNG DEVICE AND WHEN USER DOES AN OUT UUO
+                        WITH A ZERO WORD COUNT (LATTER CAUSED LOOKUP LOOP).
+                -FIX NET INPUT FAILURE LOOP CAUSED BY EP SENDING RFO JUST
+                        BEFORE USER SENDS RFO: TURN OFF SCANNER IN OSYNC.
+
+   14           -ADD IPBESE AND IPBHCW ENTRIES TO DDB AND (-4) ENTRY TO
+                        DISPATCH TABLE FOR 603 MONITOR.
+
+   15           -ADD CACHE SWEEP INSTRUCTIONS FOR KL MACHINES.
+
+   16           -CLEAR IOXRFO BIT AFTER RETURN FROM OSYNC AT CWRECO;
+                        THIS CAUSED CCP PAUSING HANG.
+                -COUNT REJECTS SENT AND RECEIVED
+                -SEND REJECT FROM ISYNC WHEN RFO-RFO RACE CONDITION OCCURS.
+
+   17           -ADD MORE CACHE SWEEPS FOR KL MACHINES.
+
+   18           -REMOVE ALL PI.ON AND PI.OFF INSTRUCTIONS - USE SCANNER ONLY.
+                -DON'T CLEAR CONNECT BEFORE SENDING DATA (SENDAT).
+                -CORRECT XCWMSK TO INCLUDE IOXRST, NOT IORRST.
+
+   19           -CLEAR IOACT AND SET ERROR FOR USER WHEN RECEIVE UNDEFINED 
+                        FUNCTION CODE.  DEFINE PROTOCOL STATUS BIT IORUND.
+
+   20           -SEND A RESTART ACKNOWLEDGE (RAK) CONTROL MESSAGE TO THE EP
+                        AS RESPONSE TO A RESTART MESSAGE.  THE RAK CONTAINS
+                        THE PDP-10 MACHINE NO. FOR THE CCP ROUTING TABLE.
+                -INCLUDE THE PDP-10 MACHINE NO. IN A RESTART MSG.
+                -USE USCID MACRO TO PRINT OUT VALUE OF USCNAM DURING ASSEMBLY.
+                -CLEAR IOACT AT IPBTLG AND SETIPM ENTRY POINTS.
+
+   21           -CHECK FOR RECEIVING UNDEFINED FUNCTION CODE IN ISYNC.
+
+   22           -SET ERROR BITS FOR USER (IO ACTIVE OR NOT) WHEN RECEIVE
+                        RESTART, REJECT, OR UNDEFINED CONTROL WORD.
+
+   23           -CHANGED INST SEQ BETWEEN $SYNC AND SYNC0 TO BREAK
+                        OUT OF WAIT FOR RESPONSE FROM EP AT EARLIEST
+                        POSSIBLE TIME.
+                -ADDED CODE AT WCWS TO CHECK FOR VALID CW CODE.
+                -EXTENDED FUNTBS BY 2 ENTRIES TO SO THAT WHEN A RESTART
+                        ACK IS SENT IPBPST IS SET CORRECTLY.
+                -CLEARED RFI AND RFO BITS AT OSYNC3 SO NETMGR CAN SEND
+                        AN RFO AGAIN AFTER PAUSING.
+                -CLEARED IOACT AT OSYNC3 SO WE DONT GET A HUNG DEVICE
+                        ON PAUSING.
+                -DONT REASSERT CODE BITS IN RECDAT AND SENDAT IF CONNECT
+                        BIT ALREADY SET, CAUSES TRANSFER TO ERROR IF IT
+                        IS GOING TO ANY DA-28 CHL OTHER THAN 0.
+                -CLEAR DAC BEFORE SETTING CODE BITS IN RECCW AND SENDCW
+                        IN CASE CONNECT HAD BEEN SET AND DA-28 CHL NOT 0.
+                -ADDED CODE FOR SECOND DDB. MADE MANY CODE CHANGES TO
+                        SUPPORT CONCURRENT OPERATIONS WITH 2 DDB'S.
+                -ADDED CODE IN HIST ROUTINE TO SAVE CODE NUMBER OF
+                        ACTIVE DDB IN UNUSED BIT (BIT 15) OF THIRD
+                        WORD OF THE 3 WORD ENTRY.
+                -REMOVED PI ASSIGNMENT AT CLERR -- IT IS NOT NEEDED
+                -DO A CLEAR DAC AT SCANON TO PREVENT FALSE INTS.
+
+   25           -CHANGED PPPL VERSION 24:  DON'T CLEAR IOACT AT OSYNC3, DON'T
+                        CHECK FOR CONNECT IN RECCW OR SENDCW, TURN OFF SCANNER
+                        BEFORE SENDING RFO IN OSYNC, CHANGE IFN PRNTEM RANGE
+                        IN DERROR, ONLY CALL IPBFRE AT SCANON AND SENDCW.
+                -CLEAR IOXRFO IN IPBLUP IF RESPONSE TO RFO IS NOT WFI.
+                -DON'T CLEAR IPBPST AFTER RECEIVING RESTART.
+                -REPLACE DOZ STOPCOD WITH NO-OP AFTER HIBER CALL; 603A MONITOR
+                        SEEMS TO GIVE ERROR RETURNS TO HIBER.
+
+  26            -ADDED HISTORY BUFFER FOR CHL1.
+                -CHECK FOR CONNECT IN ALL XMIT AND REC ROUTINES
+                -MODIFIED $SYNC ROUTINE TO PERIODICALLY TURN SCANNER
+                 ON WHILE WAITING FOR RESPONSE FROM EP.
+                -CHANGE SIZE OF 2ND DDB TO MATCH UNIX REQUIREMENTS
+
+  27            -CHANGED DDB TO COMPLY WITH 7.01 MONITOR REQUIREMENTS.
+
+  30            -INCREASED SIZE OF USER BUFFERS FROM NETMSZ+1 TO 
+                 NETMSZ+2 (1330 TO 1334 BYTES) TO HANDLE MAXIMUM SIZE
+                 NETWORK DATA MESSAGE.
+
+  31		-INCORPORATED CHANGES FOR 7.02 MONITOR MADE BY CEH@ORNL
+\
+        SUBTTL  BIT DEFINITIONS
+
+        IFNDEF  TSTMOD,<        ;TEST MODE ASSEMBLY SWITCH
+        TSTMOD==0
+>
+
+        IFNDEF  PRNTEM,<        ;ERROR MESSAGE PRINT SWITCH
+        PRNTEM==0
+>
+        IFNDEF  TWODDB,<        ;SECOND DDB
+        TWODDB==0
+>
+
+;DEVICE CODES
+
+        DAS=420                 ;STATUS REGISTER OF DA28
+        DAC=424                 ;COMMAND REGISTER OF DA28
+
+;BITS IN CONI/CONO DAS WORD
+
+        DS.UNI=17B21            ;UNIT NUMBER (CODE)
+        DS.ETM=1B22             ;ENABLE TEST MODE
+        DS.EVP=1B23             ;EVEN PARITY
+        DS.FRC=1B24             ;FORCE
+        DS.ENL=1B24             ;ENABLE LEFT
+        DS.ENR=1B25             ;ENABLE RIGHT
+        DS.CLR=1B25             ;CLEAR DAC
+        DS.NRD=1B26             ;*NOT READY
+        DS.ETI=1B27             ;ENABLE TIMER INTERRUPT
+        DS.TER=1B28             ;*TIMER ERROR
+        DS.REM=1B29             ;*REMOTE ERROR
+        DS.PAR=1B30             ;*PARITY ERROR
+        DS.CON=1B31             ;*CONNECT ERROR
+        DS.NXM=1B32             ;*NON-EXISTENT MEMORY ERROR
+        DS.PIA=7B35             ;PRIORITY INTERRUPT ASSIGNMENT
+
+;BITS IN CONI/CONO DAC WORD
+
+        DC.ERR=1B18             ;*ERROR
+        DC.SCN=1B19             ;SCAN
+        DC.TST=1B20             ;TEST
+        DC.FST=1B21             ;FAST TRANSFER
+        DC.MOD=3B23             ;MODE
+        DC.MEM=1B24             ;MEMORY (DMA)
+        DC.CON=1B25             ;CONNECT
+        DC.OUT=1B26             ;DIRECTION OF TRANSFER (=1 FOR OUTPUT)
+        DC.SRQ=1B27             ;*SELECT REQUEST
+        DC.ERI=1B28             ;ENABLE REMOTE INTERRUPT
+        DC.RMI=1B29             ;*REMOTE INTERRUPT
+        DC.EOT=1B30             ;*EOT
+        DC.BSY=1B31             ;BUSY
+        DC.DON=1B32             ;*DONE
+        DC.RFT=1B33             ;READ FEATURES
+        DC.JAM=1B34             ;JAM
+
+;THE SYMBOL * DENOTES BITS SET BY THE DEVICE
+;BITS USED IN DEVIOS
+
+        RHERR=IOBKTL!IODTER!IODERR!IOIMPM       ;ERRORS IN DEVIOS
+        RHSTOP=RHERR!IODEND                     ;EOF FOR USER
+        HIBTSK=(1B9)                            ;JOB HIBERED BY IPBSER
+        STRTPO=(1B10)                           ;PRIORITY OUTPUT STARTED
+
+;BITS USED TO LOAD DEVICE FOR TRANSFER
+
+        XBITS=DC.FST!DC.MEM!DC.CON!DC.OUT!DC.BSY        ;TRANSMIT
+        RBITS=DC.FST!DC.MEM!DC.CON!DC.BSY               ;RECEIVE
+
+;BITS USED TO DETERMINE CAUSE OF INTERRUPT
+
+        IBITS=DC.ERR!DC.SRQ!DC.EOT!DC.DON
+
+;FUNCTION CODE DEFINITIONS
+
+        FN.RFI==1               ;READY FOR INPUT
+        FN.RFO==2               ;READY FOR OUTPUT
+        FN.WFI==3               ;WAITING FOR INPUT
+        FN.WFO==4               ;WAITING FOR OUTPUT
+        FN.REJ==5               ;REJECT
+                SF.UXF==1               ;UNEXPECTED FUNCTION CODE
+                SF.HNG==2               ;BAD DATA BLOCK
+                SF.UDF==3               ;UNDEFINED FUNCTION CODE
+                SF.IDM==5               ;IMPROPER DATA MODE
+                SF.BTL==6               ;DATA BLOCK TOO LARGE
+        FN.RST==6               ;RESTART
+        FN.REP==7               ;REPLY (STATUS)
+        FN.RAK==10              ;RESTART ACKNOWLEDGE
+        MAXFNR==7               ;MAXIMUM LEGAL RECEIVED FUNCTION CODE
+        MAXFNX==10              ;MAXIMUM LEGAL XMITTED FUNCTION CODE
+
+;I/O STATUS BITS IN LH OF IPBPST IN DDB
+
+        IORUND=(1B0)            ;REC'D UNDEFINED FUNCTION CODE
+        IOXRFI=(1B1)            ;SENT RFI
+        IORRFI=(1B2)            ;REC'D RFI
+        IOXRFO=(1B3)            ;SENT RFO
+        IORRFO=(1B4)            ;REC'D RFO
+        IOXWFI=(1B5)            ;SENT WFI
+        IORWFI=(1B6)            ;REC'D WFI
+        IOXWFO=(1B7)            ;SENT WFO
+        IORWFO=(1B8)            ;REC'D WFO
+        IOXREJ=(1B9)            ;SENT REJECT
+        IORREJ=(1B10)           ;REC'D REJECT
+        IOXRST=(1B11)           ;SENT RESTART
+        IORRST=(1B12)           ;REC'D RESTART
+        IOXRAK=(1B13)           ;SENT RESTART ACKNOWLEDGE
+        EXPDAT=(1B16)           ;EXPECT DATA NEXT FROM EP
+        SNTDAT=(1B17)           ;SENT DATA LAST TO EP
+
+;MASKS FOR CONTROL WORD RECEIVE AND TRANSMIT STATES
+
+        XCWMSK=IOXRFI!IOXRFO!IOXWFI!IOXWFO!IOXREJ!IOXRST!IOXRAK
+        RCWMSK=IORRFI!IORRFO!IORWFI!IORWFO!IORREJ!IORRST!IORUND
+
+
+;DATA PACKING MODES
+
+        DM.IMI=0B23             ;IMAGE MODE
+        DM.ASC=1B23             ;ASCII
+        DM.PKI=2B23             ;PACKED IMAGE
+        DM.BIN=3B23             ;BINARY
+
+;DA-28 CHL ASSIGNMENTS
+
+        CHL0==0B21              ;MFE DA-28 CHANNEL
+        CHL1==1B21              ;PPL DA-28 CHANNEL
+
+        HICHL==CHL1             ;HIGHEST CHL IN USE
+        SUBTTL  MACRO DEFINITIONS
+
+;COROUTINE MECHANISM FOR USE OF COMMON CODE AT UUO AND INTERRUPT LEVEL
+
+        DEFINE  COROUT(MASK)
+<       MOVE    T1,[MASK]               ;GET EVENT FLAGS
+        PUSHJ   P,$COROT
+>
+
+
+;GET USER JOB AND EP IN SYNC
+
+        DEFINE  SYNC(MASK)
+<       MOVE    T1,[MASK]               ;GET EVENT FLAGS
+        PUSHJ   P,$SYNC
+>
+
+;OP DEFS
+        OPDEF   IPBON   [XCT    IPON]
+        OPDEF   IPBOFF  [XCT    IPOFF]
+IPON:   CONO    PI,1B25
+IPOFF:  CONO    PI,1B26
+
+        SUBTTL  INTER PROCESSOR BUFFER DEVICE DATA BLOCK
+
+IPBDDB: PHASE   0
+IPBNAM: SIXBIT  /IPB/                   
+IPBCHR: XWD     6*HUNGST,NETMSZ+2       ;HNG TIM=49 SEC; BUF SIZ=NETMSZ+1
+IPBIOS: 0
+IPBSER: EXP     IPBDSP
+IPBMOD: XWD     001003,000400           ;DVLNG!DVIN!DVOUT,,IMAGE MODE LEGAL
+IPBLOG: 0
+IPBBUF: 0
+IPBIAD: 0
+IPBOAD: 0
+IPBSTS: 0                               ;SAVE CONI BITS HERE
+IPBSTA: XWD     30000!DEPLEN,DEPEVM     ;DEV TYPE=60; VAR BUF LEN; NO EVM
+IPBXTR: 0                               ;SAVE ERROR FLAGS HERE
+IPBEVM: 0                               ;FOR KEEPING TRACK OF EVM
+IPBPSI: 0                               ;FOR PROGRAM SOFTWARE INTERRUPTS
+IPBESE: 0                               ;EXTENDED SOFTWARE ERROR STATUS
+IPBHCW: 0                               ;HARDWARE CHARACTERISTICS WORD
+IPBCPU: 0
+IPBJOB: 0                               ;USED BY MSGSER AND SETIOS
+IPBCWR: 0                               ;LAST CONTROL WORD RECEIVED
+IPBCWS: 0                               ;LAST CONTROL TO BE SENT OR SENT
+IPBPST: 0                               ;PROTOCOL STATUS
+IPBNBF: 0
+IPBSBF: 0
+IPBSCN: 0
+IPBISN: 0                       ;RESERVED FOR DEC=DEVISN=30 7.02***CEH
+IPBBSZ: 0                               ;MODE,,BUFFER SIZE OF TRANSFER
+IPBRFO: 0                               ;MODE,,WORD COUNT X'MITTED IN RFO
+IPBWFO: 0                               ;MODE,,WORD COUNT REC'D IN WFO
+IPBIWD: 0                               ;IOWD FOR MESSAGE TRANSFER
+IPBMSK: 0                               ;EVENT FLAGS FOR INTERRUPT CODE
+IPBCOR: 0                               ;ADDR. OF INTERRUPT COROUTINE
+IPBPRC: 0                               ;RETURN ADDRESS OF COROUTINE
+IPBCOD: CHL0+DS.CLR!DS.ETI+IPBCHN##     ; CHL0 DAS WORD
+        DEPHASE
+        IFN     TWODDB,<
+        ENTRY   IP1DDB,IP1INT
+        SUBTTL  SECOND INTER PROCESSOR BUFFER DDB
+
+IP1DDB: PHASE 34
+IP1NAM: SIXBIT  /IP1/                   
+IP1CHR: XWD     6*HUNGST,201    ;HNG TIM=49 SEC; BUF SIZ=201
+IP1IOS: 0
+IP1SER: EXP     IPBDSP
+IP1MOD: XWD     001003,000400           ;DVLNG!DVIN!DVOUT,,IMAGE MODE LEGAL
+IP1LOG: 0
+IP1BUF: 0
+IP1IAD: 0
+IP1OAD: 0
+IP1STS: 0                               ;SAVE CONI BITS HERE
+IP1STA: XWD     30000!DEPLEN,DEPEVM     ;DEV TYPE=60; VAR BUF LEN; NO EVM
+IP1XTR: 0                               ;SAVE ERROR FLAGS HERE
+IP1EVM: 0                               ;FOR KEEPING TRACK OF EVM
+IP1PSI: 0                               ;FOR PROGRAM SOFTWARE INTERRUPTS
+IP1ESE: 0                               ;EXTENDED SOFTWARE ERROR STATUS
+IP1HCW: 0                               ;HARDWARE CHARACTERISTICS WORD
+IP1CPU: 0
+IP1JOB: 0                               ;USED BY MSGSER AND SETIOS
+IP1CWR: 0                               ;LAST CONTROL WORD RECEIVED
+IP1CWS: 0                               ;LAST CONTROL TO BE SENT OR SENT
+IP1PST: 0                               ;PROTOCOL STATUS
+IP1NBF: 0
+IP1SBF: 0
+IP1SCN: 0
+IP1BSZ: 0                               ;MODE,,BUFFER SIZE OF TRANSFER
+IP1RFO: 0                               ;MODE,,WORD COUNT X'MITTED IN RFO
+IP1WFO: 0                               ;MODE,,WORD COUNT REC'D IN WFO
+IP1IWD: 0                               ;IOWD FOR MESSAGE TRANSFER
+IP1MSK: 0                               ;EVENT FLAGS FOR INTERRUPT CODE
+IP1COR: 0                               ;ADDR. OF INTERRUPT COROUTINE
+IP1PRC: 0                               ;RETURN ADDRESS OF COROUTINE
+IP1COD: CHL1+DS.CLR!DS.ETI+IPBCHN##     ; CHL1 DAS WORD
+        DEPHASE
+>
+        $HIGH
+        SUBTTL  BYTE POINTERS
+
+PIOMOD: POINT   4,DEVIOS(F),35          ;DATA MODE SET BY OPEN UUO
+PBUFSZ: POINT   17,0(T2),17             ;GET BUFFER SIZE FROM BUFFER HEADER
+PFUNCS: POINT   4,IPBCWS(F),3           ;FUNCTION CODE SENT IN CW
+PFUNCR: POINT   4,IPBCWR(F),3           ;FUNCTION CODE REC'D IN CW
+PFSBCR: POINT   4,IPBCWR(F),7           ;FUNCTION SUBCODE REC'D IN CW
+PMODER: POINT   8,IPBCWR(F),15          ;MODE REC'D IN CW
+PBCNTR: POINT   16,IPBCWR(F),31         ;BYTE COUNT REC'D IN CW
+PUBPST: POINT   4,IPBPST(F),27          ;USER BITS IN PROTOCOL STATUS WORD
+PUBT1:  POINT   4,T1,27                 ;USER BITS IN T1 (TEMP)
+PCODE:  POINT   4,IPBCOD(F),21          ;CODE NO.
+        SUBTTL  IPTSK. UUO PROCESSING
+
+;FORMAT OF IPTSK. FUNCTION TABLE IS 
+;       XWD     MINIMUM NUMBER OF ARGS REQUIRED,JUMP ADDRESS
+
+FUNTAB: CPOPJ##                 ;(00)ILLEGAL FUNCTION
+        2,,IPBGST               ;(01)GET STATUS OF DEVICE AND USER BITS
+FTMAX== .-FUNTAB-1
+
+;CALLING SEQUENCE:
+;       MOVE    AC,[LENGTH,,ADDRESS OF ARGUMENT LIST]
+;       IPTSK.  AC,
+;        ERROR RETURN           ;AC=ERROR CODE
+;       GOOD RETURN
+;       ...
+;ADDR:  FUNCTION
+;       ARGUMENTS
+;
+;ON ENTRY:
+;       (T1)=LENGTH,,ADDRESS OF ARGUMENT LIST
+
+IPBUUO: PUSHJ   P,SAVE3##               ;SAVE PRESERVED AC'S
+        HRR     M,T1                    ;SAVE ARG LIST ADDRESS
+        HLRE    P3,T1                   ;SAVE LIST LENGTH
+        JUMPLE  P3,ECOD1##              ;LENGTH MUST BE POSITIVE
+        PUSHJ   P,GETWDU##              ;GET FUNCTION INTO T1
+        JUMPLE  T1,CPOPJ##              ;MUST BE POSITIVE
+        CAILE   T1,FTMAX                ; AND NOT LARGER THAN ALLOWED
+        POPJ    P,                      ;FUNCTION NOT LEGAL
+        HLRZ    T2,FUNTAB(T1)           ;GET MINIMUM NO. OF ARGS REQUIRED
+        CAMGE   P3,T2                   ;IS LIST LONG ENOUGH?
+        JRST    ECOD1##                 ;NO-ERROR
+        HRRZ    T2,FUNTAB(T1)           ;GET JUMP ADDRESS
+        JRST    (T2)                    ;PROCESS THE UUO
+
+;HERE TO GET STATUS OF DEVICE AND USER BITS FOR USER
+
+IPBGST: MOVEI   F,IPBDDB                ;SET AC F
+        IFN     TWODDB,<
+        HRRZ    T1,IPBJOB(F)            ; GET # OF JOB USING DDB
+        CAME    T1,JOB##                ; SAME AS JOB DOING UUO?
+        MOVEI   F,IP1DDB                ; NO
+>
+        MOVE    T1,DEVIOS(F)            ;GET DEVICE STATUS
+        LDB     T2,PUBPST               ;GET USER BITS
+        DPB     T2,PUBT1                ;MERGE INTO T1
+        PUSHJ   P,PUTWD1##              ;MOVE TO USER'S ARG LIST
+        PJRST   CPOPJ1##                ;GIVE GOOD RETURN
+        SUBTTL  INTER PROCESSOR BUFFER DISPATCH TABLE
+
+        JRST    CPOPJ##                 ;(-4) DEVOP UUO
+        JRST    REGSIZ##                ;(-3) RETURN BUFFER SIZE
+        JRST    IPBINI                  ;(-2) ONCE ONLY INITIALIZATION
+        JRST    IPBHNG                  ;(-1) HUNG DEVICE ACTION
+IPBDSP: JRST    IPBREL                  ;(00) RELEASE
+        JRST    IPBCLO                  ;(01) CLOSE OUTPUT
+        JRST    IPBOUT                  ;(02) BUFFERED OUTPUT
+        JRST    IPBIN                   ;(03) BUFFERED INPUT
+;END OF SHORT DISPATCH TABLE
+        JRST    CPOPJ1##                ;(04) ENTER
+        JRST    IPBLUP                  ;(05) LOOKUP
+        JRST    CPOPJ##                 ;(06) DUMP MODE OUTPUT-NOT USED
+        JRST    CPOPJ##                 ;(07) DUMP MODE INPUT -NOT USED
+        JRST    CPOPJ##                 ;(10) USETO
+        JRST    CPOPJ##                 ;(11) USETI
+        JRST    CPOPJ##                 ;(12) UGETF
+        JRST    CPOPJ1##                ;(13) RENAME
+        JRST    CPOPJ##                 ;(14) CLOSE INPUT
+        JRST    CPOPJ##                 ;(15) UTPCLR
+        JRST    CPOPJ##                 ;(16) MTAPE
+
+
+;HERE TO INITIALIZE THE DA28-C AT ONCE TIME
+
+IPBINI: SETZM   IPBPST(F)               ;CLEAR PROTOCOL STATUS
+        MOVEI   T1,1B28                 ;SETUP INTERRUPT MASK
+        MOVNI   T2,IPBCHN##
+        LSH     T1,(T2)
+        IORM    T1,IPON
+        IORM    T1,IPOFF
+        PUSHJ   P,MAKRST                ;MAKE AND SEND A
+        PUSHJ   P,SENDCW                ; RESTART CW TO EP
+        AOS     (P)                     ;SO WE INIT ALL DDB'S
+        POPJ    P,                      ;RETURN TO UUOCON
+
+;HERE TO HANDLE HUNG DEVICE
+
+IPBHNG: MOVE    S,DEVIOS(F)             ;GET I/O STATUS
+        PUSHJ   P,CLRACT##              ;IOACT=0 AND RESET HNG DEV CNT
+        SETZM   IPBPST(F)               ;CLEAR PROTOCOL STATUS WORD
+        PJRST   SCANON                  ;TURN ON SCANNER BEFORE RETURNING
+
+;HERE TO HANDLE RELEASE UUO
+
+IPBREL: SETZM   IPBPST(F)               ;CLEAR PROTOCOL STATUS
+        PUSHJ   P,MAKRFI                ;MAKE AN RFI
+        PJRST   SENDCW                  ;SEND IT TO EP AND RETURN
+
+;HERE TO CLOSE OUTPUT
+
+IPBCLO: PJRST   WAIT1##                 ;WAIT FOR I/O TO COMPLETE
+
+; WAIT HERE UNTIL DA28-C IS FREE
+
+IPBFRE: HRLZ    T2,IPBPAR               ;GET WAIT COUNT
+        CONSO   DAC,DC.BSY              ;BUSY?
+        JRST    IPBFR1                  ;NO
+        AOBJN   T2,.-2                  ;WAIT
+        PUSHJ   P,DERRO1                ;TELL THE WORLD
+        JRST    IPBFRE
+IPBFR1: IPBOFF                          ;DEVICE IS FREE - TURN OFF INTERRUPTS
+        POPJ    P,
+
+;HERE WHEN USER ISSUES LOOKUP UUO
+;CALLING SEQUENCE:
+;       LOOKUP  NET,ADDRESS OF ARGUMENT LIST
+;        ERROR  RETURN          ;NOT OK TO DO INPUT
+;       GOOD    RETURN          ;OK TO DO INPUT
+;       ...
+; ADDR: USER DEFINED BITS (SUPPLIED)
+;   +1: DEVICE STATUS AND USER BITS (RETURNED)
+;   +2: USER OUTPUT BUFFER SIZE (SUPPLIED)
+;   +3: UNUSED
+
+
+IPBLUP: HRRZS   M                       ;GET ADDRESS OF ARG LIST
+        PUSHJ   P,GETWDU##              ;GET USER DEFINED BITS INTO T1
+        HRRM    T1,IPBPST(F)            ;SAVE IN PROTOCOL STATUS WORD
+        ADDI    M,2                     ;POINT TO 3RD WORD OF BLOCK
+        PUSHJ   P,GETWDU##              ;GET USER OUTPUT BUFFER SIZE
+        HRLI    T1,3                    ;ADD MODE CODE
+        MOVEM   T1,IPBRFO(F)            ;SAVE IT
+        SUBI    M,2                     ;RESTORE POINTER
+        HRLZ    T1,IPBPAR               ; GET WAIT CNT
+        CONSO   DAC,DC.CON!DC.BSY       ; CONNECTED OR BUSY?
+        JRST    IPBLP1                  ;NO-GO HANDLE THAT
+        AOBJN   T1,.-2                  ; WAIT IT OUT
+        TRO     S,IOIMPM                ;SET ERROR BIT
+        MOVEM   S,DEVIOS(F)             ; FOR THE USER
+        PJRST   IPBLPR                  ;ERROR RETURN
+
+IPBLP1: MOVE    T1,IPBPST(F)            ;GET PROTOCOL STATUS
+        TLNE    S,IOBEG                 ;CHECK IF VIRGIN DEVICE
+        JRST    IPBLP3                  ;YES-CHECK OUTPUT FIRST
+        TLZN    S,STRTPO                ;CHECK IF STARTED PRIORITY OUTPUT
+        JRST    IPBLP2                  ;NO-CONTINUE
+        MOVEM   S,DEVIOS(F)             ;STORE NEW DEVICE STATUS
+        JRST    IPBLP4                  ;CHECK RESPONSE TO PO RFO
+IPBLP2: LDB     T2,PFUNCR               ;CHECK IF LAST TRANSFER
+        CAIN    T2,FN.RFO               ; WAS A REC'D RFO
+        JRST    IPBLP6                  ;YES-GIVE SKIP RETURN
+IPBLP3: TRNE    T1,NET.RO               ;DOES USER WANT TO TRANSMIT?
+        TRNE    S,IOACT                 ;YES-CHECK IF IO IS ACTIVE
+        PJRST   IPBLPR                  ;YES-ERROR RETURN
+        MOVE    T1,IPBRFO(F)            ;SET MODE AND WC FOR
+        MOVEM   T1,IPBBSZ(F)            ; THE RFO CW
+
+IPBLP4: PUSHJ   P,OSYNC                 ;SEND RFO (IF NEEDED) AND GET REPLY
+         JRST   IPBLP5                  ;REPLY NOT WFI-CHECK IT
+        MOVEI   T1,NET.PA!NET.RO!NET.PO ;CLEAR USER BITS
+        ANDCAM  T1,IPBPST(F)            ; IN PROTOCOL STATUS WORD
+        PJRST   IPBLPR                  ;GIVE ERROR RETURN
+
+IPBLP5: MOVE    T1,IPBPST(F)            ;GET PROTOCOL STATUS
+        TLZ     T1,IOXRFO               ;REMOVE RECORD THAT WE SENT RFO
+        MOVEM   T1,IPBPST(F)            ; AND SAVE IN DDB
+        TLNE    T1,IORRFO               ;REC'D AN RFO?
+IPBLP6: AOS     (P)                     ;YES-GIVE SKIP RETURN
+
+IPBLPR: MOVE    T1,DEVIOS(F)            ;GET DEVICE STATUS
+        LDB     T2,PUBPST               ;GET USER BITS
+        DPB     T2,PUBT1                ;MERGE INTO T1
+        PUSHJ   P,PUTWD1##              ;STORE T1 IN LOOKUP BLOCK
+        POPJ    P,                      ;RETURN
+        SUBTTL  INPUT UUO - BUFFERED MODE
+
+;HERE FROM UUOCON WHEN USER DOES INPUT UUO AND DEVICE MUST BE STARTED
+; PRESET ACCUMULATORS
+;       S - DEVICE STATUS (DEVIOS)
+;       P - PUSH DOWN POINTER TO STACK IN JOB DATA AREA
+;       R - ADDRESS OF JOB DATA AREA
+;       F - ADDRESS OF IPBDDB
+
+IPBIN:  LDB     T1,PFUNCR               ;WAS LAST TRANSFER AN RFO
+        CAIE    T1,FN.RFO               ; FROM EP?
+        PJRST   SETIPM                  ;NO-GIVE ERROR RETURN
+        HRRZS   IPBPST(F)               ;CLEAR PROTOCOL STATUS BITS
+        PUSHJ   P,INSET                 ;SET DDB FOR INPUT
+         POPJ   P,                      ;ERROR - IMPROPER MODE
+        HRRZ    T1,DEVIAD(F)            ;GET INPUT BUFFER ADDRESS
+        PUSHJ   P,BUFCLR##              ; AND CLEAR IT
+         PJRST  ADRERR##                ;ERROR-ILLEGAL ADDRESS
+        MOVE    T2,DEVIAD(F)            ;GET BUFFER SIZE FROM
+        EXCTUX  <LDB T3,PBUFSZ>         ; BUFFER HEADER IN USER AREA
+        SUBI    T3,1                    ;MINUS ONE FOR WORD COUNT
+        HRRM    T3,IPBBSZ(F)            ;SAVE IN DDB
+        PUSHJ   P,ISYNC                 ;GET IN INPUT SYNC WITH EP
+         POPJ   P,                      ;ERROR-RETURN
+IPBIN0: HRRZ    T3,IPBWFO(F)            ;GET SIZE OF MESSAGE TO COME
+        HRRZ    T2,IPBBSZ(F)            ;GET USER BUFFER SIZE
+        CAMLE   T3,T2                   ;WILL MESSAGE FIT IN BUFFER?
+        PJRST   IPBBTL                  ;NO-MESSAGE TOO BIG
+        HRRM    T3,IPBBSZ(F)            ;UPDATE BYTE COUNT
+        HLRZ    T3,IPBWFO(F)            ;GET MODE OF MESSAGE TO COME
+        HLRZ    T2,IPBBSZ(F)            ;GET HARDWARE MODE
+        CAME    T3,T2                   ;MATCHING MODES?
+        PJRST   IPBIPM                  ;NO-IMPROPER MODE
+        HRRZ    T1,DEVIAD(F)            ;GET INPUT BUFFER ADDRESS
+        HRRZ    T2,IPBWFO(F)            ;GET NO. OF WORDS IN MESSAGE
+        EXCTXU  <MOVEM T2,1(T1)>        ;STORE IN BUFFER HEADER
+        PUSHJ   P,SETIOW                ;SET UP IOWD FOR INPUT TRANSFER
+        MOVSI   T1,EXPDAT               ;NOTE THAT DATA IS
+        IORM    T1,IPBPST(F)            ; EXPECTED NEXT FROM EP
+        PJRST   SCANON                  ;TURN ON SCAN BIT AND RETURN
+        SUBTTL  OUTPUT UUO - BUFFERED MODE
+
+;HERE FROM UUOCON WHEN USER DOES OUTPUT UUO AND DEVICE MUST BE STARTED
+; PRESET AC'S
+;       S - DEVICE STATUS
+;       P - PUSH DOWN POINTER TO STACK IN JOB DATA AREA
+;       R - ADDRESS OF JOB DATA AREA
+;       F - ADDRESS OF IPBDDB
+
+IPBOUT: PUSHJ   P,OUTSET                ;SET DDB FOR OUTPUT
+         POPJ   P,                      ;ERROR-IMPROPER MODE
+BOUT0:  MOVE    T1,DEVOAD(F)            ;GET OUTPUT BUFFER ADDRESS
+        EXCTUX  <HRRZ T1,1(T1)>         ;GET WORD COUNT
+        HRRM    T1,IPBBSZ(F)            ; AND SAVE IT
+        JUMPN   T1,BOUT1                ;EMPTY BUFFER?
+        PUSHJ   P,ADVBFE##              ;YES-IS NEXT BUFFER READY?
+         PJRST  CLRACT##                ;NO-CLEAR IOACT AND RETURN
+        PJRST   BOUT0                   ; YES-TRY THAT BUFFER
+
+BOUT1:  PUSHJ   P,SETIOW                ;SET UP IOWD IN DDB
+        HRRZ    T1,IPBBSZ(F)            ;GET WORD COUNT
+        CAILE   T1,7777                 ;FIELD LIMITATION CHECK
+        PJRST   IPBTLG                  ;BUFFER TOO BIG - ERROR RETURN
+        PUSHJ   P,OSYNC                 ;GET IN OUTPUT SYNC WITH EP
+         POPJ   P,                      ;ERROR-RETURN
+BOUT2:  PUSHJ   P,MAKWFO                ;MAKE WFO CONTROL WORD
+        PUSHJ   P,ADDSIZ                ;ADD BUFFER SIZE TO IT
+        PJRST   SENDCW                  ;SEND WFO CONTROL WORD TO EP AND RETURN
+        SUBTTL  UUO LEVEL SUBROUTINES
+
+;HERE TO SET UP FOR INPUT/OUTPUT
+
+INSET:  MOVSI   S,IO                    ;SET FOR
+        ANDCAB  S,DEVIOS(F)             ; INPUT
+        SKIPA
+
+OUTSET: MOVSI   S,IO                    ;SET FOR
+        IORB    S,DEVIOS(F)             ; OUTPUT
+        TDNE    S,[IOEND,,RHSTOP]       ;ANY ERROR FLAGS SET?
+        POPJ    P,                      ;YES-GIVE ERROR RETURN
+        LDB     T1,PIOMOD               ;NO-GET DATA MODE
+        CAIE    T1,10                   ;IMAGE MODE?
+        PJRST   SETIPM                  ;NO-IMPROPER MODE
+        MOVEI   T1,3                    ;YES-DA28 USES BINARY MODE (3)
+        HRLM    T1,IPBBSZ(F)            ;SAVE IO MODE
+        AOS     (P)                     ;YES-GIVE SKIP RETURN
+        PJRST   MAKACT                  ;TURN ON DEVICE
+
+;HERE TO MAKE A USER JOB I/O ACTIVE
+
+MAKACT: MOVE    S,DEVIOS(F)             ;SAVE S IN DDB
+        TLZ     S,IOBEG                 ;NOT A VIRGIN DEVICE NOW
+        PJRST   SETACT##                ;SET IOACT=1,IOW=0,RESET HNG DEV TIME
+
+;CONSTRUCT AND STORE IOWD FOR BUFFERED I/O
+
+SETIOW: TLNN    S,IO                    ;DOING INPUT?
+        SKIPA   T1,DEVIAD(F)            ;GET INPUT BUFFER ADDRESS
+        MOVE    T1,DEVOAD(F)            ;GET OUTPUT BUFFER ADDRESS
+        ADDI    T1,2                    ;TWO MORE FOR CORRECT ADDRESS
+        HRRZ    T2,IPBBSZ(F)            ;GET TRANSFER WORD COUNT
+        MOVNS   T2                      ;NEGATE COUNT
+        HRL     T1,T2                   ;-WORD COUNT,,FWA (SEE MAPIOW FOR SOS)
+        MOVEM   T1,IPBIWD(F)            ;STORE IOWD
+        POPJ    P,                      ;RETURN
+
+;HERE TO TURN ON SCAN BIT IN DA28-C, ENABLING SEL REQ INTERRUPTS
+
+        IFE     TSTMOD,<
+SCANON: PUSHJ   P,IPBFRE
+        CONO    DAS,DS.CLR!DS.ETI+IPBCHN##  ;CLR DAC, ENABLE TIM ERR AND SET PIA
+        CONO    DAC,DC.SCN              ;SET SCAN BIT
+        IPBON
+        POPJ    P,                      ;RETURN
+>
+        IFN     TSTMOD,<                ;FAKE DA28 FOR TEST MODE
+SCANON: MOVE    T1,IPBPST(F)            ;GET PROTOCOL STATUS
+        TLNE    T1,IOXRFI               ;SENT RFI?
+        POPJ    P,                      ;YES-RETURN
+        TLZ     T1,RCWMSK               ;CLEAR REC'D CW BITS
+        TLO     T1,IORWFI               ;FAKE A REC'D WFI
+        MOVEM   T1,IPBPST(F)            ;SAVE THE STATUS
+        TLNN    T1,IOXRFO               ;SENT RFO?
+        JRST    CWRECO                  ;NO-RESUME SENDING DATA
+        POPJ    P,                      ;YES-RETURN
+>
+        SUBTTL  ISYNC - ESTABLISH INPUT SYNC WITH EXTERNAL TASK
+
+;CALL WITH:
+;       PUSHJ   P,ISYNC
+;        RETURN HERE IF I/O ERROR ENCOUNTERED
+;       RETURN HERE IF OK TO ACCEPT DATA
+
+ISYNC:  COROUT  <IOEND!RCWMSK,,RHERR>   ;SIGNIFICANT EVENTS
+ISYNC0: MOVE    S,DEVIOS(F)             ;GET DEVICE STATUS
+        TDNE    S,[IOEND,,RHSTOP]       ;ANY EXIT CONDITIONS?
+        PJRST   $CPOPJ                  ;YES-EXIT AT UUO LEVEL
+        MOVE    T1,IPBPST(F)            ;NO-GET PROTOCOL STATUS
+        TLNE    T1,IORWFO               ;REC'D A WFO?
+        PJRST   $CPOJ1                  ;YES-GO TO WORK WITH SKIP RETURN
+        TLNE    T1,IOXWFI               ;NO-SENT A WFI?
+        JRST    ISYNC1                  ;YES-ONE IS PLENTY
+        PUSHJ   P,MAKWFI                ;NO-DO
+        PUSHJ   P,ADDSIZ                ;   IT
+        PUSHJ   P,SENDCW                ;   NOW
+
+ISYNC1: MOVE    S,DEVIOS(F)             ;NOW CHECK STATUS
+        TDNE    S,[IOEND,,RHSTOP]       ;EXIT CONDITIONS?
+        PJRST   $CPOPJ                  ;YES-RETURN
+        MOVE    T1,IPBPST(F)            ;GET PROTOCOL STATUS
+        TLNE    T1,IORWFI               ;DO WE HAVE CONTENTION?
+        JRST    ISYNC2                  ;YES-GO TAKE CARE OF IT
+        TLNE    T1,IORRFI               ;REC'D AN RFI?
+        JRST    ISYNC3                  ;YES-GO HANDLE THAT
+        TLNE    T1,IORRFO               ;REC'D AN RFO?
+        JRST    ISYNC4                  ;YES-CHECK IF RACE TIME
+        TLNE    T1,IORREJ               ;REC'D A REJECT?
+        PJRST   $CPOPJ                  ;YES-ERROR RETURN
+        TLNE    T1,IORRST               ;REC'D A RESTART?
+        PJRST   $CPOPJ                  ;YES-ERROR RETURN
+        TLNE    T1,IORUND               ;REC'D AN UNDEFINED FUNCTION CODE?
+        JRST    $CPOPJ                  ;YES-ERROR RETURN
+        SYNC    <IOEND!RCWMSK,,RHSTOP>  ;WAIT FOR REPLY
+        JRST    ISYNC0                  ;CHECK THE REPLY
+
+;HERE IF WE HAVE CONTENTION FOR THE LINE
+
+ISYNC2: TRO     S,IOIMPM                ;SET IMPROPER MODE BIT
+        TRZ     S,IOACT                 ; AND CLEAR IOACT
+        MOVEM   S,DEVIOS(F)             ;SAVE IN DDB
+        PUSHJ   P,SETIOD##              ;RESCHEDULE JOB IF IN IOW
+        MOVEI   T1,SF.UXF               ;MAKE AND
+        PUSHJ   P,MAKREJ                ; SEND REJECT CW
+        PUSHJ   P,SENDCW                ; TO EP
+        PJRST   $CPOPJ                  ;ERROR RETURN
+
+;HERE IF EP HAS NO MORE TO SEND
+
+ISYNC3: TLO     S,IOEND                 ;TELL USER NO MORE DATA NOW
+        TRZ     S,IOACT                 ;CLEAR IOACT BIT FOR USER
+        MOVEM   S,DEVIOS(F)             ; LIKE SO
+        PJRST   $CPOPJ                  ;ERROR RETURN
+
+;HERE TO CHECK IF INVOLVED IN A RACE CONDITION
+
+ISYNC4: TLNE    T1,IOXWFI               ;JUST SENT A WFI?
+        TLNE    T1,IOXRFI               ;YES-OK IF ALSO SENT RFI
+        PJRST   $CPOPJ                  ;GIVE ERROR RETURN
+        JRST    ISYNC2                  ;MUST BE RACE CONDITION
+        SUBTTL  OSYNC - ESTABLISH OUTPUT SYNC WITH EXTERNAL TASK
+
+;CALL WITH:
+;       PUSHJ   P,OSYNC
+;        RETURN HERE IF I/O ERROR ENCOUNTERED
+;       RETURN HERE IF OK TO SEND WFO
+
+OSYNC:  COROUT  <RCWMSK,,RHERR>         ;NOTE SIGNIFICANT EVENTS
+OSYNC0: MOVE    T1,IPBPST(F)            ;GET PROTOCOL STATUS
+        TLNE    T1,IOXRFO               ;SENT RFO YET?
+        JRST    OSYNC1                  ;YES-ONCE IS ENOUGH
+        CONO    DAS,DS.CLR              ;NO-TURN OFF SCANNER
+        HRRZS   IPBPST(F)               ;CLEAR PROTOCOL STATUS BITS
+        PUSHJ   P,MAKRFO                ;MAKE AN
+        PUSHJ   P,ADDSIZ                ; RFO CW
+        PUSHJ   P,SENDCW                ;SEND THE RFO
+        MOVE    T1,IPBPST(F)            ;GET STATUS AGAIN
+
+OSYNC1: TLNE    T1,IORWFI               ;IS EP READY?
+        PJRST   $CPOJ1                  ;YES-SEND WFO TO EP
+        TLNE    T1,IORWFO               ;ARE WE IN CONTENTION?
+        JRST    OSYNC2                  ;YES-HANDLE IT
+        TLNE    T1,IORRFI               ;NO-IS EP UNABLE TO TAKE MORE?
+        JRST    OSYNC3                  ;YES-HANDLE THAT CASE
+        TLNE    T1,IORRFO               ;NO-IS EP READY TO SEND?
+        PJRST   $CPOPJ                  ;YES-ERROR RETURN
+        TLNE    T1,IORREJ               ;REC'D A REJECT?
+        PJRST   $CPOPJ                  ;YES-ERROR RETURN
+        TLNE    T1,IORRST               ;REC'D A RESTART?
+        PJRST   $CPOPJ                  ;YES-ERROR RETURN
+        TLNE    T1,IORUND               ;REC'D AN UNDEFINED FUNCTION CODE?
+        PJRST   $CPOPJ                  ;YES-ERROR RETURN
+        SYNC    <RCWMSK,,RHERR>         ;WAIT FOR REPLY FROM EP
+        MOVE    S,DEVIOS(F)             ;GET STATUS
+        TRNN    S,RHERR                 ;ANY ERRORS?
+        JRST    OSYNC0                  ;NO-CHECK FOR OTHER EVENTS
+        PJRST   $CPOPJ                  ;YES-GIVE ERROR RETURN
+
+;HERE IF WE HAVE CONTENTION FOR THE LINE
+
+OSYNC2: MOVEI   S,IOIMPM                ;TELL USER OF MODE TROUBLE
+        IORB    S,DEVIOS(F)             ; LIKE SO
+        MOVEI   T1,SF.UXF               ;TELL EP ALSO
+        PUSHJ   P,MAKREJ                ; WITH A
+        PUSHJ   P,SENDCW                ; REJECT CW
+        PJRST   $CPOPJ                  ;ERROR RETURN
+
+;HERE IF USER WANTS TO PAUSE - CONGESTED
+
+OSYNC3: TRO     T1,NET.PA               ;SET PAUSE BIT
+        MOVEM   T1,IPBPST(F)            ; FOR USER
+        PJRST   $CPOPJ                  ;ERROR RETURN
+        SUBTTL  COROUTINE AND SYNC MECHANISMS DEFINED
+
+$COROT: CONSZ   PI,PI.IPA               ;IF CALLED AT INTERRUPT LEVEL,
+        POPJ    P,                      ; THEN TREAT AS NO-OP
+        MOVEM   T1,IPBMSK(F)            ;SAVE EVENT BITS
+        EXCH    T1,(P)                  ;PUT T1 ON STACK
+        EXCH    T1,-1(P)                ;PUSH RETURN ADDR/ DOWN ONE SLOT
+        MOVEM   T1,IPBPRC(F)            ;SAVE DISPLACED ENTRY IN DDB
+        PJRST   TPOPJ##                 ;RESTORE T1 AND RETURN
+
+
+$SYNC:  MOVEM   T1,IPBMSK(F)            ;SAVE EVENT FLAGS
+        CONSZ   PI,PI.IPA               ;AT INTERRUPT LEVEL?
+        JRST    SYNC0                   ;YES-GO HANDLE THAT
+        MOVEI   T3,100                  ;GET WAIT CNTS
+$SYNCA: MOVEI   T2,10000
+        TDNN    T1,IPBPST(F)            ;NOW CHECK STATUS FOR ANY FLAGS
+        TDNE    T1,DEVIOS(F)            ; CHECK HERE TOO-ANY LUCK?
+        POPJ    P,                      ;YES-RETURN
+        SOJG    T2,.-3                  ;NO-TRY AGAIN
+        CONSZ   DAC,DC.CON!DC.BSY       ;DA-28 CONNECTED OR BUSY?
+        JRST    .-1                     ;YES,WAIT
+        CONO    DAC,DC.SCN              ;TURN ON SCANNER
+        AOS     SCNCNT
+        SOJG    T3,$SYNCA               ;TIMEOUT IN OUTER LOOP?
+        AOS     CNTTIM                  ;CNT TIMEOUTS.
+        POP     P,IPBCOR(F)             ;LOOP COUNT EXPIRED-SAVE RETURN IN DDB
+        PUSHJ   P,DOZE                  ;PUT JOB TO SLEEP
+        PJRST   @IPBPRC(F)              ;GO BACK TO UUO CODE (AFTER JOB WAKES)
+
+SYNC0:  TDNN    T1,IPBPST(F)            ;ANY MASKED
+        TDNE    T1,DEVIOS(F)            ; BITS SET YET?
+        POPJ    P,                      ;YES-RETURN
+        POP     P,IPBCOR(F)             ;NO-SAVE RETURN IN DDB
+        POPJ    P,                      ;DISMISS INTERRUPT
+
+$CPOJ1: AOS     IPBPRC(F)               ;FOR SKIP RETURN
+$CPOPJ: SETZM   IPBCOR(F)               ;CLEAR COROUTINE ADDRESS
+        CONSO   PI,PI.IPA               ;AT INTERRUPT LEVEL?
+        PJRST   @IPBPRC(F)              ;NO-UUO LEVEL-PERFORM RETURN
+        PUSHJ   P,AWAKE                 ;YES-WAKE THE JOB
+        POPJ    P,                      ;RETURN (DISMISS INTERRUPT)
+        SUBTTL  HIBER-WAKE ROUTINES
+
+;HERE TO PUT JOB TO SLEEP
+
+DOZE:   MOVSI   S,HIBTSK                ;SET SLEEP BIT IN
+        IORB    S,DEVIOS(F)             ; BOTH STATUS WORDS
+        AOS     CNTHIB                  ;COUNT THE HIBERS
+        LDB     J,PJOBN##               ;GET JOB NO.
+        SETZ    T1,                     ;SO NOT AWAKENED BY TIMEOUT
+        PUSHJ   P,HIBER##               ;NIGHTY NIGHT
+         JFCL                           ;IGNORE ERROR RETURN
+        MOVE    S,DEVIOS(F)             ;UPDATE S
+        POPJ    P,                      ;RETURN
+
+;HERE TO WAKE A JOB
+
+AWAKE:  MOVSI   S,HIBTSK                ;CHECK IF JOB
+        TDNN    S,DEVIOS(F)             ; SLEEPING
+        JRST    AWAKE0                  ;NO-GOODBYE
+        ANDCAB  S,DEVIOS(F)             ;YES-CLEAR THE SLEEP BIT
+        PUSH    P,T1                    ;SAVE T1
+        LDB     T1,PJOBN##              ;GET JOB NO.
+        JUMPE   T1,TPOPJ##              ;NO-OP IF JOB 0
+        AOS     CNTWAK                  ;COUNT THE WAKES
+        PUSHJ   P,WAKJOB##              ;GOOD MORNING!
+        POP     P,T1                    ;RESTORE T1
+
+AWAKE0: MOVE    S,DEVIOS(F)             ;RESTORE S
+        POPJ    P,                      ;RETURN
+        SUBTTL  ERROR EXITS FORM UUO LEVEL
+
+;HERE TO SEND BLOCK-TOO-LARGE MESSAGE TO USER AND EP
+
+IPBBTL: MOVEI   T1,SF.BTL               ;MAKE AND
+        PUSHJ   P,MAKREJ                ; SEND A REJECT CW
+        PUSHJ   P,SENDCW                ; TO EP
+IPBTLG: TRO     S,IOBKTL                ;SET BIT FOR USER
+        TRZ     S,IOACT                 ; AND CLEAR IOACT
+        MOVEM   S,DEVIOS(F)             ; LIKE SO
+        PJRST   SETIOD##                ;EXIT AFTER SETTING DONE
+
+;HERE TO SEND IMPROPER MODE MESSAGE TO USER AND EP
+
+IPBIPM: MOVEI   T1,SF.IDM               ;MAKE AND
+        PUSHJ   P,MAKREJ                ; SEND A REJECT CW
+        PUSHJ   P,SENDCW                ; TO EP
+SETIPM: TRO     S,IOIMPM                ;SET BIT FOR USER
+        TRZ     S,IOACT                 ; AND CLEAR IOACT
+        MOVEM   S,DEVIOS(F)             ; LIKE SO
+        PJRST   SETIOD##                ;EXIT AFTER SETTING DONE
+
+        SUBTTL  INTER PROCESSOR BUFFER INTERRUPT HANDLER
+
+;HERE ON AN INTERRUPT - NO AC'S SAVED OR PRESET
+
+        IFN     TWODDB,<
+IP1INT: CONSO   DAC,IBITS               ; INT FOR US?
+        JRST    .-1                     ; NO-GO TO NEXT DEV
+>
+IPBINT: CONSO   DAC,IBITS               ;IS INTERRUPT FOR US?
+IPBNOT: JRST    .-1                     ;NO-GO ON TO NEXT DEVICE
+        CONSZ   DAC,DC.ERR              ;GET AN ERROR?
+        JRST    DERROR                  ;YES-GO HANDLE IT
+        CONSZ   DAC,DC.EOT!DC.DON       ;GET EOT AND/OR DONE?
+        JRST    EOTDON                  ;YES-GO HANDLE IT
+        CONSZ   DAC,DC.SRQ              ;GET SELECT REQUEST?
+        JRST    SELREQ                  ;YES-GO HANDLE IT
+        JRST    IPBNOT                  ;SOMETHING IS NOT RIGHT
+
+;HERE IF AN ERROR HAS BEEN DETECTED
+
+DERROR: JSR     IPBSAV##                ;SAVE AC'S AND SET UP PDL POINTER
+        MOVEI   F,IPBDDB                ;SET AC F
+        IFN     TWODDB,<
+        CONI    DAS,T1                  ; GET STATUS
+        LDB     T1,[POINT 4,T1,21]      ; GET CODE NO. FROM DA28
+        LDB     T2,PCODE                ; GET CODE NO. FROM DDB
+        CAME    T1,T2                   ; RIGHT DDB?
+        MOVEI   F,IP1DDB                ; NO
+>
+        PUSHJ   P,IOSET##               ;SET R=ADDR. OF JOB DATA AREA
+                                        ; AND S=DEVIOS AND J=DEVJOB
+        PUSHJ   P,DERRO1                ; PRINT ERROR
+        PJRST   CLERR
+DERRO1: CONI    DAS,T1                  ;GET DAS CONTENTS
+        MOVEM   T1,IPBXTR(F)            ;SAVE ERROR BITS IN DDB
+
+        IFN     PRNTEM,<
+        PUSH    P,U                     ;SAVE AC U
+        TRNN    T1,DS.NRD!DS.TER!DS.REM!DS.PAR!DS.NXM   ;CHECK FOR ERROR
+        JRST    CONERR                  ;CONNECT ERROR-GO PRINT MESSAGE
+        MOVE    U,OPRLDB##              ;SET UP FOR INLMES
+        PUSHJ   P,INLMES##              ;PRINT THE FOLLOWING MESSAGE
+        ASCIZ   /
+?DA28 HARDWARE ERROR
+STATUS:  /
+PRIREG: MOVE    T1,IPBXTR(F)            ;GET THE STATUS REGISTER
+        PUSHJ   P,PRINT1                ;PRINT IT
+        PUSHJ   P,INLMES##
+        ASCIZ   /
+COMMAND:  /
+        CONI    DAC,T1                  ;GET COMMAND REGISTER
+        PUSHJ   P,PRINT1                ;PRINT IT
+        PUSHJ   P,INLMES##
+        ASCIZ   /
+IOWD:  /
+        IFN     FTKL10,<                ;FLUSH CACHE MEMORY FOR
+        PUSHJ   P,CSDMP##               ; KL10 MACHINES
+>
+        DATAI   DAC,T1                  ;GET IOWD REGISTER
+        IFN     FTKL10,<                ;FLUSH CACHE MEMORY FOR
+        PUSHJ   P,CSDMP##               ; KL10 MACHINES
+>
+        PUSHJ   P,PRINT1                ;PRINT IT
+        PUSHJ   P,INLMES##
+        ASCIZ   /
+DATA:  /
+        IFN     FTKL10,<                ;FLUSH CACHE MEMORY FOR
+        PUSHJ   P,CSDMP##               ; KL10 MACHINES
+>
+        DATAI   DAS,T1                  ;GET DATA REGISTER
+        IFN     FTKL10,<                ;FLUSH CACHE MEMORY FOR
+        PUSHJ   P,CSDMP##               ; KL10 MACHINES
+>
+        PUSHJ   P,PRINT1
+        PUSHJ   P,CRLF##                ;END OF MESSAGE
+        POP     P,U                     ;RESTORE U
+> ;END OF IFN PRNTEM
+        POPJ    P,                      ; RTN
+
+        IFN     PRNTEM,<
+CONERR: MOVE    U,OPRLDB##              ;SET FOR INLMES
+        PUSHJ   P,INLMES##              ;PRINT THE FOLLOWING MESSAGE
+        ASCIZ   /
+?CONNECT ERROR ON DA28
+STATUS: /
+        JRST    PRIREG                  ;PRINT REGISTERS
+
+;SUBROUTINE TO PRINT T1 AS N,,N
+; CALL WITH:
+;       MOVE    T1,OCTAL NUMBER
+;       PUSHJ   P,PRINT1
+;       RETURN  HERE
+
+PRINT1: PUSH    P,T1                    ;SAVE ARG
+        HLRZ    T1,T1                   ;MOVE LH
+        PUSHJ   P,OCTPNT##              ;PRINT IT
+        PUSHJ   P,INLMES##              ;PRINT COMMAS
+        ASCIZ   /,,/
+        HRRZ    T1,(P)                  ;GET RH
+        PUSHJ   P,OCTPNT##              ;PRINT IT
+        PJRST   TPOPJ##                 ;RESTORE ARG AND RETURN
+> ;END OF IFN PRNTEM
+
+CLERR:  PUSHJ   P,SCANON                ;TURN ON SCANNER
+        HRRZS   IPBPST(F)               ;CLEAR THE PROTOCOL STATUS
+        PUSHJ   P,HIST                  ;RECORD THE EVENT
+        LDB     T1,PJOBN##              ;ANY JOB CURRENTLY
+        JUMPE   T1,CPOPJ##              ; ATTACHED?
+        PUSHJ   P,SETIOD##              ;YES-RESCHEDULE THE JOB
+        MOVEI   T1,NET.PA               ;CLEAR PAUSE BIT
+        ANDCAM  T1,IPBPST(F)            ; FOR USER
+        TRO     S,IODTER!IODERR         ;SET ERROR BITS
+        TRZ     S,IOACT                 ;TURN OFF IO ACTIVE BIT
+        TLZ     S,STRTPO                ;CLEAR PO STARTED BIT
+        SKIPE   IPBCOR(F)               ;ANY COROUTINE ACTIVE?
+        PJRST   CHKPRC                  ;YES-GO CHECK BITS
+        MOVEM   S,DEVIOS(F)             ;NO-STORE S IN DDB
+        POPJ    P,                      ;DISMISS THE INTERRUPT
+
+;HERE WHEN AN EOT AND/OR DONE(WCOF) INTERRUPT OCCURS
+
+EOTDON: JSR     IPBSAV##                ;SAVE AC'S AND SET UP PDL POINTER
+        IFN     FTKL10,<                ;FLUSH CACHE MEMORY FOR
+        PUSHJ   P,CSDMP##               ; KL10 MACHINES
+>
+        MOVEI   F,IPBDDB                ;SET F
+        IFN     TWODDB,<
+        CONI    DAS,T1                  ; GET STATUS
+        LDB     T1,[POINT 4,T1,21]      ; GET CODE NO. OF DA28
+        LDB     T2,PCODE                ; GET CODE NO. OF DDB
+        CAME    T1,T2                   ; RIGHT DDB?
+        MOVEI   F,IP1DDB                ; NO
+>
+        PUSHJ   P,IOSET##               ;SET R AND S AND J
+DDBIO:  PUSHJ   P,SVEUF##               ;MAKE USER ADDRESSABLE
+        MOVE    T1,IPBPST(F)            ;GET PROTOCOL STATUS
+        TLNN    T1,EXPDAT!SNTDAT        ;IF JUST SENT OR RECEIVED
+        JRST    CWDON                   ; A CW, THEN TRANSMISSION DONE
+        PUSHJ   P,HIST                  ;RECORD THE PARTIAL TRANSFER
+        PUSHJ   P,NXTIOW                ;MORE TO DO ON THIS BUFFER?
+        JRST    DATDON                  ;NO-TRANSMISSION DONE
+        TLNN    S,IO                    ;DOING INPUT?
+        PJRST   RECDAT                  ;YES-CONTINUE INPUT
+        PJRST   SENDAT                  ;NO-CONTINUE OUTPUT
+
+;HERE IF COMPLETED TRANSFER OF CONTROL WORD
+
+CWDON:  CONO    DAC,0                   ;DISCONNECT
+        MOVE    T1,IPBCWS(F)            ;CHECK IF CW SENT OR REC'D
+        JUMPN   T1,WCWS                 ;CW SENT
+        PJRST   RECONT                  ;CW REC'D
+
+;HERE IF COMPLETED TRANSFER OF DATA
+
+DATDON: CONO    DAC,0                   ;DISCONNECT
+        HRRZS   IPBPST(F)               ;CLEAR PROTOCOL STATUS BITS
+        TLNN    S,IO                    ;DOING INPUT?
+        PJRST   INPDON                  ;YES
+        MOVE    T1,[RCWMSK,,RHERR]      ;SET BITS FOR
+        MOVEM   T1,IPBMSK(F)            ; INTERRUPT LEVEL
+        MOVEI   T1,CWRECO               ;SET RETURN ADDRESS FOR
+        MOVEM   T1,IPBCOR(F)            ; INTERRUPT LEVEL
+        PJRST   SCANON                  ;TURN ON SCANNER AND RELEASE INT.
+
+CWRECO: SETZM   IPBPRC(F)               ;CLEAR SKIP RETURN FLAG
+        MOVSI   T1,IOXRFO               ;SET BIT FOR
+        IORM    T1,IPBPST(F)            ; OSYNC
+        PUSHJ   P,OSYNC                 ;CHECK RESPONSE
+        MOVSI   T1,IOXRFO               ;CLEAR TEMPORARY
+        ANDCAM  T1,IPBPST(F)            ; BIT
+        SKIPN   IPBPRC(F)               ;REC'D A WFI?
+        JRST    NOWFI                   ;NO-GO HANDLE THAT
+        PUSHJ   P,ADVBFE##              ;ANOTHER BUFFER AVAILABLE?
+         JRST   NOADVO                  ;NO-SEND RFI CW
+        PUSHJ   P,SETIOD##              ;RESCHEDULE JOB IF IN IOW
+        MOVE    T1,DEVOAD(F)            ;GET NEW OUTPUT BUFFER ADDRESS
+        EXCTUX  <HRRZ T1,1(T1)>         ;GET WORD COUNT
+        HRRM    T1,IPBBSZ(F)            ; AND SAVE IT
+        PUSHJ   P,SETIOW                ;SET UP IOWD IN DDB
+        HRRZ    T1,IPBBSZ(F)            ;GET WORD COUNT
+        CAILE   T1,7777                 ;FIELD LIMITATION CHECK
+        PJRST   IPBTLG                  ;BUFFER TOO BIG 
+        PJRST   BOUT2                   ;SEND WFO TO EP
+
+NOWFI:  TRZ     S,IOACT                 ;CLEAR IO ACTIVE BIT
+        PUSHJ   P,STOIOS##              ;STORE S, AND RESET HUNG DEVICE COUNT
+        PUSHJ   P,SETIOD##              ;RESCHEDULE JOB IF IN IOW
+        PUSHJ   P,ADVBFE##              ;ADVANCE DEVOAD, AND GIVE BUFFER TO USER
+         CAIA                           ;CAN'T GET NEXT BUFFER-SKIP
+        POPJ    P,                      ;NEXT BUFFER IS READY-RETURN
+        MOVEI   T1,NET.PA               ;CLEAR PAUSE BIT
+        ANDCAM  T1,IPBPST(F)            ; FOR USER
+        POPJ    P,                      ;RETURN
+
+NOADVO: PUSHJ   P,MAKRFI                ;MAKE AND SEND AN RFI
+        PUSHJ   P,SENDCW                ; TO EP
+        TRZ     S,IOACT                 ;CLEAR IO ACTIVE BIT
+        PUSHJ   P,STOIOS##              ;STORE S, AND RESET HUNG DEVICE COUNT
+        MOVSI   T1,RCWMSK               ;CLEAR REC'D
+        ANDCAM  T1,IPBPST(F)            ; CW STATUS BITS
+        PJRST   SETIOD##                ;RESCHEDULE JOB IF IN IOW
+
+INPDON: IFN     FTKL10,<                ;FLUSH CACHE MEMORY FOR
+        PUSHJ   P,CSDMP##               ; KL10 MACHINES
+>
+        MOVE    T1,IPBPST(F)            ;GET PROTOCOL STATUS WORD
+        TRNE    T1,NET.PO               ;DOES USER WANT PRIORITY OUTPUT?
+        JRST    PRIOUT                  ;YES-GIVE IT A GO
+ADVBUF: IFN     FTKL10,<                ;FLUSH CACHE MEMORY FOR
+        PUSHJ   P,CSDMP##               ; KL10 MACHINES
+>
+        PUSHJ   P,ADVBFF##              ;ADVANCE INPUT BUFFERS
+         JRST   NOADVI                  ;NOT OK-HANDLE THAT
+        PUSHJ   P,MAKWFI                ;OK-MAKE A WFI CW
+        PUSHJ   P,ADDSIZ                ;ADD SIZE OF BUFFER
+        CAIA                            ;SKIP
+NOADVI: PUSHJ   P,MAKRFI                ;MAKE AN RFI CW
+        MOVE    T1,[RCWMSK,,RHSTOP]     ;SET BIT MASK
+        MOVEM   T1,IPBMSK(F)            ; FOR INTERRUPT LEVEL
+        MOVEI   T1,CWRECI               ;SET RETURN ADDRESS
+        MOVEM   T1,IPBCOR(F)            ; FOR INTERRUPT LEVEL
+        PJRST   SENDCW                  ;SEND CW AND DISMISS INTERRUPT
+
+CWRECI: SETZM   IPBPRC(F)               ;CLEAR SKIP RETURN FLAG
+        MOVSI   T1,IOXWFI               ;SET BIT FOR
+        IORM    T1,IPBPST(F)            ; ISYNC
+        PUSHJ   P,ISYNC                 ;CHECK RESPONSE
+        SKIPN   IPBPRC(F)               ;REC'D A WFO?
+        JRST    ACTOFF                  ;NO-RELEASE THE USER
+        PUSHJ   P,SETIOD##              ;RESCHEDULE JOB IF IN IOW
+        MOVE    T2,DEVIAD(F)            ;GET BUFFER SIZE FROM
+        EXCTUX  <LDB T3,PBUFSZ>         ; BUFFER HEADER IN USER AREA
+        SUBI    T3,1                    ;MINUS ONE FOR WORD COUNT
+        HRRM    T3,IPBBSZ(F)            ;SAVE IN DDB
+        PJRST   IPBIN0                  ;CHECK WFO CONTENTS
+
+ACTOFF: TRZ     S,IOACT                 ;CLEAR IO ACTIVE BIT
+        PUSHJ   P,STOIOS##              ;STORE S, AND RESET HUNG DEVICE COUNT
+        PJRST   SETIOD##                ;RESCHEDULE JOB IF IN IOW
+
+;HERE TO TRY STARTING HIGH PRIORITY OUTPUT
+
+PRIOUT: TLO     S,STRTPO!IOEND          ;SET STARTED PO AND END-OF-DATA BITS
+        TRZ     S,IOACT                 ;CLEAR IO ACTIVE BIT
+        PUSHJ   P,STOIOS##              ;STORE S AND RESET HUNG DEVICE COUNT
+        IFN     FTKL10,<                ;FLUSH CACHE MEMORY FOR
+        PUSHJ   P,CSDMP##               ; KL10 MACHINES
+>
+        PUSHJ   P,ADVBFF##              ;ADVANCE INPUT BUFFERS
+         JFCL                           ;IGNORE ERROR RETURN
+        PUSHJ   P,SETIOD##              ;RESCHEDULE JOB IF IN IOW
+        HRRZS   IPBPST(F)               ;CLEAR PROTOCOL STATUS BITS
+        MOVE    T1,IPBRFO(F)            ;SET UP MODE AND WC FOR
+        MOVEM   T1,IPBBSZ(F)            ; THE RFO CW
+        PUSHJ   P,MAKRFO                ;MAKE AN RFO CW
+        PUSHJ   P,ADDSIZ                ; ADD COUNT
+        PJRST   SENDCW                  ; AND SEND IT
+
+;HERE TO DECIDE WHICH CONTROL WORD WAS JUST SENT TO EP AND PROCEED
+
+WCWS:   LDB     T1,PFUNCS               ;GET FUNCTION CODE OF CW SENT
+        SKIPLE  T1                      ;IS CODE
+        CAILE   T1,MAXFNX               ;LEGAL?
+        SETZ    T1,                     ;NO - SET TO ZERO
+        MOVE    T1,FUNTBS(T1)           ;GET CORRESPONDING BIT
+        MOVE    T2,IPBPST(F)            ;GET STATUS
+        TLZ     T2,XCWMSK               ;CLEAR SEND CW BITS
+        IOR     T1,T2                   ;SET THIS ONE
+        MOVEM   T1,IPBPST(F)            ;STORE UPDATED STATUS
+        PUSHJ   P,HIST                  ;RECORD THE TRANSFER
+        TLNN    T1,IOXWFO               ;SENT WFO?
+        PJRST   SCANON                  ;NO-TURN ON SCANNER AND RETURN
+        TLO     T1,SNTDAT               ;MAKE NOTE THAT DATA 
+        MOVEM   T1,IPBPST(F)            ; IS BEING SENT
+        IFN     FTKL10,<                ;FLUSH CACHE MEMORY FOR
+        PUSHJ   P,CSDMP##               ; KL10 MACHINES
+>
+        PJRST   DDBIO                   ;SEND DATA
+
+;TABLE OF PROTOCOL STATUS BITS INDEXED BY FUNCTION CODE OF XMITTED CW
+
+FUNTBS: 0                               ;(0) UNDEFINED
+        IOXRFI,,0                       ;(1) READY FOR INPUT
+        IOXRFO,,0                       ;(2) READY FOR OUTPUT
+        IOXWFI,,0                       ;(3) WAITING FOR INPUT
+        IOXWFO,,0                       ;(4) WAITING FOR OUTPUT
+        IOXREJ,,0                       ;(5) REJECT
+        IOXRST,,0                       ;(6) RESTART
+        0                               ;(7) STATUS (NOT XMITTED)
+        IOXRAK,,0                       ;(10) RESTART ACK
+
+;HERE TO GENERATE THE NEXT DA28 IOWD OR WARN THAT TRANSFER IS DONE
+;       CPOPJ FOR I/O DONE
+;       CPOPJ1 FOR NEXT IOWD IN T1
+
+NXTIOW: MOVE    T1,IPBIWD(F)            ;GET IOWD FROM DDB
+        JUMPGE  T1,CPOPJ##              ;TRANSFER DONE-RETURN
+        PUSHJ   P,MAPIOW                ;MAP IOWD TO PHYSICAL ADDRESS
+        MOVEM   T2,IPBIWD(F)            ;PUT REMAINDER OF IOWD IN DDB
+        PJRST   CPOPJ1##                ;GIVE SKIP RETURN
+
+;HERE TO MAP THE IOWD IN T1 INTO A DA28 IOWD WITH PHYSICAL MEMORY ADDRESS
+;RETURN THE DA28 IOWD IN T1 AND THE REMAINDER IOWD IN T2
+; CALL WITH:
+;       MOVE    T1,<IOWD>
+;       PUSHJ   P,MAPIOW
+;       RETURN HERE
+
+MAPIOW: PUSHJ   P,SAVE2##               ;SAVE AC'S P1,P2
+        PUSH    P,T1                    ;SAVE THE INPUT IOWD
+        HRRZS   T1                      ;REMOVE NEGATIVE COUNT
+IFE FTKLP,<
+        LSH     T1,W2PLSH##             ;SHIFT TO GET PAGE NO.
+        ROT     T1,-1                   ;TURN ON SIGN BIT IF PAGE NO. IS ODD
+        ADDI    T1,.UPMP                ;ADD ADDRESS OF UPMP
+        TLZE    T1,400000               ;PAGE NO. ODD?
+        TLOA    T1,001500               ;YES-POINT TO PAGE NO. (RIGHT)
+        TLO     T1,221500               ;NO-POINT TO PAGE NO. (LEFT)
+        LDB     T2,T1                   ;GET PHYSICAL PAGE NO.
+        LSH     T2,P2WLSH##             ;SHIFT TO WORD ADDRESS
+        MOVE    T4,(P)                  ;GET INPUT IOWD
+        ANDI    T4,PG.BDY##             ;MASK OFF OFFSET INTO PAGE
+        IOR     T2,T4                   ;GET PHYSICAL ADDRESS
+> ;END IFE FTKLP
+IFN FTKLP,<
+        EXCTUX  <MAP T2,(T1)>           ;GET PHYS ADDR
+        TLZ     T2,777760               ;CLEAR JUNK KLP BITS
+        MOVE    T4,(P)                  ;GET ADDRESS BACK AGAIN
+        ANDI    T4,PG.BDY##             ;KEEP JUST THE OFFSET
+> ;END IFN FTKLP
+        MOVEI   T3,PAGSIZ##             ;GET PAGE SIZE
+        SUBI    T3,(T4)                 ;MAX. NO. WORDS FROM THIS PAGE
+        HLRE    T4,(P)                  ;GET NEGATIVE COUNT FROM IOWD
+        MOVNS   T4                      ;MAKE POSITIVE
+        TDZA    P2,P2                   ;ZERO THE WORD COUNT AND SKIP
+
+ADDPAG: MOVEI   T3,PAGSIZ##             ;GET NEXT WORD COUNT INCREMENT
+        ADD     P2,T3                   ;UPDATE WORD COUNT
+        CAML    P2,T4                   ;DO WE HAVE ENOUGH CONTIGUOUS WORDS?
+        PJRST   IOWDON                  ;YES-GET OUT
+IFE FTKLP,<
+        LDB     P1,T1                   ;NO-GET PHYSICAL PAGE NO.
+        TLCN    T1,220000               ;MAKE POINTER TO NEXT PAGE NO.
+        ADDI    T1,1                    ; ONE MORE IS PERFECT
+        LDB     T3,T1                   ;GET NEXT PHYSICAL PAGE NO.
+        CAIN    T3,1(P1)                ;CONTIGUOUS?
+> ;END IFE FTKLP
+IFN FTKLP,<
+        MOVE    P1,T2                   ;GET PHYS PAGE NUMBER
+        ADDI    P1,PAGSIZ##             ;POINT TO NEXT PAGE
+        ADDI    T1,PAGSIZ##             ;NEXT VIRT ADDR
+        EXCTUX  <MAP T3,(T1)>           ;GET NEW PHYS ADDR
+        TLZ     T3,777760               ;CLEAR RANDOM KLP BITS
+        CAMN    T3,P1                   ;NEXT PHY PAG MATCH NEXT VIRT PAGE?
+> ;END IFN FTKLP
+        JRST    ADDPAG                  ;YES-CONTINUE ADDING
+
+IOWDON: CAMLE   P2,T4                   ;(NO) DO WE HAVE MORE WORDS THAN NECC.?
+        MOVE    P2,T4                   ;YES-CUT BACK
+        MOVN    T1,P2                   ;NO-NEGATE NO. WORDS TO GO
+        LSH     T1,^D22                 ;BUILD DA28
+        IOR     T1,T2                   ; IOWD
+        SOS     T1                      ; LIKE THIS:  -WC,,FWA-1
+        POP     P,T2                    ;GET INPUT IOWD
+        ADD     T2,P2                   ;UPDATE MEMORY ADDRESS
+        SUBM    P2,T4                   ; AND WORD COUNT
+        HRL     T2,T4                   ; AND STORE IN T2 FOR NEXT TIME
+        POPJ    P,                      ;RETURN
+;HERE WHEN AN EXTERNAL PROCESSOR REQUESTS SERVICE
+
+SELREQ: JSR     IPBSAV##                ;SAVE AC'S AND SET UP PDL POINTER
+        MOVEI   F,IPBDDB                ;SET F
+        IFN     TWODDB,<
+        CONI    DAS,T1                  ; GET STATUS
+        LDB     T1,[POINT 4,T1,21]      ; GET CODE NO. OF DA28
+        LDB     T2,PCODE                ; GET CODE NO. OF DDB
+        CAME    T1,T2                   ; RIGHT DDB?
+        MOVEI   F,IP1DDB                ; NO
+>
+        PUSHJ   P,IOSET##               ;SET R AND S AND J
+        CONI    DAS,IPBSTS(F)           ;GET CONI BITS INTO DDB
+        MOVE    T1,IPBSTS(F)            ;GET CONI BITS
+        ANDI    T1,DS.UNI               ; GET CODE NO. OF DA28
+        CAILE   T1,HICHL                ; OK?
+        JRST    BADCOD                  ;NO-ERROR
+        MOVE    T1,IPBPST(F)            ;GET PROTOCOL STATUS
+        TLNN    T1,EXPDAT               ;EXPECTING DATA?
+        PJRST   RECCW                   ;NO-GO GET A CW
+        IFN     FTKL10,<                ;FLUSH CACHE MEMORY FOR
+        PUSHJ   P,CSDMP##               ; KL10 MACHINES
+>
+        PJRST   DDBIO                   ;SET TO RECEIVE DATA
+
+;HERE TO TELL WORLD THAT A SEL REQ INTERRUPT OCCURRED FOR
+; A NON-EXISTENT CODE NO.
+
+BADCOD: PUSH    P,U                     ;SAVE U
+        MOVE    U,OPRLDB##              ;SET FOR INLMES
+        PUSHJ   P,INLMES##              ;PRINT FOLLOWING MESSAGE
+        ASCIZ   /
+?DA28 SEL REQ ON NX UNIT
+/
+        POP     P,U                     ;RESTORE U
+        PJRST   CLERR                   ;CLEAR DA28 AND INFORM USER
+
+;HERE TO SET DEVICE TO RECEIVE A CONTROL WORD
+
+RECCW:  SETZM   IPBCWS(F)               ;CLEAR ENTRY-USE AS FLAG
+        HRLI    T1,-<<1>_4>             ;SET WC=-1
+        HRRI    T1,IPBCWR-1(F)          ;SET MA=LOCATION OF CW-1
+        IFN     FTKL10,<                ;FLUSH CACHE MEMORY FOR
+        PUSHJ   P,CSDMP##               ; KL10 MACHINES
+>
+        PUSHJ   P,IPBFRE
+        DATAO   DAC,T1                  ;LOAD DAC REGISTER
+        HRRZ    T1,IPBCOD(F)            ; GET DAS WORD
+        CONO    DAC,0                   ; IN CASE CONNECT SET!!
+        CONO    DAS,(T1)                ; LOAD DAS REG
+        CONO    DAC,RBITS!DM.BIN        ;GO
+        IPBON
+        POPJ    P,                      ;RETURN
+
+;HERE TO INITIATE AN OUTPUT DATA TRANSFER
+;CALL WITH:
+;       MOVE    T1,<IOWD>               ;MA IS PHYSICAL ADDRESS
+;       PUSHJ   P,SENDAT
+;       RETURN HERE
+
+        IFE     TSTMOD,<
+SENDAT: IFN     FTKL10,<                ;FLUSH CACHE MEMORY FOR
+        PUSHJ   P,CSDMP##               ; KL10 MACHINES
+>
+        CONI    DAS,T2
+        LDB     T2,[POINT 4,T2,21]
+        LDB     T3,PCODE                ;GET OUR CODE NO
+        CAME    T2,T3                   ;IS IT US?
+        PUSHJ   P,IPBFRE                ;NO - WAIT UNTIL FREE
+        DATAO   DAC,T1                  ;LOAD DAC WITH IOWD
+        HRRZ    T1,IPBCOD(F)            ; GET DAS WORD
+        CONSO   DAC,DC.CON              ; CONNECT SET?
+        CONO    DAS,(T1)                ; NO-LOAD DAS REG (SET CODE)
+        CONO    DAC,XBITS!DM.BIN        ;GO
+        IPBON
+        POPJ    P,                      ;RETURN
+>
+        IFN     TSTMOD,<                ;FAKE DA28 FOR TEST MODE
+SENDAT: JRST    DDBIO                   ;CONTINUE OUTPUT
+>
+;HERE TO INITIATE AN INPUT DATA TRANSFER
+;CALL WITH:
+;       MOVE    T1,<IOWD>               ;MA IS PHYSICAL ADDRESS
+;       PUSHJ   P,RECDAT        
+;       RETURN; HERE
+
+RECDAT: IFN     FTKL10,<                ;FLUSH CACHE MEMORY FOR
+        PUSHJ   P,CSDMP##               ; KL10 MACHINES
+>
+        CONI    DAS,T2
+        LDB     T2,[POINT 4,T2,21]
+        LDB     T3,PCODE                ;GET OUR CODE NO
+        CAME    T2,T3                   ;IS IT US?
+        PUSHJ   P,IPBFRE                ;NO - WAIT UNTIL FREE
+        DATAO   DAC,T1                  ;LOAD DAC WITH DA28 IOWD
+        HRRZ    T1,IPBCOD(F)            ; GET DAS WORD
+        CONSO   DAC,DC.CON              ; CONNECT SET?
+        CONO    DAS,(T1)                ; NO-LOAD DAS REG (SET CODE)
+        CONO    DAC,RBITS!DM.BIN        ;GO
+        IPBON
+        POPJ    P,                      ;RETURN
+;HERE WHEN INPUT OF CONTROL WORD IS COMPLETED
+
+RECONT: LDB     T1,PFUNCR               ;GET FUNCTION CODE OF REC'D CW
+        SKIPLE  T1                      ;IS CODE
+        CAILE   T1,MAXFNR               ; LEGAL?
+        SETZ    T1,                     ;NO-SET TO ZERO
+        CAIN    T1,FN.REP               ;DID EP SEND A REP CW?
+        PJRST   SCANON                  ;YES-IGNORE IT
+        MOVE    T1,FUNTBR(T1)           ;GET CORRESPONDING TABLE ENTRY
+        HLLZ    T2,T1                   ;GET STATUS BIT
+        MOVE    T3,IPBPST(F)            ;GET STATUS OF PROTOCOL
+        TLZ     T3,RCWMSK               ;CLEAR REC'D CW BITS
+        IOR     T3,T2                   ;SET THIS ONE
+        MOVEM   T3,IPBPST(F)            ;STORE UPDATED STATUS
+        PUSHJ   P,HIST                  ;RECORD THE TRANSFER
+        HRRZ    T2,T1                   ;GET SUBROUTINE ADDRESS
+        PUSHJ   P,(T2)                  ; AND GO THERE
+        PJRST   CHKPRC                  ;CHECK FOR COROUTINES
+
+;TABLE OF PROTOCOL STATUS BITS INDEXED BY FUNCTION CODE OF REC'D CW
+
+FUNTBR: IORUND,,RECUND                  ;(0) UNDEFINED
+        IORRFI,,RECRFI                  ;(1) READY FOR INPUT
+        IORRFO,,RECRFO                  ;(2) READY FOR OUTPUT
+        IORWFI,,RECWFI                  ;(3) WAITING FOR INPUT
+        IORWFO,,RECWFO                  ;(4) WAITING FOR OUTPUT
+        IORREJ,,RECREJ                  ;(5) REJECT
+        IORRST,,RECRST                  ;(6) RESTART
+
+;HERE WHEN AN UNDEFINED CONTROL WORD RECEIVED
+
+RECUND: MOVEI   T1,SF.UDF               ;MAKE AND
+        PUSHJ   P,MAKREJ                ; SEND A
+        PUSHJ   P,SENDCW                ; REJECT
+        PJRST   RECRST
+
+;HERE WHEN AN RFI CONTROL WORD RECEIVED
+
+RECRFI: PJRST   SCANON                  ;RETURN AFTER STARTING SCAN
+
+;HERE WHEN AN RFO CONTROL WORD RECEIVED
+
+RECRFO: LDB     T1,PJOBN##              ;GET NO. OF ATTACHED JOB
+        JUMPE   T1,RCRFO0               ;IF NO JOB, IGNORE RFO
+        PUSHJ   P,WAKJOB##              ;WAKE IT 
+        MOVEI   T1,NET.PA               ;CLEAR PAUSE BIT
+        ANDCAM  T1,IPBPST(F)            ; FOR USER
+        POPJ    P,                      ;RETURN 
+
+RCRFO0: SETZM   IPBCWR(F)               ;CLEAR REC'D CW ENTRY
+        TLZ     T3,IORRFO               ;CLEAR REC'D RFO BIT
+        MOVEM   T3,IPBPST(F)            ; IN PROTOCOL STATUS WORD
+        PJRST   SCANON                  ;TURN ON SCANNER AND RETURN
+
+;HERE WHEN A WFI CONTROL WORD RECEIVED
+
+RECWFI: POPJ    P,                      ;RETURN
+
+;HERE WHEN A WFO CONTROL WORD RECEIVED
+
+RECWFO: MOVE    T1,IPBPST(F)            ;GET STATUS
+        TLNE    T1,IOXWFI               ;SENT WFI?
+        JRST    RCWFO0                  ;YES-STORE CW INFO
+        SKIPE   IPBCOR(F)               ;WILL COROUTINE SEND REJECT?
+        POPJ    P,                      ;YES-SO DON'T BOTHER
+        MOVEI   T1,SF.UXF               ;NO-SEND REJECT CW TO
+        PUSHJ   P,MAKREJ                ; EP, SINCE OUT
+        PJRST   SENDCW                  ; OF SYNC
+
+RCWFO0: LDB     T1,PMODER               ;GET MODE FROM CW
+        HRLM    T1,IPBWFO(F)            ;STORE IT
+        LDB     T1,PBCNTR               ;GET BYTE COUNT FROM CW
+        IDIVI   T1,4                    ;CONVERT
+        SKIPE   T2                      ; TO
+        AOS     T1                      ; WORD COUNT
+        HRRM    T1,IPBWFO(F)            ;STORE IT
+        POPJ    P,                      ;RETURN
+
+;HERE WHEN A REJECT CONTROL WORD RECEIVED
+
+RECREJ: AOS     RREJCT                  ;COUNT IT AND DROP THROUGH
+
+;HERE WHEN A RESTART CONTROL WORD RECEIVED
+
+RECRST: MOVEI   T1,ASSCON!ASSPRG        ;SEE IF DDB IS BEING USED
+        TDNN    T1,IPBMOD(F)            ;...
+        JRST    RECRT1                  ;NO-SKIP CLEAN UP CODE
+        SKIPE   IPBCOR(F)               ;ANY COROUTINES ACTIVE?
+        PUSHJ   P,@IPBCOR(F)            ;YES-TAKE CARE OF THAT
+        LDB     T1,PJOBN##              ;GET JOB NO.
+        SKIPE   T1                      ;NO-OP IF NO JOB
+        PUSHJ   P,WAKJOB##              ;SET THE WAKE BIT FOR USER
+        MOVEI   T1,NET.PA               ;CLEAR PAUSE BIT
+        ANDCAM  T1,IPBPST(F)            ; FOR USER
+        TRO     S,IOIMPM!IODTER!IODERR  ;SET ERROR FLAGS FOR USER
+        MOVEM   S,DEVIOS(F)             ;LIKE SO
+        TRZN    S,IOACT                 ;CLEAR IOACT IF ON
+        JRST    RECRT1                  ;NOTHING ACTIVE
+        MOVEM   S,DEVIOS(F)             ;SAVE FLAGS FOR USER
+        PUSHJ   P,BUFDON                ;ADVANCE THE BUFFERS
+         JFCL                           ;IGNORE ERROR RETURN
+        PUSHJ   P,SETIOD##              ;RESCHEDULE JOB IF IN IOW
+
+RECRT1: MOVE    T1,IPBPST(F)            ;DID WE RECEIVE A 
+        TLNN    T1,IORRST               ; RESTART?
+        PJRST   SCANON                  ;NO-TURN ON SCANNER AND RETURN
+        PUSHJ   P,MAKRAK                ;YES-MAKE AND
+        PUSHJ   P,SENDCW                ; SEND A RESTART ACKNOWLEDGE MSG
+        POPJ    P,                      ;RETURN
+
+;HERE TO ADVANCE BUFFERS
+
+BUFDON: TLNE    S,IO                    ;CHECK DIRECTION OF IO
+        PJRST   ADVBFE##                ;OUT
+        IFN     FTKL10,<                ;FLUSH CACHE MEMORY FOR
+        PUSHJ   P,CSDMP##               ; KL10 MACHINES
+>
+        PJRST   ADVBFF##                ;IN
+
+
+;HERE TO CHECK IF COROUTINE SHOULD RUN OR JOB SHOULD BE WAKED AND DO IT
+
+CHKPRC: MOVEM   S,DEVIOS(F)             ;SAVE S
+        ADD     S,IPBPST(F)             ;GET PROTOCOL STATUS
+        SKIPE   IPBCOR(F)               ;ANY COROUTINE TO RETURN TO?
+        TDNN    S,IPBMSK(F)             ;YES-ANY SIGNIFICANT EVENTS NOW?
+        POPJ    P,                      ;NO-RETURN
+        MOVE    S,DEVIOS(F)             ; YES-RESTORE S
+        PJRST   @IPBCOR(F)              ;RETURN TO COROUTINE
+        SUBTTL  MAKE CONTROL WORDS
+
+MAKRFI: MOVSI   T4,<<FN.RFI>_^D14>
+        PJRST   FINCW
+MAKRFO: MOVSI   T4,<<FN.RFO>_^D14>
+        PJRST   FINCW
+MAKWFI: MOVSI   T4,<<FN.WFI>_^D14>
+        PJRST   FINCW
+MAKWFO: MOVSI   T4,<<FN.WFO>_^D14>
+        PJRST   FINCW
+MAKREJ: AOS     XREJCT                  ;INCREMENT THE COUNTER
+        MOVSI   T4,<<FN.REJ>_^D14>
+        DPB     T1,[POINT 4,T4,7]
+        PJRST   FINCW   
+MAKRST: MOVSI   T4,<<FN.RST>_^D14>
+        HRRI    T4,USCNUM_4             ;USC MACHINE NUMBER
+        PJRST   FINCW
+MAKRAK: MOVSI   T4,<<FN.RAK>_^D14>
+        HRRI    T4,USCNUM_4             ;USC MACHINE NUMBER
+        PJRST   FINCW
+
+;HERE TO FINISH CONTROL WORD IN T4
+
+FINCW:  HLRZ    T2,IPBBSZ(F)            ;GET SAVED IO MODE
+        DPB     T2,[POINT 8,T4,15]      ;FINISH CONTROL WORD
+        MOVEM   T4,IPBCWS(F)            ;STORE IT IN DDB
+        POPJ    P,                      ;RETURN
+
+;HERE TO ADD BYTE COUNT TO CONTROL WORD
+
+ADDSIZ: HRRZ    T2,IPBBSZ(F)            ;GET WORD COUNT OF BUFFER
+        IMULI   T2,4*^D16               ;CONVERT TO BYTE COUNT AND SHIFT LEFT 4
+        HRRM    T2,IPBCWS(F)            ;STORE IT IN DDB
+        POPJ    P,                      ;RETURN
+        SUBTTL  SEND CONTROL WORD TO EP
+
+        IFE     TSTMOD,<
+SENDCW: SETZM   IPBCWR(F)               ;CLEAR ENTRY-USE AS FLAG
+        HRLI    T1,-<<1>_4>             ;SET WC=-1
+        HRRI    T1,IPBCWS-1(F)          ;SET MA=LOCATION OF CW-1
+        IFN     FTKL10,<                ;FLUSH CACHE MEMORY FOR
+        PUSHJ   P,CSDMP##               ; KL10 MACHINES
+>
+        PUSHJ   P,IPBFRE                ;WAIT UNTIL DA28 FREE
+        DATAO   DAC,T1                  ;LOAD DAC REGISTER
+        HRRZ    T1,IPBCOD(F)            ; GET DAS WORD
+        CONO    DAC,0                   ; IN CASE CONNECT SET!!
+        CONO    DAS,(T1)                ; LOAD DAS REG
+        CONO    DAC,XBITS!DM.BIN        ;GO
+        IPBON
+        POPJ    P,                      ;RETURN
+>
+        IFN     TSTMOD,<                ;FAKE DA28 FOR TEST MODE
+SENDCW: JRST    WCWS                    ;FAKE THE SENDING OF CW
+>
+        SUBTTL  ROUTINE TO RECORD IPB TRANSFERS
+
+HIST:   PUSH    P,T1                    ;SAVE AC'S
+        PUSH    P,T2                    ;...
+        MOVE    T1,HISTAB               ;GET SEQUENCE NO.,,TABLE POINTER
+        SETZM   2(T1)                   ;CLEAR
+        LDB     T2,PCODE                ;GET CODE NO
+        DPB     T2,[POINT 2,2(T1),15]   ;SAVE CODE #
+        HRR     T2,TIME##               ;GET CURRENT JIFFIE COUNT
+        HLL     T2,IPBPST(F)            ; AND LH OF PROTOCOL STATUS WORD
+        IORM    T2,2(T1)                ;STORE IN TABLE
+        TLNE    T2,EXPDAT               ;REC'D DATA?
+        JRST    HISTDI                  ;YES-RECORD THAT
+        TLNE    T2,SNTDAT               ;SENT DATA?
+        JRST    HISTDO                  ;YES-RECORD THAT
+        MOVE    T2,IPBCWR(F)            ;MAKE TABLE ENTRY FROM
+        MOVEM   T2,(T1)                 ; TRANSFER DATA
+        MOVE    T2,IPBCWS(F)
+        MOVEM   T2,1(T1)
+        JRST    UPDATE
+
+HISTDI: MOVE    T2,IPBIWD(F)            ;GET IO WORD
+        MOVEM   T2,(T1)                 ;STORE IT
+        SETZM   1(T1)
+        JRST    UPDATE
+
+HISTDO: MOVE    T2,IPBIWD(F)            ;GET IO WORD
+        MOVEM   T2,1(T1)                ;STORE IT
+        SETZM   (T1)
+
+UPDATE: ADDI    T1,2                    ;INCREMENT POINTER
+        AOBJP   T1,.+2                  ; AND SEQUENCE NO.
+        HRRZS   T1                      ;CLEAR SEQUENCE NO. OF TOO BIG
+        HRRZ    T2,T1                   ;GET POINTER
+        CAILE   T2,LHSTAB-2             ;CHECK IF TABLE FULL
+        HRRI    T1,HISTAB+1             ;YES-RESET POINTER TO START
+        MOVEM   T1,HISTAB               ;SAVE SEQUENCE NO.,,TABLE POINTER
+        IFN     TWODDB,<
+        LDB     T2,PCODE                ;GET CODE #
+        SKIPE   T2                      ;CHL 1?
+        PUSHJ   P,HIST1                 ;YES
+>
+        POP     P,T2                    ;RESTORE AC'S
+        POP     P,T1                    ;...
+        POPJ    P,                      ;RETURN
+
+        IFN     TWODDB,<
+        SUBTTL  ROUTINE TO RECORD IPB TRANSFERS (CHL 1)
+
+HIST1:
+        MOVE    T1,HISTA1               ;GET SEQUENCE NO.,,TABLE POINTER
+        SETZM   2(T1)                   ;CLEAR
+        LDB     T2,PCODE                ;GET CODE NO
+        DPB     T2,[POINT 2,2(T1),15]   ;SAVE CODE #
+        HRR     T2,TIME##               ;GET CURRENT JIFFIE COUNT
+        HLL     T2,IPBPST(F)            ; AND LH OF PROTOCOL STATUS WORD
+        IORM    T2,2(T1)                ;STORE IN TABLE
+        TLNE    T2,EXPDAT               ;REC'D DATA?
+        JRST    HIST1I                  ;YES-RECORD THAT
+        TLNE    T2,SNTDAT               ;SENT DATA?
+        JRST    HIST1O                  ;YES-RECORD THAT
+        MOVE    T2,IPBCWR(F)            ;MAKE TABLE ENTRY FROM
+        MOVEM   T2,(T1)                 ; TRANSFER DATA
+        MOVE    T2,IPBCWS(F)
+        MOVEM   T2,1(T1)
+        JRST    UPDAT1
+
+HIST1I: MOVE    T2,IPBIWD(F)            ;GET IO WORD
+        MOVEM   T2,(T1)                 ;STORE IT
+        SETZM   1(T1)
+        JRST    UPDAT1
+
+HIST1O: MOVE    T2,IPBIWD(F)            ;GET IO WORD
+        MOVEM   T2,1(T1)                ;STORE IT
+        SETZM   (T1)
+
+UPDAT1: ADDI    T1,2                    ;INCREMENT POINTER
+        AOBJP   T1,.+2                  ; AND SEQUENCE NO.
+        HRRZS   T1                      ;CLEAR SEQUENCE NO. OF TOO BIG
+        HRRZ    T2,T1                   ;GET POINTER
+        CAILE   T2,LHSTA1-2             ;CHECK IF TABLE FULL
+        HRRI    T1,HISTA1+1             ;YES-RESET POINTER TO START
+        MOVEM   T1,HISTA1               ;SAVE SEQUENCE NO.,,TABLE POINTER
+        POPJ    P,                      ;RETURN
+
+        $LOW
+HISTA1: EXP     HISTA1+1                ;POINTER TO NEXT OPEN SLOT
+        BLOCK 100
+LHSTA1: 0                              ;LAST TABLE ENTRY
+>
+
+        $LOW
+HISTAB: EXP     HISTAB+1                ;POINTER TO NEXT OPEN SLOT
+        BLOCK   100
+LHSTAB: 0                           ;LAST TABLE ENTRY
+
+;DATA STORAGE
+
+IPBPAR: -77777                          ;NO. OF TRIES BEFORE HIBER DONE
+CNTWAK: 0                               ;NO. OF WAKES
+CNTHIB: 0                               ;NO. OF HIBERS
+RREJCT: 0                               ;NO. OF REJECTS REC'D
+XREJCT: 0                               ;NO. OF REJECTS X'MITTED
+CNTTIM: 0                               ;NO. OF TIMEOUTS WAITING FOR 11/40
+SCNCNT: 0                               ; NO TIMES SCANNER TURNED ON 
+                                        ; WAITING FOR EP.
+        $LIT
+IPBEND: END
+        LIT

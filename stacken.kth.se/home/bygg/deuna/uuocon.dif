@@ -1,0 +1,14 @@
+File 1)	DSKB:UUOCON.MAC[10,10,SYSTEM,KS,TOPSY,IPTEST]	created: 1849 13-May-101
+File 2)	DSKB:UUOCON.MAC[10,7,MON]                    	created: 0359 27-Jul-88
+
+1)12	X	SLATT., SLATT##,  UU.CP1	;(-10) SLIP attach.
+1)	X	SLDET., SLDET##,  UU.CP1	;(-07) SLIP detach.
+1)	X	IPROU., IPRUUO##, UU.CP1	;(-06) IP routing control.
+1)	X	TCP.,   TCPUUO##, UU.CP1	;(-05) TCP: functions.
+1)	X	UDP.,   UDPUUO##, UU.CP1	;(-04) UDP: functions.
+1)	X	ARP.,   ARPUUO##, UU.CP1	;(-03) ARP functions.
+1)	X	DEUNA., UNAUUO##, UU.CP1	;(-02) DEUNA/DELUA functions.
+1)	X	LIGHTS,LIGHTS,UU.CP1		;(-1) SET LIGHTS ON CONSOLE
+****
+2)12	X	LIGHTS,LIGHTS,UU.CP1		;(-1) SET LIGHTS ON CONSOLE
+**************

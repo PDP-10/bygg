@@ -1,0 +1,28 @@
+VAX emulator v0.2a Pre-Alpha
+
+This VAX emulator is under developement at this time.  I currently am
+developing this emulator in progress.
+
+I am starting to develop VAX emulator as MicroVAX II series.  Later models
+will be added like VAX-11/780, VAX 8650, etc.
+
+I am looking for more device specifications to complete the VAX emulators
+with wide devices includes tape, ethernet, etc.  Only I have knowledge
+of RH11 controller and its MASSBUS drives specifications at this time 
+(for PDP-10 emulator).  Also, I need Q-bus specification for MicroVAX II.
+
+When you develop your desired device handling routines, please include
+complete specification documents as much as possible so that other developers
+and I can understand how they work clearly.
+
+I have a copy of VAX Aritecture Handbook (1st edition - 1987) and VAX Internal
+and Data Sturctures Handbook.  I am looking for a copy of 2nd edition (1991)
+for complete vector instructions and other latest models.
+
+Also, I am looking for a copy of MicroVAX II technical manual about local
+I/O access like console terminal, etc.
+
+Thank you!
+
+Tim Stark
+sword7@speakeasy.org

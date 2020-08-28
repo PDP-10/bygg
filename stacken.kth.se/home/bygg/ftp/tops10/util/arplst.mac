@@ -1,0 +1,108 @@
+title	arplst -- list all arp entries.
+search	jobdat, uuosym, macten
+
+t1==1
+t2==2
+t3==3
+t4==4
+
+n==10
+a==11
+
+p==17
+
+pdl:	block	<pdllen==100>
+buffer:	block	<buflen==4*100>
+
+arplst:	jfcl
+	reset
+	move	p,[iowd pdllen, pdl]
+	movei	n,[exp 2, buflen, buffer]
+	call	n,[sixbit 'arp.']
+	 jrst[	outstr[ asciz "can't read arp list.
+"]
+		monrt.
+		exit]
+	jumple	n,done
+	movei	a,buffer
+loop:	move	1,0(a)
+	pushj	p,pripa
+	outstr[	asciz " is at "]
+	dmove	1,1(a)
+	pushj	p,preth
+	outstr[	asciz ", ttl = "]
+	hrrz	1,3(a)
+	pushj	p,prdec
+	pushj	p,pcrlf
+	addi	a,4
+	sojg	n,loop
+
+done:	pushj	p,pcrlf
+	monrt.
+	jrst	arplst
+
+prdec:	idivi	t1,^d10
+	push	p,t2
+	skipe	t1
+	 pushj	p,prdec
+	pop	p,t2
+	addi	t2,"0"
+	outchr	t2
+	popj	p,
+
+pripa:	push	p,t1
+	ldb	t1,[point 8,(p),7]
+	pushj	p,prdec
+	pushj	p,prper
+	ldb	t1,[point 8,(p),15]
+	pushj	p,prdec
+	pushj	p,prper
+	ldb	t1,[point 8,(p),23]
+	pushj	p,prdec
+	pushj	p,prper
+	ldb	t1,[point 8,(p),31]
+	pushj	p,prdec
+	pop	p,(p)
+	popj	p,
+
+pcrlf:	outstr[	byte (7) 15, 12, 0]
+	popj	p,
+
+prper:	outchr[	exp "."]
+	popj	p,
+
+prcol:	outchr[	exp ":"]
+	popj	p,
+
+hexdig:	exp	"0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"
+
+pr2hex:	andi	t1,377
+	idivi	t1,^D16
+	outchr	hexdig(t1)
+	outchr	hexdig(t2)
+	popj	p,
+
+preth:	push	p,t1
+	push	p,t2
+	ldb	t1,[point 8,-1(p),7]
+	pushj	p,pr2hex
+	pushj	p,prcol
+	ldb	t1,[point 8,-1(p),15]
+	pushj	p,pr2hex
+	pushj	p,prcol
+	ldb	t1,[point 8,-1(p),23]
+	pushj	p,pr2hex
+	pushj	p,prcol
+	ldb	t1,[point 8,-1(p),31]
+	pushj	p,pr2hex
+	pushj	p,prcol
+	ldb	t1,[point 8,0(p),7]
+	pushj	p,pr2hex
+	pushj	p,prcol
+	ldb	t1,[point 8,0(p),15]
+	pushj	p,pr2hex
+	pop	p,t2
+	pop	p,t1
+	popj	p,
+
+end	arplst

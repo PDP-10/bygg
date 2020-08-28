@@ -1,0 +1,23 @@
+        sp=15
+
+        start:  movea sp,stack
+                pushj sp, foo
+                pushj sp, bar
+
+                ;... and so on...
+
+        foo:    ;do something
+                popj sp,
+
+        bar:	;som something else
+		movei 1,<42 + kaka>
+                popj sp,
+
+        .align 8  ;Stack must be word aligned
+
+	; 256 entries for now.
+        stksize= 0x100
+
+        stack:  .blkw stksize
+
+                .end

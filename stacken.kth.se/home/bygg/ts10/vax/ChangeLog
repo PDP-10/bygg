@@ -1,0 +1,22 @@
+Version 0.2a - Timothy Stark - 3/13/2001
+----------------------------------------
+* This VAX module had been merged with TS10 emulator
+
+Version 0.2 - Timothy Stark - 3/9/2001
+---------------------------------------
+* Some VAX instructions had been fixed with running HCORE tests.
+* Several VAX instructions had been added more.
+* Console terminal devices for VAX-11/780 had been added.
+* First VMS message finally was printed by VMB.EXE. :-)
+
+Version 0.1 - Timothy Stark - 3/7/2001
+--------------------------------------
+* Several VAX instructions had been implemented.  There now are 111
+  instructions.
+* Execution routine had added.
+* KA780 module had been added.
+
+Version 0.0 - Timothy Stark - 2/16/2001
+---------------------------------------
+* Initial VAX emulator had been created.
+* Released to public.

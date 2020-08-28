@@ -1,0 +1,836 @@
+From: "Zane H. Healy" <healyzh@shell1.aracnet.com>
+Subject: TOPS-10 v7.03 Install Proceedure V2
+Newsgroups: alt.sys.pdp10
+Date: Tue, 13 Mar 2001 19:59:16 GMT
+Organization: Aracnet
+
+Since I recieved positive response to the first draft I've been hard at
+work improving it.  This time I used the UNIX 'script' command to capture
+what I was doing so this should be a lot more complete than the 1st draft.
+
+		           Zane
+
+Installation of TOPS-10 v7.03
+=============================
+LAST UPDATED: 13MAR2001
+
+This is still a work in progress.  However, I believe there is enough
+information to allow someone with a basic understanding of UNIX to
+more or less successfully install TOPS-10.  The answers you'll need to
+provide, and the commands you need to run have been underlined.
+                                                    ^^^^^^^^^^
+
+The following procedure is mainly based on information Barb, Greg Satz, 
+Parag Patel, and Timothy Stark have posted.  As well as information 
+found in the "TOPS-10 Operator's Guide".
+
+Both Timothy Stark for the ts10 emulator and Tim Shoppa for the pdp-10 
+file archive deserve our thanks for thier great work.  As does Eric 
+Smith for making the "TOPS-10 Operator's Guide" Available.
+
+NOTE: Based on Mark Hittinger's comments about the RIB errors which I'd 
+noticed in my first install, I've used 1990 as the year in the following 
+and it seems to have not had any problem.  I believe others have done this 
+giving the correct date without any problem however.
+
+=========================================================================
+STEP 1.
+=========================================================================
+First get the following tapes from http://pdp-10.trailing-edge.com or
+ftp://ftp.trailing-edge.com/pub/pdp10 (you will need to decompress the 
+images as they've been gzipped).
+
+> BB-X138B-BB   KS Bootable TOPS-10 v7.03 tape
+Filename for FTP: tops10_703_ksbootable_bb-x138b-bb.tap.gz
+
+> BB-X140B-SB   TOPS-10 v7.03 Monitor sources
+Filename for FTP: tops10_703_distr_bb-x140b-sb.tap.gz
+
+> BB-X128B-SB   TOPS-10 v7.03 w/sources #1
+Filename for FTP: cuspmar86binsrc_1of2_bb-x128b-sb.tap.gz
+
+> BB-FP63A-SB   TOPS-10 v7.03 w/sources #2
+Filename for FTP: cuspmar86binsrc_2of2_bb-fp63a-sb.tap.gz
+
+> BB-FP64A-SB   TOPS-10 v7.03 Tools w/sources
+Filename for FTP: tops10_tools_bb-fp64a-sb.tap.gz
+
+> BB-X130B-SB   CUSP w/sources
+Filename for FTP: custsupcuspmar86_bb-x130b-sb.tap.gz
+
+You can also get the sources for the ts10 emulator here.
+ftp://ftp.trailing-edge.com/pub/ts10.tar.gz
+
+However, the recommended place for getting the source is via CVS.  See the 
+following URL for instructions: http://sourceforge.net/cvs/?group_id=20745
+
+You will most likely also want to have a copy of the "TOPS-10 Operator's 
+Guide" handy once you get this up.  It can be obtained from the following
+location:
+http://www.36bit.org/dec/manual/
+
+
+=========================================================================
+STEP 2.
+=========================================================================
+Apply the following patch.
+
+
+diff -c -r1.1 system.c
+*** pdp10/system.c      2001/02/27 14:17:06     1.1
+--- pdp10/system.c      2001/03/11 22:01:50
+***************
+*** 120,126 ****
+        }
+        text7[p] = 0;
+
+!       sprintf(text, "%012Lo ('%s' '%s')", data, text6, text7);
+
+        return text;
+  }
+--- 120,126 ----
+        }
+        text7[p] = 0;
+
+!       sprintf(text, "%012qo ('%s' '%s')", data, text6, text7);
+
+        return text;
+  }
+***************
+*** 348,355 ****
+  //    int   reqBoot = FE_P0_MONITOR_PREBOOT;
+  //    int   reqBoot = FE_P0_DIAGNOSTIC_PREBOOT;
+  //    int   reqBoot = FE_P0_BOOTCHECK2_PREBOOT;
+!       uint8 inBuffer[0777 * 5];
+!       int36 inBlock[0777];
+        int36 idHom = util_PackedASCII6("HOM");
+        int36 dAddr36;
+        int36 data36;
+--- 348,355 ----
+  //    int   reqBoot = FE_P0_MONITOR_PREBOOT;
+  //    int   reqBoot = FE_P0_DIAGNOSTIC_PREBOOT;
+  //    int   reqBoot = FE_P0_BOOTCHECK2_PREBOOT;
+!       uint8 inBuffer[01000 * 5];
+!       int36 inBlock[01000];
+        int36 idHom = util_PackedASCII6("HOM");
+        int36 dAddr36;
+        int36 data36;
+
+
+=========================================================================
+STEP 3.
+=========================================================================
+Edit ks10.cfg to include a pointer to your disk, and boot tape.  I've done 
+this by adding the following two lines.
+
+attach rpa0: tops10_703.dsk
+attach mta0: tops10_703_ksbootable_bb-x138b-bb.tap
+
+When you first start the emulator it will create the disk image for you.
+
+
+=========================================================================
+STEP 4.
+=========================================================================
+Startup the emulator and perform the base install.
+
+[healyzh@ts10 ts10]$ ./ks10 -f ks10.cfg
+                     ^^^^^^^^^^^^^^^^^^
+Welcome to TS10 Emulator v0.7 (Alpha)
+Unit uba: had been created.
+Addr=776700 Mask=000077 IntBR=6 IntVec=254
+Addr=772440 Mask=000037 IntBR=6 IntVec=224
+Device RPA0: had been created.
+Device RPA1: had been created.
+Device MTA: had been created.
+Device MTA0: had been created.
+Device MTA1: had been created.
+Device MTB: had been created.
+Device MTB0: had been created.
+Device MTB1: had been created.
+Unit rha0 had been initialized.
+Unit rpa0 had been initialized.
+Unit rha1 had been initialized.
+Unit mta had been initialized.
+Unit mtb had been initialized.
+Unit 0 dType RP06
+Unit rpa0 had been attached with 'tops10_703.dsk' file.
+Unit 0 dType TU45
+Unit mta0 had been attached with 'tops10_703_ksbootable_bb-x138b-bb.tap'
+file.
+TS10> boot mta0:
+      ^^^^^^^^^^
+Booting MTA0...
+Now running...
+
+BOOTM V6(37)
+
+BTM>/tm02
+    ^^^^^
+
+KS10     03-19-86
+Why reload: new
+            ^^^
+Date: 12-mar-90
+      ^^^^^^^^^
+Time: 10:29
+      ^^^^^
+
+Startup option: destroy
+                ^^^^^^^
+
+% WARNING:  All structures will be refreshed.  All disk files
+will be destroyed.  All information on currently spinning packs
+will be lost.  Do not proceed unless you are positive that you
+want to do this.
+
+Proceed? (Y or <CR>)y
+                    ^
+
+HOME blocks written on all units
+RPA0 first BAT block consistency error
+RPA0 second BAT block consistency error
+
+Both BAT blocks are bad.
+Do you want to initialize the BAT blocks on this unit?
+Y
+^
+
+Not normally done, are you sure?
+Y
+^
+Initializing BAT blocks
+
+Start system? (Y or <CR>)y
+                         ^
+
+Disk file structures:
+DSKB:RPA0(ONC104)
+
+
+To automatically log-in under [1,2] type "LOGIN"
+
+
+KS10     10:29:17
+
+.LOGIN
+ ^^^^^
+
+.ASSIGN MTA0: TAPE:
+ ^^^^^^^^^^^^^^^^^^
+MTA000 assigned
+.GET TAPE:BACKUP
+ ^^^^^^^^^^^^^^^
+Job setup
+
+.SAVE BACKUP
+ ^^^^^^^^^^^
+BACKUP saved
+
+.RUN BACKUP
+ ^^^^^^^^^^
+
+/TAPE TAPE:
+ ^^^^^^^^^^
+/SUPERSEDE ALWAYS
+ ^^^^^^^^^^^^^^^^
+/INTERCHANGE
+ ^^^^^^^^^^^
+/FILES
+ ^^^^^
+/RESTORE SYS:=*.*
+ ^^^^^^^^^^^^^^^^
+! SYSTEM        EXE
+
+"Done
+
+/RESTORE DEC:=*.*
+ ^^^^^^^^^^^^^^^^
+! SMFILE        EXE
+ SMFILE HLP
+ SMFILE TXT
+ T10KL  ULD
+ KSBOOT EXE
+ BOOTM  RDI
+ T10KL  RAM
+
+"Done
+
+/EXIT
+ ^^^^
+
+[Press ^E]
+.TS10> attach mta0: cuspmar86binsrc_1of2_bb-x128b-sb.tap
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Unit 0 dType TU45
+Unit mta0 had been attached with 'cuspmar86binsrc_1of2_bb-x128b-sb.tap'
+file.
+TS10> continue
+      ^^^^^^^^
+Running now...
+RUN BACKUP
+^^^^^^^^^^
+
+/TAPE TAPE:
+ ^^^^^^^^^^
+/SUPERSEDE ALWAYS
+ ^^^^^^^^^^^^^^^^
+/PROTECTION 055
+ ^^^^^^^^^^^^^^
+/FILES
+ ^^^^^
+/RESTORE DSKB:
+ ^^^^^^^^^^^^^
+!10,7   DSKB
+ CUSP   DIR
+ CUSP   BWR
+ CUSPS  CTL
+ CUSPS  RST
+ ACCT   DOC
+[long list of files cut]
+ DIXFP  BLI
+ DIXGBL BLI
+ DIXGEN BLI
+DSKB:[10,7,DIL,DILSRC]DIXGEN.BLI (BLOCK=1)
+
+[MTA000: Read(C/H/S) = 9441600/0/0]
+
+$BKPEOT Reached EOT--mount new tape then type "GO"
+[Press ^E]
+/TS10> attach mta0: cuspmar86binsrc_2of2_bb-fp63a-sb.tap
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Unit 0 dType TU45
+Unit mta0 had been attached with 'cuspmar86binsrc_2of2_bb-fp63a-sb.tap'
+file.
+TS10> continue
+      ^^^^^^^^
+Running now...
+GO
+^^
+!10,7
+ DIXGEN BLI
+ DIXHST BLI
+ DIXLIB BLI
+[long list of files cut]
+ UFDSET MAC
+ UFDSET REL
+ UUOSYM DOC
+ UUOSYM MAC
+ UUOSYM REL
+ UUOSYM UNV
+ WILD   DOC
+ WILD   MAC
+ WILD   REL
+
+"Done
+
+[Press ^E]
+/TS10> attach mta0: cuspmar86binsrc_1of2_bb-x128b-sb.tap
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Unit 0 dType TU45
+Unit mta0 had been attached with 'cuspmar86binsrc_1of2_bb-x128b-sb.tap'
+file.
+TS10> continue
+      ^^^^^^^^
+Running now...
+
+/@DSKB:[10,7,BUILD]CUSPS.RST
+!10,7   DSKB
+ ACCT   DOC
+ ACTDAE EXE
+ ACTLIB REL
+ ACTPRM UNV
+[Long list of files cut]
+ DELFIL DOC
+ DIL    DOC
+ DIL    HLP
+ DIL    REL
+ XPORT  REL
+DSKB:[10,7,DIL,DILSRC]DIXGEN.BLI (BLOCK=145)
+
+[MTA000: Read(C/H/S) = 36486080/0/0]
+
+$BKPEOT Reached EOT--mount new tape then type "GO"
+[Press ^E]
+/TS10> attach mta0: cuspmar86binsrc_2of2_bb-fp63a-sb.tap
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Unit 0 dType TU45
+Unit mta0 had been attached with 'cuspmar86binsrc_2of2_bb-fp63a-sb.tap'
+file.
+TS10> continue
+      ^^^^^^^^
+Running now...
+GO
+^^
+!10,7
+ DIL1V2 REL
+ DIT1V2 REL
+ DIX1V2 REL
+ DAP1V1 REL
+[Long list of files cut]
+ UUOSYM DOC
+ UUOSYM REL
+ UUOSYM UNV
+ WILD   DOC
+ WILD   REL
+
+"Done
+
+/EXIT
+ ^^^^
+
+.R CREDIR
+ ^^^^^^^^
+
+Create directory: ACT:
+                  ^^^^
+  Created DSKB0:[1,7].UFD/PROTECTION:775
+Create directory: [6,2020]
+Create directory: ^Z
+                  ^^[Press ^Z]
+
+=========================================================================
+Other directories that can (or maybe should) be created.  Some of these
+already exist.  This list is modified version of what is found in 
+COMMOD.MAC
+
+
+MFD:            1,1             ;(0) PROJECT-PROGRAMMER NUMBER FOR STORING
+                                ;    UFDS ONLY (ALL OTHER FILE STRUCTURE
+FILES
+                                ;    ARE STORED IN DEVICE SYS (SEE SYSPPN))
+STD:                            ;(1) PROJ-PROG NO. FOR DEVICE 'STD'
+SYS:                            ;(1) PROJ-PROG NO. FOR DEVICE 'SYS' (I.E.,
+                                ;    CUSPS, LIBRARY)
+FFA:            1,2             ;(2) PROJ-PROG NO. FOR
+FULL-FILE-ACCESS/OPERATOR
+HLP:            2,5             ;(3) PROJ-PROG NO. FOR HELP FILES, GENERAL
+                                ;    "NOT-LOGGED-IN" ACCOUNT (FOR SUCH AS
+                                ;    HELP, SYSTAT, ETC.)
+SPL:            3,3             ;(4) PROJ-PROG NO. FOR MPB/GALAXY SPOOLING
+XPN:
+CRU:            10,1            ;(16) UFD FOR DUMPING CRASHES
+NEW:
+XSY:            1,5             ;(25) PPN OF EXPERIMENTAL SYS
+OLD:            1,3             ;(26) PPN OF OLD SYS
+UMD:            6,10            ;(27) USER MODE DIAGNOSTICS PPN
+                                ;    (CAN DISABLE ERROR LOGGING)
+ALG:            5,4             ;(32) ALGOL LIBRARY
+BLI:            5,5             ;(33) BLISS LIBRARY
+FOR:            5,6             ;(34) FORTRAN LIBRARY
+MAC:            5,7             ;(35) MACRO LIBRARY
+UNV:            5,17            ;(36) UNIVERSAL LIBRARY
+PUB:            1,6             ;(37) USER MAINTAINED SYS:
+TED:            5,10            ;(40) TEXT EDITOR LIBRARY
+REL:            5,11            ;(41) REL FILE LIBRARY
+RNO:            5,12            ;(42) RUNOFF LIBRARY
+SNO:            5,13            ;(43) SNOBOL LIBRARY
+DOC:            5,14            ;(44) DOC FILE LIBRARY
+FAI:            5,15            ;(45) FAIL LIBRARY
+MUS:            5,16            ;(46) MUSIC LIBRARY
+DEC:            10,7            ;(47) LIBRARY FOR DEC DISTRIBUTED SOFTWARE.
+TAB:            -SWPMAX,SWPTAB  ;(50) POINTER TO ACTIVE SWAPPING LIST
+BAS:            5,1             ;(51) BASIC LIB PPN
+COB:            5,2             ;(52) COBOL LIB PPN
+MXI:            5,3             ;(53) PDP-11 LIB PPN
+NEL:            5,20            ;(54) NEL1AC LIBRARY
+DMP:            5,21            ;(55) DUMP LIBRARY
+POP:            5,22            ;(56) POP2 LIBRARY
+TST:            5,,23                   ;(57) TEST PPN
+DBS:            5,24            ;(63) DBMS LIBRARY
+MIC:            5,25            ;(65) LIBRARY OF MIC MACROS
+TPS:            5,26            ;(66) TEXT PROCESSING SYSTEM LIBRARY
+CTL:            5,27            ;(67) CTL FILE LIBRARY
+GAM:            5,30            ;(70) GAMES
+ACT:            1,7             ;(71) SYSTEM ACCOUNTING
+APL:            5,31            ;(72) APL LIB
+D60:            5,32            ;(100) DAS60 LOG FILE AREA
+UTP:            5,33            ;(112) UETP AREA
+INI:            5,34            ;(113) INITIALIZATION FILES AREA
+UPS:            5,35            ;(137) PPN FOR LIBRARY FOR MAILERS
+FNT:            5,36            ;(142) PPN FOR LASER PRINTER FONTS
+=========================================================================
+
+
+
+=========================================================================
+PROBLEM:
+I get the distinct impression I'm doing something wrong with SMFILE. This
+is shown by the fact that I can't access help, I have to give a PPN when 
+writing the setup and that I have to give KSBOOT.EXE as DEC:KSBOOT.EXE
+=========================================================================
+.R DEC:SMFILE
+ ^^^^^^^^^^^^ 
+
+
+DECSYSTEM 2020 DIAGNOSTICS FE-FILE PROGRAM
+VERSION 2.5, TOPS-10, KS10, CPU#=5000
+[FOR HELP TYPE "HELP"]
+SMFILE>HELP
+?SMFILE.HLP NOT FOUND - ERROR AT PC 1722
+SMFILE>WRITE SETUP DSKB:
+?ERROR CREATING KS10FE.BIN - ERROR AT PC 10003
+SMFILE>WRITE SETUP DSKB:[1,4]
+       ^^^^^^^^^^^^^^^^^^^^^^
+SMFILE>WRITE RESET
+       ^^^^^^^^^^^
+SMFILE>WRITE BOOT DEC:KSBOOT.EXE
+       ^^^^^^^^^^^^^^^^^^^^^^^^^
+SMFILE>WRITE DONE
+       ^^^^^^^^^^
+SMFILE>EXIT
+       ^^^^
+
+EXIT
+
+[Press ^E]
+.TS10> quit
+       ^^^^ 
+Exiting PDP10 Emulator
+
+=========================================================================
+STEP 5.
+=========================================================================
+You should now be ready to start your system from disk.
+
+[healyzh@ts10 ts10]$ ./ks10 -f ks10.cfg
+                     ^^^^^^^^^^^^^^^^^^
+Welcome to TS10 Emulator v0.7 (Alpha)
+Unit uba: had been created.
+Addr=776700 Mask=000077 IntBR=6 IntVec=254
+Addr=772440 Mask=000037 IntBR=6 IntVec=224
+Device RPA0: had been created.
+Device RPA1: had been created.
+Device MTA: had been created.
+Device MTA0: had been created.
+Device MTA1: had been created.
+Device MTB: had been created.
+Device MTB0: had been created.
+Device MTB1: had been created.
+Unit rha0 had been initialized.
+Unit rpa0 had been initialized.
+Unit rha1 had been initialized.
+Unit mta had been initialized.
+Unit mtb had been initialized.
+Unit 0 dType RP06
+Unit rpa0 had been attached with 'tops10_703.dsk' file.
+Unit 0 dType TU45
+Unit mta0 had been attached with 'tops10_703_ksbootable_bb-x138b-bb.tap'
+file.
+TS10> boot rpa0:
+      ^^^^^^^^^^
+Booting RPA0...
+[Reading first HOM block...]
+[Reading FE-FILE Page 0 at C 213 T 12 S 11]
+[Reading Monitor Pre-boot at C 213 T 15 S 3]
+Now running...
+BOOT V3(47)
+
+BOOT>
+    ^^[Press 'Return' here]
+[Loading from DSKB:SYSTEM.EXE[1,4]]
+
+KS10     03-19-86
+Why reload: new
+            ^^^
+Date: 12-mar-90
+      ^^^^^^^^^
+Time: 10:53
+      ^^^^^
+
+Startup option: go
+                ^^
+[Rebuilding the system search list from the HOMe blocks]
+
+[Rebuilding the active swapping list from the HOMe blocks]
+
+[Rebuilding the system dump list from the HOMe blocks]
+
+
+KS10     10:53:01 CTY system 5000
+Connected to Node (0) Line # 42
+.LOGIN 1,2
+.R OPSER
+[OPRPAF Processing auto command file]
+?OPRALF LOOKUP failure 0
+*
+[CCPWFD Waiting for file daemon to start]
+%%TTY STOMPER - Starting
+
+*^C
+ ^^[Press ^C]
+
+.R LOGOUT
+ ^^^^^^^^
+
+[LGTOUL Other users logged-in under [1,2]]
+Job 3  User OPSER  [1,2]
+Logged-off CTY  at 10:53:42  on 12-Mar-90
+Runtime: 0:00:01, KCS:11, Connect time: 0:00:40
+Disk Reads:122, Writes:2, Blocks saved:0
+.LOGIN 1,2
+ ^^^^^^^^^
+Job 2  KS10       CTY
+[LGNJSP Other jobs same PPN]
+[LGNLAS Last access to [1,2] succeeded on  4-Mar-86:17:48:53]
+10:53   12-Mar-90   Monday
+
+.SYSTAT
+ ^^^^^^
+
+Status of KS10   at 10:54:10 on 12-Mar-90
+
+Uptime 1:09, 90% Null time = 90% Idle + 0% Lost, 3% Overhead
+12 Jobs in use out of 35.  12 logged in, 10 detached.
+
+Job    Who     Line#    What   Size(P)  State   Run Time
+
+ 1    [OPR]     DET41   STOMPR  9+8     SL             1 01
+ 2    [OPR]     CTY     SYSTAT  21+SPY  RN             1
+ 4    [OPR]     DET41   ACTDAE  180+39  SL             4
+ 5    [OPR]     DET41   DAEMON  20+SPY  SL             1
+ 6    [OPR]     DET41   FILDAE  17      HB             0
+ 7    [OPR]     DET41   QUASAR  108+39  SL             2
+ 8    [OPR]     DET41   PULSAR  65+39   HB             1
+ 9    [OPR]     DET41   CATLOG  30+39   HB             1
+10    [OPR]     DET41   BATCON  38+39   SL             1
+11    [OPR]     DET41   ORION   97+39   SL             2
+12    [OPR]     DET41   LPTSPL  58+39   HB             1
+13    [OPR]     41              4       ^C             0
+n means job runs in HPQ n
+
+High Segments:
+Program Device  Owner   High(P) Users
+
+INITIA  DSKB    [SYS]    8      1
+GLXLIB  DSKB    [SYS]   39      7
+
+Swapping space used = 658/2000 = 33%
+Virt. Core used = 694/2000 = 35%
+81P Core left
+Active swapping ratio = 21/775 = .02
+Virt. Core saved by sharing = 234/(234+694) = 25%
+Average job size =647/12 = 53.9P+281/12 = 23.4P  Total=928/12 = 77.3P
+
+No busy devices
+
+System File Structures:
+Name    Free    Mount
+DSKB    213900  2
+Total Free 213900
+
+
+[Press ^E]
+.TS10> attach mta0: tops10_tools_bb-fp64a-sb.tap
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Unit 0 dType TU45
+Unit mta0 had been attached with 'tops10_tools_bb-fp64a-sb.tap' file.
+TS10> continue
+      ^^^^^^^^
+Running now...
+MOUNT MTA0: TAPE: /REELID:0/NOWAIT
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Mount request MTA0 queued, request #4]
+
+.R OPR
+ ^^^^^
+
+OPR>
+11:58:15          -- Message from the Accounting System --
+                Account validation is not required
+
+11:58:17          -- [SYSTEM]CATALOG error --
+                Input error reading DSKB:STRLST.SYS[1,4]; End of file
+
+11:58:17          -- [SYSTEM]CATALOG error --
+                Input error reading DSKB:MTALST.SYS[1,4]; End of file
+
+11:58:17        -- Begin auto take file --
+                File: SYS:SYSTEM.CMD[3,3]
+
+11:58:18        -- Auto Take error on line 3 --
+                Unrecognized switch or keyword: "IGNORE"
+
+11:58:18        -- End auto take file --
+
+11:58:18          -- [SYSTEM]CATALOG error --
+                Input error reading DSKB:DTALST.SYS[1,4]; End of file
+11:59:44          -- Magtape mount request #4 --
+                User: OPSER  [1,2] Job #2
+                Volume-set name: MTA0
+                
+                Volume-ID   Write   Labels  Track  Density
+                ---------  -------  ------  -----  -------
+                0          Locked   No        9    1600
+
+OPR>RECOGNIZE MTA0:
+    ^^^^^^^^^^^^^^^
+OPR>
+12:00:07  <1>   Device MTA000  -- Label error --
+                Can't read this tape's labels on this drive
+                Type 'RESPOND <number> ABORT' to unload the tape on MTA0
+00
+                Type 'RESPOND <number> PROCEED' to treat the tape on MTA
+000 as unlabled
+
+OPR>RESPOND 1 PROCEED
+    ^^^^^^^^^^^^^^^^^
+OPR>
+12:00:34        Device MTA000  -- Unlabeled volume mounted --
+                Density 1600 BPI, write-Locked
+
+OPR>ID MTA0: REQ 4
+    ^^^^^^^^^^^^^^
+OPR>
+12:00:47        Device MTA000  -- Volume 0 reassigned --
+                User: OPSER  [1,2] Job #2
+
+OPR>EXIT
+    ^^^^
+
+=========================================================================
+PROBLEM:
+I'm sure this isn't the correct way to do this.  I want to be able to get
+all files off of the tape, and I should be useing the TOOLS.RST that is 
+on the tape like I do with the CUSPS tapes.
+=========================================================================
+
+.R BACKUP
+ ^^^^^^^^
+
+/TAPE TAPE:
+ ^^^^^^^^^^
+/SUPERSEDE ALWAYS
+ ^^^^^^^^^^^^^^^^
+/PROTECTION 055
+ ^^^^^^^^^^^^^^
+/FILES
+ ^^^^^
+/REWIND
+ ^^^^^^
+/RESTORE SYS:=*.EXE[*,*,*,*,*,*,*],-
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#HLP:=*.HLP[*,*,*,*,*,*,*],-
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#DOC:=*.DOC[*,*,*,*,*,*,*],-
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#REL:=*.REL[*,*,*,*,*,*,*],-
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#UNV:=*.UNV[*,*,*,*,*,*,*]
+ ^^^^^^^^^^^^^^^^^^^^^^^^^
+!10,7   DSKB
+ CICTRS EXE
+ CISTS  DOC
+ CISTS  EXE
+ CPU    EXE
+ CSHDPY EXE
+ CSHDMP EXE
+[Large list of files cut]
+ WHO    HLP
+ WHOONC EXE
+ WHO    EXE
+ WHYCRS HLP
+ WHYCRS EXE
+ DMPAVL EXE
+
+"Done
+
+/EXIT
+ ^^^^
+
+.R WHO
+ ^^^^^
+*1,2
+ ^^^
+%WHOFET WHO/monitor feature skew; disabling ANF10,SMP
+Job  User  name       PPN      Line    Connect    Prog   Low + Hgh  OH State 
+  1 TTY STOMPER       1,2     DET41              STOMPR     4+8      3 SL
+Job  User  name       PPN      Line    Connect    Prog   Low + Hgh  OH State 
+  2 OPSER             1,2     CTY                WHO       15+64     3 R2*
+*^C
+ ^^[press ^C]
+
+.R OPR
+ ^^^^^
+
+OPR>
+OPR>SHOW STATUS TAPE-DRIVE/ALL
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+OPR>
+12:06:42                -- Tape Drive Status --
+
+Drive  Trk  Status     AVR  Density       Write  Volume
+------ --- ----------- --- ------------- ------- ------
+MTA000  9  Online      No  1600          Locked  0      
+        Owned by job 2 OPSER  [1,2]
+MTA001  9  Free        No  800/1600      
+
+
+OPR>DISMOUNT TAPE-DRIVE MTA0:
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+OPR>
+12:07:15        Device MTA000  -- Volume is Already in Use --
+
+OPR>SHOW STATUS TAPE-DRIVE
+    ^^^^^^^^^^^^^^^^^^^^^^
+OPR>
+12:07:23                -- Tape Drive Status --
+
+Drive  Trk  Status     AVR  Density       Write  Volume
+------ --- ----------- --- ------------- ------- ------
+MTA000  9  Online      No  1600          Locked  0      
+        Owned by job 2 OPSER  [1,2]
+MTA001  9  Free        No  800/1600      
+
+
+OPR>EXIT
+    ^^^^
+
+.DISMOUNT MTA0:
+ ^^^^^^^^^^^^^^
+
+[MTA000:0 Read(C/H/S) = 12033280/1/0]
+[MTA000 dismounted]
+
+.R OPR
+ ^^^^^
+
+OPR>
+12:07:48        Device MTA000  -- Released --
+                User: OPSER  [1,2] Job #2
+
+OPR>SHOW STATUS TAPE-DRIVE
+    ^^^^^^^^^^^^^^^^^^^^^^
+OPR>
+12:08:01                -- Tape Drive Status --
+
+Drive  Trk  Status     AVR  Density     
+------ --- ----------- --- -------------
+MTA000  9  Free        No  800/1600      
+MTA001  9  Free        No  800/1600      
+
+
+OPR>EXIT
+    ^^^^
+
+.
+[Press ^E] 
+TS10> quit
+      ^^^^
+Exiting PDP10 Emulator
+[healyzh@ts10 ts10]$
+
+=========================================================================
+Appendix A.
+=========================================================================
+From Barb:
+> Also, when you guys make ppns for yourselves to login under,
+> DO NOT assign a project number or a programmer number less
+> than 10.  Anything less than [7,*] is reserved; it will get
+> you into trouble.
+
+> You may not have PPNs
+> [10,10]
+> [10,675]
+> [10,2162]
+

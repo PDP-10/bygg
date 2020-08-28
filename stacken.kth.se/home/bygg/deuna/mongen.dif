@@ -1,0 +1,37 @@
+File 1) DSKB:MONGEN.MAC[10,10,SYSTEM,KS,TOPSY,IPTEST]   created: 2354 25-May-101
+File 2) DSKB:MONGEN.MAC[10,7,MON]                       created: 0631 28-Jun-88
+
+1)20      FT    (IP4   ,<F.KL10!F.KS10>,<IPv4 network stack>)
+1)        FT    (SLIP  ,<F.KL10!F.KS10>,<SLIP IP interfaces (requires FTIP4)>)
+1)        FT    (DUNA  ,<F.KL10!F.KS10>,<DEUNA IP interface (requires FTIP4)>)
+1)      > ;END DEFINE FET
+****
+2)20    > ;END DEFINE FET
+**************
+1)65    ;       JUMPE   N,NETEND        ;JUMP IF NO LAT WANTED
+1)              jumpe   n,askip4        ;Skip on if no LAT wanted.
+1)              PUSHJ   P,ASKNOX        ;YES, GET A 'NODE' (SERVICE) NAME
+****
+2)65            JUMPE   N,NETEND        ;JUMP IF NO LAT WANTED
+2)              PUSHJ   P,ASKNOX        ;YES, GET A 'NODE' (SERVICE) NAME
+**************
+1)65    askip4: ; Ask for IP stack.
+1)              ASKYN   <@IP software (YES,NO) [
+1)      Answer YES if you want an IP stack.]>
+1)              FILOUT  <M.IP4==:*@>,N
+1)              JUMPE   N,NOIP4         ;No, so don't ask about interfaces.
+1)              ASKYN   <  DEUNA interface for IP (YES,NO) [
+1)      Include IP over ethernet via a DEUNA or DELUA card.]>
+1)              FILOUT  <M.DUNA==:*@>,N
+1)              ASKDEC  <  Number of SLIP interfaces (0,0-32)>
+1)              FILOUT  <M.SLIP==:*@>,N
+1)              ASKDEC  <  Number of UDP: devices (10,0-*)>
+1)              FILOUT  <M.UDPN==:*@>,N
+1)              ASKDEC  <  Number of TCP: devices (20,0-*)>
+1)              FILOUT  <M.TCPN==:*@>,N
+1)      NOIP4:
+1)      NETEND:
+****
+2)65    ;       JRST    NETEND
+2)      NETEND:
+**************

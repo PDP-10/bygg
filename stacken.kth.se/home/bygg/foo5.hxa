@@ -1,0 +1,15 @@
+;;kaka=allan*3
+allan=500
+kaka=allan*3
+
+foo:	aos {8} 1,@bar
+	
+	movei 2,allan
+	movei 3,7
+
+bar:	.word ctr
+
+ctr:	.word allan
+	.word kaka
+
+	.end

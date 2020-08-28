@@ -1,0 +1,193 @@
+[Image]
+
+We appreciate your interest in the Digital Wallet. We hope
+the information below will answer most of your questions?
+
+General
+
+Who is Minds@Work?
+We are an engineering and marketing company geared toward
+developing cutting edge products and technologies.
+
+Is Minds@Work a publicly traded company?
+Currently, Minds@Work is a private company.
+
+What is the Digital Wallet?
+The Digital Wallet is a Portable Smart Storage (PSS) hard
+drive that allows the transfer and storage of files from
+digital cameras and computers. So not only can your files be
+stored in one convenient location, your information can be
+taken with you anywhere.
+
+When is the Digital Wallet Shipping?
+Shipping for the award winning Digital Wallet is scheduled
+for late June 2000. You'll be able to purchase the Digital
+Wallet from major electronic retail stores. We'll be getting
+more specific on our corporate web site to be launched June.
+
+Has the Digital Wallet been covered in the News?
+Yes! The Digital Wallet has been covered in:
+
+Popular Mechanics (The Digital Wallet Won Editors Choice
+Award for Most Innovative Product)
+PC World
+Portable Computing Magazine
+Sound & Vision Magazine
+And soon to be Wired Magazine
+
+What is the Price of the Digital Wallet?
+MSRP for Digital Wallets are:
+    -  3GB $349
+    -  10GB $449
+    -  20GB $549
+
+What colors will the Digital Wallet come in?
+The unit will come in the following two colors: 1) Silver
+and black 2) Translucent blue
+
+How big is the Digital Wallet?
+Physically, the Digital Wallet is 5 inches tall, 3 ½ inches
+wide and 1 inch thick. It weights less than 10 ounces making
+transporting easy especially, if you purchase the specially
+made carrying case.
+
+What is the storage capacity?
+    -  3GB
+    -  10GB
+    -  20GB
+
+What is the Digital Wallet's interface?
+The Digital Wallet connects to a PC or Mac via USB.
+
+Which digital cameras does the Digital Wallet support?
+The Digital Wallet is compatible with all digital cameras
+that use:
+Compact Flash
+SmartMedia Flash
+Intel Miniature Flash (Strata Flash)
+Sony Memory Stick
+IBM Micro Drive
+MMC MultiMedia Card
+
+Does the Digital Wallet come with a Warranty?
+The Digital Wallet comes with 1 Year Limited Warranty.
+
+What software does it use? Will it be capable to use
+Japanese software?
+The Digital Wallet uses software developed by Minds@Work.
+The primary goal of the software is to allow you to upload,
+download and view the files you have stored on the Digital
+Wallet. The software does not function as like that of a
+PDA. The software in the Digital Wallet is centric the
+storage functions.
+
+What interface does it use?
+As noted on our web site in the FAQs, the Digital Wallet
+interfaces with both PCs
+and MACs by way of USB. Through this interface, you can
+upload and download
+files to and from your PC.
+
+You may also transfer digital pictures from a digital camera
+by way of the camera's FLASH card. This FLASH cards fits
+into a PCMCIA adapter then slides into the PCMCIA slot int
+he Digital Wallet at which time you can download the
+contents of
+the FLASH card to the Digital Wallet's 8GB 2.5 inch hard
+disk.
+
+Your web site mentions that the Digital Wallet works with
+the 'memory stick', 'compact flash' , etc... how does it
+interface with these?
+As mentioned earlier, the FLASH card fits into a PCMCIA
+adapter, which then fits into the PCMCIA slot in the Digital
+Wallet. The Digital Wallet comes with (which?) adapter.
+
+The Digital Wallet will also take:
+
+Smart Media FLASH
+Intel Miniature FLASH
+Sony Memory Stick
+MMC (Multi Media Card)
+IBM MicroDrive
+
+The PCMCIA adapter for each of the above 5 media must be
+purchased seperately.
+
+How durable is the digital wallet? Do you have test data
+available for example can it withstand a drop of 3' from the
+floor and continue to work', or shock data?
+Yes, the Digital Wallet has been vibration and shock tested.
+Operating vibration is 1.0G. Operating Shock is 150G and
+Non-Operating shock is 700G. If you drop the Digital Wallet
+onto the floor from 3 feet, the Digital Wallet will...
+
+What is displayed on the Digital Wallet's LCD screen?
+File transfer status, main storage capacity, file directory,
+and battery status.
+
+What does the LCD show/ read on the Digital Wallet?
+The LCD will show the functions of the Digital Wallet. Once
+the Digital Wallet had been turned on, by way of 3 primary
+function options the user will be able to transfer content,
+view content and view battery status. The user will also be
+able to start and stop transfers, scroll and error codes to
+name a few function.
+
+Can the Digital Wallet work without a computer?
+Yes, the Digital Wallet is non-PC centric. This means it
+works even if you don't have it connect to your computer.
+Because it runs on it's own micro-processor, operating
+system, hard drive and rechargeable batteries, the Digital
+Wallet doesn't need to rely on a computer to operate.
+
+How does the Digital Wallet hook up to a keyboard?
+Or does it hook up to a keyboard?
+The Digital Wallet does not hook up to a keyboard. The
+Digital Wallet is non PC Centric. The Digital Wallet runs by
+way of it's own microprocessor, hard drive and batteries.
+When the Digital Wallet does need to connect to a PC it does
+so by wayof it's own docking station. The docking station
+connects to the PC or MAC by way
+of USB.
+
+How are files downloaded into the3 Digital Wallet from
+Digital Cameras? Flashcards would fit into the PC Card
+adapter then, the PC Card adapter slides into the Digital
+Wallet's PCMCIA slot. Couple of quick commands and your
+pictures is now on the Digital Wallet's 2.5 inch hard disk.
+This allows you to free up your flash card up to keep on
+clicking!
+
+Where can I get more information about the Digital Wallet?
+You can download a data sheet off our web site. The address
+is http://www.mindsatwork.net/dwdatasheet.pdf
+
+Can I write from the Digital Wallet to a compact flashcard?
+Yes! You can both upload and download pictures to and from
+your Digital Wallet!
+
+What control do you have over the naming of and transferring
+of files
+between devices?
+Each time you do a download to the Digital Wallet, you
+create a new separate file. The Digital Wallet creates the
+name for you. Once you download to your PC by way of USB,
+you can give it any name you like. In the case that you
+decide to upload this file back on to the Digital Wallet,
+you will see only the first 7 letters of the file name you
+gave your file on the Digital Wallet.
+
+Will you be selling the Digital Wallet internationally?
+Yes, but not right away. We plan to sell the Digital wallet
+internationally and the expansion will be in phases. The
+steps are Asia then Europe. However, you'll be able to buy
+the Digital Wallet from select web sites. These sites are
+Minds@Work Authorized Web Retailers.
+
+So, if you no matter where you are you are in the world, you
+will be able to buy a Digital Wallet. We'll provide more
+information on soon to be launched corporate web site late
+April.
+
+Hope this helped!

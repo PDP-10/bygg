@@ -1,0 +1,67 @@
+
+; Simple echo loop.
+
+.opdef ttcall [(0xe8000000)]
+.opdef outchr [ttcall 1,]
+.opdef inchr  [ttcall 2,]
+.opdef skpinc [ttcall 3,]
+.opdef skpouc [ttcall 4,]
+
+sp=15
+
+start:	movea sp, stack
+	movea 1, hello
+	pushj sp, printstr
+	movea 1, crlf
+	pushj sp, printstr
+	jrst loop
+
+ch:	.blkw 1		; Input char gets here.
+
+stack:	.blkw 10	; Small stack.
+
+hello:	.asciz "echo test program"
+
+crlf:   .byte 13, 10, 0
+
+pfx:    .asciz " 0x"
+
+	.align 4
+
+loop:	skpinc
+	 jrst loop
+	inchr ch
+loop2:	movea 1,pfx
+	pushj sp, printstr
+	move 2, ch
+	pushj sp, printhex
+	movea 1,crlf
+	pushj sp, printstr
+	jrst loop
+
+hex:	.ascii "0123456789abcdef"
+
+printhex:
+	idivi 2,16
+	move8 2,hex(2)
+	pushj sp, printchr
+	move8 2,hex(3)
+	; fall into printchr
+
+; Print char from reg. 2
+
+printchr:
+	skpouc
+	 jrst printchr
+	outchr (2)
+ret:	popj sp,
+
+; Print string.  Pointer in reg. 1
+
+printstr:
+	move8  2,(1)
+	jumpe  2,ret
+	pushj  sp, printchr
+	aoja   1,printstr
+
+.end

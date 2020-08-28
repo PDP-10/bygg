@@ -1,0 +1,159 @@
+
+	      Release Notes for Columbia MM version 0.88
+
+For 0.88 we tried to make MM more easily portable, using the same
+method that GNU Emacs does.  This involves a scheme where, rather than
+trying to figure out which OS's have which features, we instead
+conditionalize the code on feature-specific defines (such as
+HAVE_FLOCK, HAVE_RENAME).  This requires a system-describing file
+which contains all the appropriate #define's.  So far, we have
+s-ultrix.h, s-sun40.h, s-bsd43.h, s-hpux.h and s-xinu-bsd43.h.  See
+the INSTALL file for how to use these.  Please let us know if you have
+problems with these.  We would appreciate it if you send us any new OS
+files you write (like the pyramid one...).
+
+One serious warning comes with this version of MM.  On our Suns
+(running SunOS 4.0), we had a bit of trouble with locking files.  If
+you tell MM to use FCNTL for locking (by defining HAVE_F_SETLK in
+s-sunxx.h), but do not run a lock manager daemon (for example, if you
+are trying to lock a file exported (via NFS) from an Ultrix system,
+for which lock managers are not implemented), your MM process will
+hang (in a socket wait) and there is no way to get rid of it.  The
+process will be there until the system goes down.  Rather unfriendly.
+For this reason, you may wish to fall back on the flock call, which
+unfortunately does not do correct locking across NFS (but at least
+doesn't hang).
+
+We have found one small bug (while trying to announce MM 0.88), which
+should be fixed soon, but decided to release 0.88 since it's about
+time and since it seems to be an infrequent bug.  If you have an alias
+which expands to a filename, and the file contains a groupname and
+list of addresses, MM may core dump.  The workaround is to not use the
+alias, just type in the file name.
+
+The other warnings are just ones your compiler might give you when you
+compile CCMD.  (We got these on our Suns.)  Compiling ccmdmd.c you may
+get the warning "illegal pointer combination" since the signal() call
+is sometimes defined to return void.  (This is fixed in MM but not yet
+in CCMD.)  When ranlib runs, you may get the warning "ccmd.a (dir.o)
+no symbol table" -- this is nothing to worry about.
+
+And now, the new features in MM 0.88.
+
+- The sys-profile program became sys-prof (for short file name SYSV
+types...). 
+
+- Many break mask fixes (allowing different characters in certain
+fields).
+
+- We have all new address parsing code that doesn't loop on invalid
+addresses.  Instead, it asks if you want to use them (or not,
+depending on the value of "use_invalid_address", which is a yes/no/ask
+type variable).  Note that this is only invoked for parsing of
+addresses within messages (when replying, for example) -- CCMD is
+still used to parse addresses from the command line.
+
+- MM now handles the case where the first address displayed is longer
+than the terminal width.
+
+- Escape completion on filenames now completes directory names by
+appending a "/" and pausing, rather than assuming you want the file
+which IS the directory.  The "directory-folders" variable can be used
+to get the old behavior on mail-file name parses, and will be most
+useful when MM handles mail formats (mh) where mail files can be
+directories.
+
+- MM now handles an "FCC:" header, which is where all filenames go.
+That is, if you send mail "to *myfile" MM will automatically move that
+to the FCC: field.  This prevents problems with replying to mail that
+was sent to a filename and generally looks neater.  There is a new
+"default-fcc-list" variable to match "default-bcc-list" and friends,
+as well as "prompt-for-fcc" and an "fcc" command at the S> prompt.
+
+- New "prompt-rcpt-always" variable to always prompt for fcc, bcc, and
+cc (even if a recipient is specified in the line with "send").
+
+- Fix bug in alias parsing -- don't recognize partial matches on alias
+names.  So if you have a user named "joe" and an alias "joeshmoe", "to
+joe" will go to user "joe".
+
+- New "compat" module for file locking and other routines to support
+compatibility.
+
+- Redo file locking code to use fcntl when available.
+
+- Make bugsto be bug-mm.  It is the responsibility of the installer to
+set up an appropriate "bug-mm" alias on their system (see sys-prof).
+
+- Add hooks for doing usage statistics (define USAGE when compiling to
+get statistics, written to USAGEFILE as defined in pathnames.h).
+
+- Provide for omitting From/Sender/Date headers from input passed to
+sendmail.  Define DONT_EMIT_FROM_HEADERS conditional to suppress them.
+(This allows sendmail to add them as it pleases.)
+
+- Preserve protection of mminit over create-init.
+
+- Messages in mbox or mtxt format kept gaining two hours every time MM
+read them in from the file, just a little confusion over Daylight
+Savings Time...
+
+- Use split_args() to take apart editor and speller variables to pass
+argv to exec().
+
+- Various signal and process handling work.
+
+- If display_outgoing_message is true, the last screenful of whatever
+text exists is shown whenever entering text for message body starts
+(that is, whenever a CCMD "paragraph parse" occurs),
+
+- New files created with new file mode.
+
+- Fix problem with autowrap not getting set right from mmfast file.
+
+- In mailrc, understand '\' as a continuation character at end of line
+and allow quoted strings in alias expansions.
+
+- When writing mbox format put a ">" in front of any lines starting
+with "From " since mbox format is so hoky.
+
+- In mbox format, only accept the Flags: field in the header section
+of the message.
+
+- New hostname variables -- see s-xxx.h files.
+
+- The mkversion program now exits with 0 so make is happy.
+
+- Local pathnames (editor and friends) are now set in pathnames.h
+instead of config.h.
+
+- New prepatch program included which looks for patches in the current
+directory and tries to automatically apply them (this may not work
+yet). 
+
+- When a sequence is "type"d, it now goes through more as a group,
+rather than one message at a time (with immediate screen clears after
+short messages :-).)
+
+- The "reply" command now allows including/not-including and
+sender/all in either order.
+
+- Fix bug where sender field would get randomly trashed (mostly on
+HP9000's).
+
+- Add unkeyword message sequence to specify all messages without
+keywords.
+
+- Make % mean the same thing as * (last message) in a message sequence, as
+in MM-20.
+
+- Use a more pipe when showing all variables ("show<CR>"), since there
+are SO many.
+
+- Don't abbreviate "/" (root's home dir).
+
+- sys-prof now writes stuff out to ./mm.conf instead of /tmp/mminit.
+
+- The transform program is now more robust, and handles files from
+that OTHER Vax MM :-).
+

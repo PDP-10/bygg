@@ -1,0 +1,49 @@
+
+	This program was conceived, and the core written, by Roy Trubshaw during
+his final year at Essex University. The remaining three-quarters were written
+by Richard Bartle. Aknowledgement is given for the help and encouragement of
+the following illustrious personages: Nigel Roberts, Brian Mallett and Ronan
+Flood (see graveyard!). VALLEY is MUD run under a different database, so
+most of what you read here applies to both of them. There now follows a short
+treatise on what MUD accepts as valid command and what not!
+	MUD's natural language interface is fairly primitive, to keep down
+the code (and because it's hard!). The sort of sentences it can understand are
+of the form <verb> <object> WITH <instrmnt> and may be separated by AND, THEN,
+a comma, a full stop, or a return. MUD doesn't require that all the fields be
+present, and so long as it has a verb it will accept virtually any old rubbish
+and re-execute the last verb. This is a feature, ie was put in deliberately, so
+don't complain if, for example, SCORE <cr><rubbish><cr> does 2 SCORE's: since
+SCORE needs no object, <rubbish> will do! This can annoy if the last thing
+you did was a move, but as you play you will find the facility becoming more
+and more useful, eg GET AXE, GOAT, TREASURE.
+	In its efforts to get a readable sentence, MUD will throw out all
+manner of things, eg it will parse OPEN KITCHEN DOOR as OPEN DOOR as it
+ignores the 2nd word if it knows the other 2. As a result, error messages
+are less frequent, but when they do come they're unhelpful. This will be
+rectified 'one day'. Also, MUD will accept nigh on anything instead of
+WITH, so OPEN DOOR GYROSCOPE KEYS will work. It also understands some 'inverse'
+WITH-words, eg SHOOT CANNON AT DOOR is the same as SHOOT DOOR WITH CANNON.
+	In order to help with long words, MUD keeps a set of pronouns
+maintained. IT is the last object mentioned, HIM is the last male, HER is
+the last female, THEM is the last player; also kept are the default object and
+instrument, if there are any (the default is the last anything you typed, rather
+than you typed or was mentioned by MUD).
+	There are problems if you carry more than 1 of the same object, as
+MUD takes the first one every time. So DOUSE BRAND will only get the first one
+and you'll have to put it in a container or drop it in another room before
+you can douse the other. To light one brand from another is at least a bit
+more easy, you just drop the one you want to light and hold the other, if
+possible. Also, jumping off the cliff with an opened and a closed parachute
+may not have the desired result...
+	To help speed things up, many common commands can be abbreviated,
+for example G for GET, DR for DROP. Type COMMANDS and the minimum abbreviation
+will be in upper case. Also, WI is short for WITH (in fact virtually anything
+is!).
+	MUD will set up a logical path for you, MUD:, which will last for the
+rest of the job. You will also be added to our mailing list, so we can send
+messages to all MUD players (and so can you, using MUDMO).
+	In the "highly unlikely" event of a crash, MUD will let you out after
+200 ^C's. Otherwise, it lets you out after 1 and saves your persona etc as
+if you'd typed QUIT.
+
+	Richard Bartle.

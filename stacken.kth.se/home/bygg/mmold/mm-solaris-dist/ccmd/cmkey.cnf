@@ -1,0 +1,69 @@
+_
+_ Copyright (c) 1986, 1990 by The Trustees of Columbia University in
+_ the City of New York.  Permission is granted to any individual or
+_ institution to use, copy, or redistribute this software so long as it
+_ is not sold for profit, provided this copyright notice is retained.
+_
+_ Author: Andrew Lowry
+
+/* keyword parse errors */
+
+fnerror(NM,`Does not match keyword')
+fnerror(AMB,`Ambiguous')
+fnerror(ABR,`Invalid abbreviation chain in keyword table')
+
+/*
+ * KEYWRD structure specifies one entry in a keyword table.  KEYTAB
+ * structure describes a table of keywords.
+ */
+
+#ifdef notdef
+/*
+ * we want to return "anything" as the value of a keyword,
+ * so we need to know what is the 'largest' type in a machine independent 
+ * way.   I can't figure out a way to do this at compile time, so we'll use a 
+ * generated include file.
+ */
+
+#include "cmkeyval.h"		/* this defines the keyval type */
+#endif
+
+#ifdef KEYVAL_TYPE
+typedef KEYVAL_TYPE keyval;
+#else
+typedef long keyval;
+#endif
+
+
+typedef struct KEYWRD {
+	char *	_kwkwd;	/* keyword string */
+	short	_kwflg;	/* flags (see below) */
+	keyval	_kwval;	/* arbitrary value, not used internally */
+			/*  except for abbreviations... see KEY_ABR */
+			/*  flag below */
+} keywrd;
+
+typedef struct KEYTAB {
+	int	_ktcnt;	/* number of keywords in table */
+	keywrd * _ktwds;/* array of keyword entries */
+	int	_ktwid;	/* fixed column width for help */
+} keytab;
+
+/* Valid flags in fdb */
+fnflag(EMO)		/* exact match only */
+fnflag(PTR)		/* return pointer to keywrd struct */
+fnflag(WID)		/* fixed width on help */
+
+/* flags that can be present in a keyword entry */
+
+fnflag(ABR)		/* keyword is an abbreviation for the */
+			/* keyword indexed by this entry's _kwval value */
+
+fnflag(NOR)		/* Ignore this keyword (do not recognize */
+			/*  any prefix, or even an exact match) */
+#define KEY_IGN KEY_NOR
+fnflag(INV)		/* Invisible keyword (not shown with help) */
+fnflag(MAT)		/* This keyword matches current input */
+			/*  (used internally) */
+
+pvtype(keyval)_		/* KEY returns a keyval. */

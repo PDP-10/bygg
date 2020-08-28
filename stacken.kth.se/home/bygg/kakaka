@@ -1,0 +1,415 @@
+------------------------------------------------------------
+[ Jag är elakare här än i LysLysKOM.  Där markerar jag förändringar ]
+
+- BOP --------------
+
+Namn:		Richard Levitte
+Adress:		Tunnlandsvägen 52
+Stad:		S-168 36 Bromma
+Telefon + fax:	08-26 52 47   (mest privat)
+Nallefon:	0708-26 53 44 (LP och privat)
+Skype:		rlevitte
+Email-adress:	levitte@{{stacken.,}kth,lp}.se
+		bastard@bofh.se
+		richard@levitte.org
+Familj:		en son, Jacob.
+		en kvinna, Eva.
+
+- Spridda data -----
+
+  182.  ~70.  39.  40.  20 (10+10).  Blågrå.  Kortare än förr.  Inte
+  annars så hårig.  Brillor.  Oallergisk (så vitt jag vet).  Poly.
+  Binär.  Förvirrad.  Tankspridd.  Allmänt glad.  Inte längre så elak.
+  Hackar (alldeles för mycket enligt vissa).  "Spridda data"-tjuv.
+  Farsa.
+
+- Status -----------
+
+  Pluggsugen, lite grann.  Har precis fått ett STORT uppdrag, annars
+  känns de mest spridda.
+
+- Kännetecken ------
+
+  Sitter inte fullt lika ofta vid en VMS-burk som förr.  Smått tokig.
+  Har varg som totem.  Rabiat KOM-kommentator när andan faller på.
+  Återhållsam dygnsarytmiker.  Viftar med en död kykling, samt med en
+  liten virtuell flagga när jag vet.  En smula filosofisk.
+
+- Favvocitat -------
+
+  - Jag kan bara VMS, i princip...
+
+- Favvoförolämpning
+
+  - Plattfot!
+
+- Sanning ----------
+
+  Adressen numera väldigt sann (läs: jag sov förr relativt ofta på
+  Stacken...  Numera har jag haft anledning att finna det trevligt
+  att sova hemma...). 
+
+- Föreningar -------
+
+  Stacken <http://www.stacken.kth.se/>
+  Ctrl-C <http://www.ctrl-c.liu.se/>
+  Birds Of a Feather-Hand <http://www.bofh.se/>
+  Råsunda Motettkör <http://www.rmk.org/>
+
+- Jobb -------------
+
+  Open Network Security AB <http://www.opennetworksecurity.com/>
+  Levitte Programming <http://www.lp.se/>
+
+- F.d. jobb --------
+
+  (GemPlus [köpte upp Celo] <http://www.gemplus.com/>)
+  (Celo Comunications AB <http://www.celocom.se/>)
+
+- Hackar på --------
+
+  OpenSSL <http://www.openssl.org>
+  CTWM <http://ctwm.free.lp.se/>
+  LPlib (ingen URL ännu)
+  (GAC) [SCons kan redan allt jag vill ha och är bättre]
+  NetCrypto <http://netcrypto.free.lp.se>
+  (GNU-program för VMS <http://vms.gnu.ai.mit.edu/>)
+  (FISH, SSH-klient för VMS <http://www.free.lp.se/fish/>)
+  (Free-VMS <http://www.free-vms.org/>)
+  Diverse annat... <http://www.free.lp.se/>
+
+- Datorer ----------
+
+  På stan:
+	ELLA:	VAXstation 4000-90, kör och är:
+		nic.lp.se
+		OpenVMS 7.2
+		TCP/IP Services 5.0A
+		MX 5.4
+		OSU HTTPD (inte längre så färsk, har inte hänt så mycket)
+		OSU SSH_SERVER (inte längre så färsk, har inte hänt så mycket)
+		... (the list goes on)
+		Är fortfarande *servern* för LP, men kanske inte så
+		länge till.
+	guardian: PC (i686 med mycket GHz, 1GB RAM och sisådär 400GB disk)
+		kör och är:
+		guardian.lp.se
+		Debian GNU/Linux (testing)
+		Courier (kommer att ersätta ELLAs MX för mailserveri)
+		SpamAssassin
+		ClamAV
+		Greylistd
+		OpenLDAP
+		Bind (kommer att agera sekundär till att börja med)
+		monotone (kommer att ersätta repository.lp.se som
+			 monotone-server)
+		OpenSSH
+		Apache 2 (vet inte hur mycket jag kommer att använda
+			 det än, kanske lite vebbkalender, sql-ledger
+			 och annat användbart)
+		PostgreSQL
+		NewPKI-server
+		MySQL (därför att NewPKI-server beror på den...)
+		RT (så snart jag har lyckats flytta över allt data
+		   från MySQL till PostgreSQL)
+  Hemma, sitter bakom Bostream^H^H^H^H^H^H^H^HBredbandsbolaget:
+	herbie:	PC (AMD Athlon 1.3GHz, mycket minne och disk), kör:
+		Windows 2000 (för att spela samt för att webcamen inte
+		har drivrutin för Linux ännu)
+        repository:PC (F@milyNET), kör och är:
+		repository.lp.se
+		Debian GNU/Linux (testing)
+		Filrepository, CVS/monotone-server för LP.
+		Den är åtkomlig på ett begränsat antal portar.
+	backup: PC (Dell OptiFlex GXa), kör och är:
+		Debian GNU/Linux (testing)
+		Backupserver åt resten av maskinerna, fast inte
+		riktigt klar.  Bacula bråkar med mig.
+	(det är för sådana här maskiner jag plötsligt satte upp en
+	DHCP-server hemma.  Enklast så...  och roligast...)
+  I handen, ibland hemma, ibland på jobbet, ibland på Stacken:
+	lapdog:	HP Pavilion N5420L, kör och är:
+		Debian "unstable"/Linux 2.6.11.
+		Min primära utvecklingsmaskin.
+  Hemma, just nu inte igång:
+	primo:	VAXstation 4000-60, kör INTE just nu.
+	u1:	Annan PC som någon tyckte jag kunde ha.  Jag har inget
+		namn på den ännu, men kan tänka mig att låta den
+		klustra med sandbox, bara för att få leka lite med
+		Linux-kluster.
+	u2:	AlphaStation 255.  Funderar på att använda den för
+		VMS-fälttester (8.3 är på gång just nu).
+
+- Glossary ---------
+
+  Stundtals gillar jag, liksom en viss Martin, i LysLysKOM (och
+  numera även här), att översätta oöversättbara engelska uttryck till
+  svenska.  Vissa har ibland svårigheter att förstå vad jag säger i
+  sådana fall, så här är en liten meningslista (vissa myntade av
+  Martin,):
+
+	"I rest my case"	<=>	"Jag vilar min väska"
+	"In my humble opinion"	<=>	"Enligt min humla"
+	"If you catch my drift"	<=>	"Om ni fångar min driva"
+	"You have a point"	<=>	"Du har en punkt"
+	"Go ahead"		<=>	"Gå ett huvud"
+	"I'll be right back"	<=>	"Jag kommer att vara höger rygg"
+
+	[det kommer att läggas till fler allteftersom]
+
+- Telefon ----------
+
+  Nedanstående bör egentligen revideras lite igen.  Då jag numera bor
+  själv igen så är jag inte fullt så strikt med tiderna.  Dock ska man
+  vara medveten om att jag, för min sons skull, behöver hålla någon
+  form av dygnsrytm, och därför oftast ser till att sova mellan 00 och
+  08.  Jag divergerar dock kraftigt från detta de dagar jag är
+  barnfri.
+
+  [ Jo, folk undrar ibland vid vilken tid på dygnet man kan ringa
+  mig.  Svaret på det är "ja", dvs det går bra när som helst.  Ett av
+  skälen är att min dygnsrytm ändå är så konstig att sannolikheten är
+  relativt stor att jag blir 'tagen på sängen'...]  Naturligtvis
+  kommer då frågan "men om jag väcker dig?"  Pja, det finns tre
+  alternativ:
+
+  1.  Jag vaknar till, och svarar.  Den som ringer får tåla att det
+      tar ca. 5 minuter innan jag har vaknat helt.
+  2.  Jag vaknar till, svarar, kommer fram till att jag egentligen
+      inte vill prata, ber att få återkomma, lägger på.
+  3.  Jag låter min telefonsvarare ta hand om saken.  Ibland hör jag
+      till och med vad som sägs, och kommer fram till att jag nog vill
+      svara trots allt.  Av den anledningen kan det vara bra att
+      faktiskt säga något (det är ju bra i vilket fall som helst, så
+      att jag vet till vem jag ska ringa tillbaka...)
+
+- Hatar ------------
+
+  - Trångsynthet.
+
+  - Hyckleri.
+
+  - När folk inte kan säga något till telefonsvararen.  Det har varit
+    alltför många gånger som jag får tysta meddelanden, och flera
+    dagar senare få reda på att jag har varit förbannat svåråtkomlig,
+    och att enbart svararen har svarat...
+
+- Hört om mig ------
+
+  - M.a.p. på polyamori, och folk började diskutera hur de uppfattade
+    mig:
+
+	(Rasmus) Kaj: de flest förhållanden brukar vara binära,
+		      antingen är man ihop med 0 eller 1 person.
+		      Polyamorösa förhållanden brukar kunna beskrivas
+		      med naturliga tal, men för Levitte's del verkar
+		      det som om man ska använda reella tal.
+	bygg: Jag tycker nog mest att Levitte's situation verkar rätt
+	      komplex.
+
+- Hemsida ----------
+
+  http://richard.levitte.org/
+
+- EOP --------------
+(325428) /Richard (LeViMS) Levitte - (( (  (   )  ) ))/(Filled)
+Time - Review (the) commented (text)
+Review text 279180
+279180 2005-04-25 18:30 /188 lines/ Richard (LeViMS) Levitte - (( (  (   )  ) ))
+Recipient: Presentation (av nya) medlemmar <571>
+Marked by 1 user.
+Subject: Richard (LeViMS) Levitte - (( (  (   )  ) )) (+flickvän)
+------------------------------------------------------------
+[ Jag är elakare här än i LysLysKOM.  Där markerar jag förändringar ]
+
+- BOP --------------
+
+Namn:		Richard Levitte
+Adress:		Tunnlandsvägen 52
+Stad:		S-168 36 Bromma
+Telefon + fax:	08-26 52 47   (mest privat)
+Nallefon:	0708-26 53 44 (LP och privat)
+Skype:		rlevitte
+Email-adress:	levitte@{{stacken.,}kth,lp}.se
+		bastard@bofh.se
+		richard@levitte.org
+Familj:		en son, Jacob.
+		en kvinna, Eva.
+
+- Spridda data -----
+
+  182.  ~70.  39.  40.  20 (10+10).  Blågrå.  Kortare än förr.  Inte
+  annars så hårig.  Brillor.  Oallergisk (så vitt jag vet).  Poly.
+  Binär.  Förvirrad.  Tankspridd.  Allmänt glad.  Inte längre så elak.
+  Hackar (alldeles för mycket enligt vissa).  "Spridda data"-tjuv.
+  Farsa.
+
+- Status -----------
+
+  Pluggsugen, lite grann.  Har precis fått ett STORT uppdrag, annars
+  känns de mest spridda.
+
+- Kännetecken ------
+
+  Sitter inte fullt lika ofta vid en VMS-burk som förr.  Smått tokig.
+  Har varg som totem.  Rabiat KOM-kommentator när andan faller på.
+  Återhållsam dygnsarytmiker.  Viftar med en död kykling, samt med en
+  liten virtuell flagga när jag vet.  En smula filosofisk.
+
+- Favvocitat -------
+
+  - Jag kan bara VMS, i princip...
+
+- Favvoförolämpning
+
+  - Plattfot!
+
+- Sanning ----------
+
+  Adressen numera väldigt sann (läs: jag sov förr relativt ofta på
+  Stacken...  Numera har jag haft anledning att finna det trevligt
+  att sova hemma...). 
+
+- Föreningar -------
+
+  Stacken <http://www.stacken.kth.se/>
+  Ctrl-C <http://www.ctrl-c.liu.se/>
+  Birds Of a Feather-Hand <http://www.bofh.se/>
+  Råsunda Motettkör <http://www.rmk.org/>
+
+- Jobb -------------
+
+  Open Network Security AB <http://www.opennetworksecurity.com/>
+  Levitte Programming <http://www.lp.se/>
+
+- F.d. jobb --------
+
+  (GemPlus [köpte upp Celo] <http://www.gemplus.com/>)
+  (Celo Comunications AB <http://www.celocom.se/>)
+
+- Hackar på --------
+
+  OpenSSL <http://www.openssl.org>
+  CTWM <http://ctwm.free.lp.se/>
+  LPlib (ingen URL ännu)
+  (GAC) [SCons kan redan allt jag vill ha och är bättre]
+  NetCrypto <http://netcrypto.free.lp.se>
+  (GNU-program för VMS <http://vms.gnu.ai.mit.edu/>)
+  (FISH, SSH-klient för VMS <http://www.free.lp.se/fish/>)
+  (Free-VMS <http://www.free-vms.org/>)
+  Diverse annat... <http://www.free.lp.se/>
+
+- Datorer ----------
+
+  På stan:
+	ELLA:	VAXstation 4000-90, kör och är:
+		OpenVMS 7.2
+		TCP/IP Services 5.0A
+		MX 5.4
+		OSU HTTPD (alltid väldigt färsk)
+		OSU SSH_SERVER (alltid väldigt färsk)
+		... (the list goes on)
+		Är *servern* för LP.
+  Hemma, sitter bakom Bostream^H^H^H^H^H^H^H^HBredbandsbolaget:
+	herbie:	PC (AMD Athlon 1.3GHz, mycket minne och disk), kör:
+		Windows 2000 (för att spela samt för att webcamen inte
+		har drivrutin för Linux ännu)
+        repository:PC (F@milyNET), kör och är:
+		Debian GNU/Linux (testing)
+		Filrepository, CVS/monotone-server för LP.
+		Den är åtkomlig på ett begränsat antal portar som
+		repository.lp.se.
+	backup: PC (Dell OptiFlex GXa), kör och är:
+		Debian GNU/Linux (testing)
+		Backupserver åt resten av maskinerna, fast inte
+		riktigt klar.  Bacula bråkar med mig.
+	(det är för sådana här maskiner jag plötsligt satte upp en
+	DHCP-server hemma.  Enklast så...  och roligast...)
+  I handen, ibland hemma, ibland på jobbet, ibland på Stacken:
+	lapdog:	HP Pavilion N5420L, kör och är:
+		Debian "unstable"/Linux 2.6.11.
+		Min primära utvecklingsmaskin.
+  Hemma, just nu inte igång:
+	primo:	VAXstation 4000-60, kör INTE just nu.
+	u1:	Annan PC som någon tyckte jag kunde ha.  Jag har inget
+		namn på den ännu, men kan tänka mig att låta den
+		klustra med sandbox, bara för att få leka lite med
+		Linux-kluster.
+	u2:	AlphaStation 255.  Funderar på att använda den för
+		VMS-fälttester (8.2 är på gång just nu).
+
+- Glossary ---------
+
+  Stundtals gillar jag, liksom en viss Martin, i LysLysKOM (och
+  numera även här), att översätta oöversättbara engelska uttryck till
+  svenska.  Vissa har ibland svårigheter att förstå vad jag säger i
+  sådana fall, så här är en liten meningslista (vissa myntade av
+  Martin,):
+
+	"I rest my case"	<=>	"Jag vilar min väska"
+	"In my humble opinion"	<=>	"Enligt min humla"
+	"If you catch my drift"	<=>	"Om ni fångar min driva"
+	"You have a point"	<=>	"Du har en punkt"
+	"Go ahead"		<=>	"Gå ett huvud"
+	"I'll be right back"	<=>	"Jag kommer att vara höger rygg"
+
+	[det kommer att läggas till fler allteftersom]
+
+- Telefon ----------
+
+  Nedanstående bör egentligen revideras lite igen.  Då jag numera bor
+  själv igen så är jag inte fullt så strikt med tiderna.  Dock ska man
+  vara medveten om att jag, för min sons skull, behöver hålla någon
+  form av dygnsrytm, och därför oftast ser till att sova mellan 00 och
+  08.  Jag divergerar dock kraftigt från detta de dagar jag är
+  barnfri.
+
+  [ Jo, folk undrar ibland vid vilken tid på dygnet man kan ringa
+  mig.  Svaret på det är "ja", dvs det går bra när som helst.  Ett av
+  skälen är att min dygnsrytm ändå är så konstig att sannolikheten är
+  relativt stor att jag blir 'tagen på sängen'...]  Naturligtvis
+  kommer då frågan "men om jag väcker dig?"  Pja, det finns tre
+  alternativ:
+
+  1.  Jag vaknar till, och svarar.  Den som ringer får tåla att det
+      tar ca. 5 minuter innan jag har vaknat helt.
+  2.  Jag vaknar till, svarar, kommer fram till att jag egentligen
+      inte vill prata, ber att få återkomma, lägger på.
+  3.  Jag låter min telefonsvarare ta hand om saken.  Ibland hör jag
+      till och med vad som sägs, och kommer fram till att jag nog vill
+      svara trots allt.  Av den anledningen kan det vara bra att
+      faktiskt säga något (det är ju bra i vilket fall som helst, så
+      att jag vet till vem jag ska ringa tillbaka...)
+
+- Hatar ------------
+
+  - Trångsynthet.
+
+  - Hyckleri.
+
+  - När folk inte kan säga något till telefonsvararen.  Det har varit
+    alltför många gånger som jag får tysta meddelanden, och flera
+    dagar senare få reda på att jag har varit förbannat svåråtkomlig,
+    och att enbart svararen har svarat...
+
+- Hört om mig ------
+
+  - M.a.p. på polyamori, och folk började diskutera hur de uppfattade
+    mig:
+
+	(Rasmus) Kaj: de flest förhållanden brukar vara binära,
+		      antingen är man ihop med 0 eller 1 person.
+		      Polyamorösa förhållanden brukar kunna beskrivas
+		      med naturliga tal, men för Levitte's del verkar
+		      det som om man ska använda reella tal.
+	bygg: Jag tycker nog mest att Levitte's situation verkar rätt
+	      komplex.
+
+- Hemsida ----------
+
+  http://richard.levitte.org/
+
+- EOP --------------
+(279180) /Richard (LeViMS) Levitte - (( (  (   )  ) ))/(Filled)
+Comment in text 325428 by Richard (LeViMS) Levitte - (( (  (   )  ) ))
+Time - 

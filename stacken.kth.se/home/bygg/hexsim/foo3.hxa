@@ -1,0 +1,11 @@
+; Example program:
+
+	.align 4
+
+foo:	movei 1,20
+	movem 1,@4711
+	aos {8} 4711
+
+	.end
+
+junk here, should not be seen.

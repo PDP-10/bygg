@@ -1,0 +1,9 @@
+foo:    .asciz "This is a string"
+	.align 8
+bar:	.byte 42
+	.byte 0b110
+	.byte 0123
+	.byte 0x30	
+	.end
+
+junk here, should not be seen.

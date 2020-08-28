@@ -1,0 +1,18 @@
+
+
+*  scratch pad size? Hur många context kan vi ha, varje är 16 register
+   plus pc, psw och ev. 128 bitar AC.
+
+*  TLB.  1/2/3-way assoc?  Size?
+
+*  Instruktionsnamn och namn på pseudo-ops.
+
+*  Interruptsystem?
+
+*  Page fail?
+
+*  traps?
+
+*  signed/unsigned extension of EA in number field?
+
+*  ...

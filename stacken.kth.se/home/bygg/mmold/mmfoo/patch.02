@@ -1,0 +1,271 @@
+Patch number: 2
+MM Version: 0.90
+Date: Fri Jan  4 17:20:06 1991
+File: newmail.c
+
+
+Description:
+
+if mail_directory is unset, can't read in new mail, unless /.mm-newmail
+is writable.
+
+
+Fix:
+
+Check for blank mail_directory, and use HOME instead.  Also, some
+other assorted cleanup in new_mail().
+
+
+Patch:
+
+*** /tmp/,RCSt1013017	Fri Jan  4 17:18:15 1991
+--- newmail.c	Fri Jan  4 17:17:17 1991
+***************
+*** 35,45 ****
+      static msgvec *nf;
+      msgvec *nmf;
+      int type;
+-     keylist i;
+      static struct stat mailbuf;
+      struct stat oldbuf, sbuf;
+      extern int continuous_check;
+      int result = true;
+  
+      /* if they're busy and don't want to be bothered, don't interrupt */
+      if (quiet && !continuous_check && mode != MM_TOP_LEVEL)
+--- 35,46 ----
+      static msgvec *nf;
+      msgvec *nmf;
+      int type;
+      static struct stat mailbuf;
+      struct stat oldbuf, sbuf;
+      extern int continuous_check;
+      int result = true;
++     string new_mail_filename;
++     int getting_mail;
+  
+      /* if they're busy and don't want to be bothered, don't interrupt */
+      if (quiet && !continuous_check && mode != MM_TOP_LEVEL)
+***************
+*** 66,72 ****
+  	    in_here = false;
+  	}
+      }
+!     if ((cf != NULL) && !(cf->flags & MF_RDONLY) && (cf->flags & MF_MAILBOX)) {
+  	nmf = (msgvec *) malloc(sizeof(msgvec));
+  	if (!nmf)
+  	    return;			/* XXX */
+--- 67,82 ----
+  	    in_here = false;
+  	}
+      }
+! 
+!     /* use mail_directory if defined and not "." ("." hard to find later) */
+!     sprintf(new_mail_filename,"%s/%s", 
+! 	    (strcmp(".",mail_directory) && mail_directory[0] != NULL) ?
+! 	    mail_directory : HOME, tempfile);
+!     getting_mail = ((cf != NULL) && !(cf->flags & MF_RDONLY) && 
+! 		    (cf->flags & MF_MAILBOX)); /* getting or just looking? */
+!     
+!     /* check for leftover (orphaned) .mm-newmail */
+!     if (getting_mail) {
+  	nmf = (msgvec *) malloc(sizeof(msgvec));
+  	if (!nmf)
+  	    return;			/* XXX */
+***************
+*** 73,80 ****
+  	
+  	bzero (nmf, sizeof (msgvec));
+  
+! 	sprintf(nmf->filename,"%s/%s", 
+! 		strcmp(".",mail_directory)?mail_directory:HOME, tempfile);
+  	if (stat(nmf->filename,&sbuf) == 0) {
+  	    switch (mail_probe (nmf->filename,&type)) { /* can we read this? */
+  	    case PR_NAME:
+--- 83,89 ----
+  	
+  	bzero (nmf, sizeof (msgvec));
+  
+! 	strcpy(nmf->filename, new_mail_filename);
+  	if (stat(nmf->filename,&sbuf) == 0) {
+  	    switch (mail_probe (nmf->filename,&type)) { /* can we read this? */
+  	    case PR_NAME:
+***************
+*** 109,114 ****
+--- 118,125 ----
+  	}
+      }
+  
++ 
++     /* check for (new) incoming mail */
+      if (incoming_mail == NULL) {
+  	incoming_mail = (keylist) malloc(2 * sizeof(char *));
+  	incoming_mail[0] = malloc(strlen(user_name) + 
+***************
+*** 116,147 ****
+  	sprintf(incoming_mail[0], "%s/%s", SPOOL_DIRECTORY, user_name);
+  	incoming_mail[1] = NULL;
+      }
+!     for(i = incoming_mail; i && *i; i++) {
+! 	switch (mail_probe (*i, &type))	{ /* can we read this? */
+  	case PR_NAME:
+  	    if (!quiet)
+! 		cmxprintf("?Badly formed filename: %s\n", *i);
+  	    continue;
+  	case PR_NOEX:
+  	    continue;
+  	case PR_PERM:
+  	    if (!quiet)
+! 		cmxprintf("?Cannot read file: %s\n", *i);
+  	    continue;
+  	case PR_EMPTY:
+  	    continue;
+  	case PR_NOTOK:
+  	    if (!quiet)
+! 		cmxprintf("?File is damaged or in unknown format: %s\n", *i);
+  	    continue;
+  	}
+  
+! 	if (stat(*i,&sbuf) < 0)
+! 	    continue;
+! 	if ((cf == NULL) || (cf->flags & MF_RDONLY) || 
+! 	    !(cf->flags & MF_MAILBOX)) {
+  	    if (sbuf.st_mtime > oldbuf.st_mtime || !quiet) {
+! 		printf("You have new mail in %s.\n", *i);
+  		if (sbuf.st_mtime > mailbuf.st_mtime)
+  		    mailbuf = sbuf;
+  		sawmail = true;
+--- 127,157 ----
+  	sprintf(incoming_mail[0], "%s/%s", SPOOL_DIRECTORY, user_name);
+  	incoming_mail[1] = NULL;
+      }
+!     for(im = incoming_mail; im && *im; im++) { /* loop over inboxes */
+! 	if (stat(*im,&sbuf) < 0)
+! 	    continue;
+! 	switch (mail_probe (*im, &type))	{ /* can we read this? */
+  	case PR_NAME:
+  	    if (!quiet)
+! 		cmxprintf("?Badly formed filename: %s\n", *im);
+  	    continue;
+  	case PR_NOEX:
+  	    continue;
+  	case PR_PERM:
+  	    if (!quiet)
+! 		cmxprintf("?Cannot read file: %s\n", *im);
+  	    continue;
+  	case PR_EMPTY:
+  	    continue;
+  	case PR_NOTOK:
+  	    if (!quiet)
+! 		cmxprintf("?File is damaged or in unknown format: %s\n", *im);
+  	    continue;
+  	}
+  
+! 	if (!getting_mail) {
+  	    if (sbuf.st_mtime > oldbuf.st_mtime || !quiet) {
+! 		printf("You have new mail in %s.\n", *im);
+  		if (sbuf.st_mtime > mailbuf.st_mtime)
+  		    mailbuf = sbuf;
+  		sawmail = true;
+***************
+*** 152,169 ****
+  	nf = (msgvec *) malloc(sizeof(msgvec));
+  	bzero(nf,sizeof(msgvec));
+  	nf->type = type;
+! 	if (same_file (cf->filename, nf->filename))
+! 	    cmxprintf ("\
+! ?Cannot read incoming mail file %s that is primary mail file\n", *i);
+! 	else {
+! 	    if (move_mail (*i, strcmp(mail_directory,".")?mail_directory:HOME,
+! 		tempfile, quiet) != 0)
+! 		nmreturn (result);
+! 	    sprintf(nf->filename,"%s/%s", 
+! 		    strcmp(mail_directory,".")?mail_directory:HOME, tempfile);
+! 	    if (!fetchmail(nf,*i))
+! 		return(true);
+  	}
+      }
+      result = sawmail || gotmail;
+      nmreturn (result);
+--- 162,187 ----
+  	nf = (msgvec *) malloc(sizeof(msgvec));
+  	bzero(nf,sizeof(msgvec));
+  	nf->type = type;
+! 	strcpy (nf->filename, new_mail_filename);
+! 	if (same_file (cf->filename, new_mail_filename)) {
+! 	    cmxprintf ("?Primary mail file cannot be %s.\n",
+! 		       new_mail_filename);
+! 	    continue;
+  	}
++ 	if (same_file (new_mail_filename, *im)) {
++ 	    cmxprintf ("?Incoming mail file cannot be %s.\n",
++ 		       new_mail_filename);
++ 	    continue;
++ 	}
++ 	if (same_file (cf->filename, *im)) {
++ 	    cmxprintf ("?Incoming mail file cannot be primary mail file %s.\n",
++ 		       cf->filename);
++ 	    continue;
++ 	}
++ 	if (move_mail (*im, new_mail_filename, quiet) != 0)
++ 	    nmreturn (result);
++ 	if (!fetchmail(nf,*im))
++ 	    return(true);
+      }
+      result = sawmail || gotmail;
+      nmreturn (result);
+***************
+*** 276,294 ****
+      return(true);
+  }
+  
+! move_mail(from, todir, tofile, quiet)
+! char *from, *todir, *tofile;
+  int quiet;
+  {
+      int ret;
+      extern string movemail_path;
+      char *movemail_argv[4];
+-     char buf[MAXPATHLEN];
+      
+      movemail_argv[0] = movemail_path;
+      movemail_argv[1] = from;
+!     sprintf(buf,"%s/%s", todir, tofile);
+!     movemail_argv[2] = buf;
+      movemail_argv[3] = nil;
+  
+      fix_signals_for_fork (true);
+--- 294,310 ----
+      return(true);
+  }
+  
+! move_mail(from, tofile, quiet)
+! char *from, *tofile;
+  int quiet;
+  {
+      int ret;
+      extern string movemail_path;
+      char *movemail_argv[4];
+      
+      movemail_argv[0] = movemail_path;
+      movemail_argv[1] = from;
+!     movemail_argv[2] = tofile;
+      movemail_argv[3] = nil;
+  
+      fix_signals_for_fork (true);
+
+
+
+*** /tmp/,RCSt1029082	Fri Jan  4 17:18:32 1991
+--- mm-patchlevel.h	Fri Jan  4 17:17:41 1991
+***************
+*** 10,13 ****
+   * release.  Don't forget to send diffs for this file in the patch file.
+   */
+  
+! #define MM_PATCH 1
+--- 10,13 ----
+   * release.  Don't forget to send diffs for this file in the patch file.
+   */
+  
+! #define MM_PATCH 2

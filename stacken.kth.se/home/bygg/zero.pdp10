@@ -1,0 +1,48 @@
+	sojn	ac, .
+	aojn	ac, .
+;;;;;
+	movei	ac, 0
+	movni	ac, 0
+	movsi	ac, 0
+	movmi	ac, 0
+	imuli	ac, 0
+	xor	ac, ac
+	xorm	ac, ac
+	xorb	ac, ac
+	andi	ac, 0
+	tdz	ac, ac
+	setz	ac,
+	setzm	    ac
+	setzb	ac, ac
+	setzi	ac,
+	sub	ac, ac
+	subb	ac, ac
+	subm	ac, ac
+	lsh	ac, ^D36
+	ash	ac, ^D36
+	hrrzi	ac, 0
+	hllzi	ac, 0
+	hrlzi	ac, 0
+	hlrzi	ac, 0
+	hrrei	ac, 0
+	hllei	ac, 0
+	hrlei	ac, 0
+	hlrei	ac, 0
+;;;;;;
+	move	ac, [0]
+	movm	ac, [0]
+	movn	ac, [0]
+	imul	ac, [0]
+	and	ac, [0]
+	andcm	ac, [-1]
+	skip	ac, [0]		;hmmm..
+	tdz	ac, [-1]
+	ldb	ac,[point 36, [0]]
+	hrrz	ac, [0]
+	hrlz	ac, [0]
+	hlrz	ac, [0]
+	hllz	ac, [0]
+	hrre	ac, [0]
+	hrle	ac, [0]
+	hlre	ac, [0]
+	hlle	ac, [0]

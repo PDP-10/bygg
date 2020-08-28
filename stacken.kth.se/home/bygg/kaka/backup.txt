@@ -1,0 +1,692 @@
+From bygg@sunet.se Thu Dec 14 17:36:55 1995
+Date: Thu, 14 Dec 1995 23:37:43 MET
+From: Johnny Eriksson <bygg@sunet.se>
+To: budd@cs.bu.edu (Phil Budne)
+Subject: Re: TOPS-10 BACKUP program 
+Content-Length: 20993
+Status: O
+
+> I've been reading some of my old TOPS-10 BACKUP tapes with the backup
+> program made available by Dave Dyer and John Wilson, and I started to
+> play with making it's listing's more familiar.  I've managed to
+> reconstruct most of the data from the BEGIN/END records, file dates &
+> versions (and set the dates when extracting), but I HAVEN'T been able
+> to decode the protection.  My only backup DOC (dated 1975) doesn't
+> even have words past A$VERS, so I was hoping you might have something
+> better!
+
+I have a text that I used when writing that hack in the first place:
+
+	 backup tape format
+
+Backup is designed for two primary functions; performing system
+backup and interchanging files between systems.  For the latter function,
+Backup provides an "interchange" switch which causes system dependent 
+data to be ignored and only critical file information to be written on
+tape. A restore operation in interchange mode also ignores system 
+dependent data, allowing the operating system to supply defaults where
+necessary. Items not included in interchange
+mode are noted in the description which follows.
+
+	tape record types
+
+backup tapes are made up of a series of tape records of various types.
+Each record is self identifying. All records on the tape are written
+at the standard length of 544(10) words, made up of a 32(10) word header
+and a 512(10) data area. Even if the data area is not needed, or is
+only partially needed, it is fully written. All undefined or unused
+words are written with zeros and ignored on read. This maximizes
+the probability of reading old tapes. Also the tape format is included
+in the labels and the save set headers.
+
+	The record types are:
+
+t$lbl -- tape label used to identify reel id and
+destruction date/time. This record is optional, but if present
+must be at the start of the tape.
+
+t$beg -- beginning of a save set used to identify when
+the save set was written and on what device of what system.
+It also includes the save set name. This record is mandatory
+and must be the first record of the save set.
+
+t$end -- end of a save set. This is identical to the t$beg
+record except that it appears at the end.
+
+t$fil -- this is the actual data which has been saved. It is
+the only type of record which is encrypted. It is self-identifying
+as to the position within the file, but contains only part of
+the full path name of the file.
+
+t$ufd -- contains the information for each directory. It
+gives all information necessary to re-create the directory.
+(Not written in interchange mode.)
+
+t$eov -- indicates end of volume (future).
+
+t$com -- comment (ignored).
+
+t$con -- continuation of save set. This is identical to
+t$beg except that it indicates the continuation of the save
+set at the start of a new volume. This ensures that each
+volume is completely self identifying.
+
+
+t$lbl==1	;label identification record
+t$beg==2	;save start
+t$end==3	;save end
+t$fil==4	;disk file data
+t$ufd==5	;ufd rib
+t$eov==6	;end of volume
+t$com==7	;comment
+t$con==10	;continue (same data as t$beg-t$end)
+
+t$max==t$con	;maximum record type
+
+	standard record format
+
+Every tape record has the same general format. This
+consists of a 32(10) word record header followed by one
+page of data (512(10) words). All record headers start
+with the same first twelve words. The first seven words are:
+
+g$type -- record type as described in
+the previous section. This is a small positive integer.
+
+g$seq -- record sequence number. This is incremented by
+one for each record on the tape. If a record is repeated
+because of a tape write error, the number of the repeated record
+is the same as that of the original.
+
+g$rtnm -- relative tape number. This is incremented by
+one for each volume.
+
+g$flag -- various flag bits:
+
+g$type==0	;record type
+g$seq==1	;sequence number
+g$rtnm==2	;relative tape number
+g$flag==3	;record dependent bits
+
+gf$eof -- this flag is set if this is the last tape
+record for this disk file. On short files,
+this can even be set on the first record of the file!
+
+gf$rpt -- this flag is set if this tape record is a repeat
+of the previous record. This is set whenever the record is
+rewritten because of a tape write error.
+
+gf$nch -- this flag is set if no checksum has been
+computed for the tape record.
+
+gf$sof -- this flag is set if this is the first
+tape record for this disk file.
+
+gf$dfe -- one of these flags is set if one of these disk records
+had an error.
+
+
+gf$eof==1b0	;last record of file
+gf$rpt==1b1	;repeat of last record write error
+gf$nch==1b2	;ignore checksum
+gf$sof==1b3	;start of file
+gf$df0==1b4	;[254] disk file had error (first block on tape)
+gf$df1==1b5	;[254] disk file had error (second block on tape)
+gf$df2==1b6	;[254] disk file had error (third block on tape)
+gf$df3==1b7	;[254] disk file had error (fourth block on tape)
+gf$dfe==gf$df0!gf$df1!gf$df2!gf$df3	;[254] disk file had error
+
+g$chk -- checksum of the tape record.
+
+g$siz -- number of words used for data in this tape record.
+
+g$lnd -- number of words to skip before the data starts.
+
+The next four words are reserved for future expansion.
+The twelvth (last) word in the general section of the record
+header is reserved for customer use. The remaining 20 words in the 
+record header vary for each record type, with the last word of each
+record header being reserved for customer use. In interchange mode,
+customer reserved words will be written with zeros on a save and
+ignored on a read.
+
+
+g$chk==4	;checksum
+g$siz==5	;number of data words
+g$lnd==6	;total length of non-data section
+g$cusw==13	;reserved for customer use
+
+	non-data blocks
+
+The data portion of a tape record is primarily for storing file data, but
+may be used for saving some overhead information. Any non-data
+information written in the data area of a tape record is prefaced
+with a control word of the form:
+ lh = type, rh = length in words including this word.
+
+ More than one overhead region can appear. In this case, they follow
+each other with no intervening space. The currently defined types for
+overhead  blocks are:
+
+
+o$name --  gives the full path identification of the file without
+punctuation. The path components are treated as if the user gave a 
+quoted representation in "dec Integrated Command Language".
+This block consists of sub-blocks in the standard order:  device,
+directories (top down), file name, extention, version, generation.
+Sub-blocks corresponding to missing fields in the path specification
+are omitted. Each sub-block is in the format:
+ word0: lh = type, rh = length in words including this word.
+
+ The rest of the sub-block is the path field in asciz
+without leading or imbedded nulls, terminated by at least
+one null. For the ufd directory field, the project and 
+programmer halves are converted to octal numbers and separated
+by an underline character. Omitted fields will be defaulted. In interchange
+mode, only the name, extension and version are written. In
+interchange restore, only name, extension and version are used.
+ Sub-block type codes are:
+
+ 1 = device
+ 2 = name
+ 3 = extension
+ 4 = version
+ 5 = generation
+ 40 = directory  (lower directories are 41,42, ...)
+
+o$file -- a block containing  file attributes. The first section
+of this block is a fixed length header area containing in fixed
+locations either single word attributes or byte pointers to asciz
+string attributes  located in the remaining section. All dates and time
+are in universal date/time format. In interchange mode only the critical
+attributes (starred)  will be written, and the rest of this block will
+contain zeros. In the description which follows, the symbols in brackets
+represent the rib data from which the attribute values will be converted.
+(If none is given, the location will be zero)
+
+a$fhln (*) -- fixed header length in words.
+
+a$flgs -- flags:
+
+b$perm -- permanent (not deletable) [rp.ndl]
+
+b$temp -- temporary
+
+b$dele -- already deleted
+
+b$dlra -- don't delete for lack of recent access [rp.abu]
+
+b$nqcf -- not quota checked [rp.nqc]
+
+b$nocs -- does not have valid checksums [rp.abc]
+
+b$cser -- has checksum error [rp.fce]
+
+b$wrer -- has disk write error [rp.fwe]
+
+b$mrer -- had backup read error on restore [rp.bfa]
+
+b$daer -- declared bad by damage assessment [rp.bda]
+
+
+b$perm==1b0	;permanent
+b$temp==1b1	;temporary
+b$dele==1b2	;already deleted
+b$dlra==1b3	;don't delete for lack of recent access
+b$nqcf==1b4	;not quota checked
+b$nocs==1b5	;does not have valid checksums
+b$cser==1b6	;has checksum error
+b$wrer==1b7	;has disk write error
+b$mrer==1b8	;had backup read error on restore
+b$daer==1b9	;declared bad by damage assesment
+
+	table of backup flags:
+
+bkpflg:	exp	b$perm
+	exp	b$temp
+	exp	b$dele
+	exp	b$dlra
+	exp	b$nqcf
+	exp	b$nocs
+	exp	b$cser
+	exp	b$wrer
+	exp	b$mrer
+	exp	b$daer
+ln$flg==.-bkpflg
+
+table of corresponding rib flags:
+
+ribflg:	exp	rp.ndl
+	exp	z
+	exp	z
+	exp	rp.abu
+	exp	rp.nqc
+	exp	rp.abc
+	exp	rp.fce
+	exp	rp.fwe
+	exp	rp.bfa
+	exp	rp.bda
+
+a$writ (*) -- date/time of last write [rb.crd and rb.crt]
+
+a$alls (*) -- allocated size in words [.rbalc]
+
+a$mode (*) -- mode of last write [rb.mod]
+
+a$leng (*) -- length in bytes (1B0 if > 2_35-1) [.rbsiz]
+
+a$bsiz (*) -- byte size (7 or 36).
+
+a$vers (*) -- version identification (.jbver format) [.rbver]
+
+a$prot -- protection [rb.prv]. The protection for directories appears
+in the directory attribute block (o$dirt). For files, the protection
+word is defined as four fields of eight bits each with a "5" stored
+in the leftmost three bits in order to avoid looking like a byte pointer:
+
+ bits 0-2		"5"
+
+ bit  3			reserved for future
+
+ bits 4-11		future access
+
+ bits 12-19		owner access
+
+ bits 20-27		affinity group access
+
+ bits 28-35		"world" access
+
+Each file access field is subdivided into bytes which describe the
+attribute, write and read (respectively) protections associated with the
+file. A description of the "world" access field follows, with the
+associated tops-10 protection given in parentheses, if applicable.
+The owner and affinity group (project) fields are similarly defined.
+
+pr$spc (bit 28) -- reserved for special checking. The rest of the field is
+special if this bit is set.
+
+pr$atr (bits 29-31) -- the attribute subfield is a 3-bit byte interpreted
+as follows:
+
+ 0 -- file is completely hidden.
+ 1 -- flie name is visible (7-6).
+ 2 -- file attributes are visible (5-2).
+ 3 -- can change unprotected attributes.
+ 4-5 -- (future)
+ 6 -- can change protection (0).
+ 7 -- can delete the file (1).
+
+pr$wrt (bits 32-33) -- the write access  subfield is defined as:
+
+ 0 -- no write access (7-5).
+ 1 -- append (4).
+ 2 -- write (3).
+ 3 -- superseding generation (2-0).
+
+pr$red (bits 34-35) -- the read access subfield is defined as:
+
+ 0 -- no read access (7).
+ 1 -- execute only (6).
+ 2 -- can read the file (5-0).
+ 3 -- (future).
+
+
+a$acct -- byte pointer to account string
+
+a$note -- byte pointer to annotation string [.rbspl]
+
+a$cret -- creation date and time of this generation 
+
+a$redt -- last read date and time of this generation [rb.acd]
+
+a$modt -- monitor set last write date and time [.rbtim]
+
+a$ests -- estimated size in words [.rbest]
+
+a$radr -- requested disk address [.rbpos]
+
+a$fsiz -- maximum file size in words
+
+a$musr -- byte pointer to identification of last modifier
+
+a$cusr -- byte pointer to identification of creator [.rbaut]
+
+a$bkid -- byte pointer to identification of previous backup [.rbmta]
+
+a$bkdt -- date and time of last backup
+
+a$ngrt -- number of generations to retain
+
+a$nrds -- number of opens for read this generation
+
+a$nwrt -- number of opens for write this generation
+
+a$usrw -- undefined user word [.rbnca]
+
+a$pcaw -- privileged customer word [.rbpca]
+
+a$ftyp (*) -- file type and flags word [.rbtyp]
+
+a$fbsz (*) -- byte sizes [.rbbsz]
+
+a$frsz (*) -- record and block sizes [.rbrsz]
+
+a$fffb (*) -- application/customer word [.rbffb]
+
+
+a$fhln==0	;header length word
+a$flgs==1	;flags
+a$writ==2	;creation date/time
+a$alls==3	;allocated size
+a$mode==4	;mode
+a$leng==5	;length
+a$bsiz==6	;byte size
+a$vers==7	;version
+a$prot==10	;protection
+a$acct==11	;byte pointer account string
+a$note==12	;byte pointer to anonotation string
+a$cret==13	;creation date/time of this generation
+a$redt==14	;last read date/time of this generation
+a$modt==15	;monitor set last write date/time
+a$ests==16	;estimated size in words
+a$radr==17	;requested disk address
+a$fsiz==20	;maximum file size in words
+a$musr==21	;byte pointer to id of last modifier
+a$cusr==22	;byte pointer to id of creator
+a$bkid==23	;byte pointer to save set of previous backup
+a$bkdt==24	;date/time of last backup
+a$ngrt==25	;number of generations to retain
+a$nrds==26	;nbr opens for read this generation
+a$nwrt==27	;nbr opens for write this generation
+a$usrw==30	;user word
+a$pcaw==31	;privileged customer word
+a$ftyp==32	;file type and flags
+a$fbsz==33	;byte sizes
+a$frsz==34	;record and block sizes
+a$fffb==35	;application/customer word
+
+ln$afh==36	;length of fixed header
+
+protection bytes:
+
+ac$own==377b19	;owner access field
+ac$grp==377b27	;affinity group access field
+ac$wld==377b35	;world access field
+
+pr$atr==7b31	;attribute protection subfield
+pr$wrt==3b33	;write protection subfield
+pr$red==3b35	;read protection subfield
+
+The remainder of this block is reserved for future expansion.
+
+o$dirt -- a block containing directory attributes (not written
+in interchange mode). The first section of this block is a fixed
+length header area containing either directory attributes or  pointers
+to attributes located in the remaining section. The symbols in
+brackets represent the rib data used for conversion (the location is zero
+if none is given). The directory protection word appears in this block
+rather than in the o$file block (a$prot is zero for directories).
+
+
+d$fhln -- fixed header length in words
+
+d$flgs -- directory flags:
+
+df$fod -- files only directory
+
+df$aal -- alpha accounts are legal
+
+df$rlm -- repeat login messages
+
+
+df$fod==1b0	;files only directory
+df$aal==1b1	;alpha accounts are legal
+df$rlm==1b2	;repeat login messages
+
+d$acct -- account number or ascii byte pointer to account string
+
+d$prot -- directory protection [rb.prv]. 
+The dirctory protection word is divided into the same access fields
+as the file protection word, a$prot, but each directory access field
+has bits as follows (rib bits given in parentheses):
+
+ Bit 28 -- reserved for special checking. The rest of the
+	    field is special is this bit is set.
+ Bits 29-31 -- (future)
+ Bit 32 -- connect allowed
+ Bit 33 -- can open files (4)
+ Bit 34 -- can create generations (2)
+ Bit 35 -- directory can be read (1)
+
+d$fprt -- default file protection
+
+d$logt -- date/time of last login in dec-10 universal format
+	    [rb.crd and rb.crt]
+
+d$genr -- default number of generations to keep
+
+d$qtf -- first-come-first-served logged-in quota in words [.rbqtf]
+
+d$qto -- logged out quota in words [.rbqto]
+
+d$acsl -- list of groups which can access this directory (see below)
+
+d$usrl -- list of groups which this user is in (see below)
+
+d$prvl -- privilege list (see below)
+
+d$pswd -- ascii byte pointer to password
+
+
+The list attribute words given above (d$acsl, d$usrl, d$prvl)
+may be in any one of the following formats:
+
+ a) an ascii string pointer
+ b) 5B2 + group (or 5B2 + privilege for d$prvl)
+ c) -N,,relative location of start of list
+
+ If in format (c), each word of the list is 5B2 + group
+ (5B2 + privilege for d$prvl)
+
+
+d$fhln==0	;fixed header length word
+d$flgs==1	;directory flags
+d$acct==2	;account number
+d$prot==3	;directory protection
+d$fprt==4	;default file protection
+d$logt==5	;login date/time
+d$genr==6	;number generations to keep
+d$qtf==7	;logged-in quota
+d$qto==10	;logged-out quota
+d$acsl==11	;access list
+d$usrl==12	;user list
+d$prvl==13	;privilege list
+d$pswd==14	;password
+
+ln$dfh==15	;length of directory fixed header
+
+o$sysn -- a block containing the system header line in asciz.
+
+o$ssnm  -- a  block containing the user supplied
+save set name in asciz (max of 30 characters).
+This block is omitted if no save set name was specified.
+
+o$name==1	;full path name block
+o$file==2	;file attribute block
+o$dirt==3	;directory attribute block
+o$sysn==4	;system header block
+o$ssnm==5	;save set name block
+
+locations in t$lbl record
+
+This record has no contents in the "data" region. The remaining
+locations in the record header are defined as follows:
+
+
+l$date -- date/time of labelling in dec-10 universal format
+(i.e. lh=days since 17-Nov-1858, rh=fraction of day)
+
+l$fmt -- backup tape format (constant = 1).
+
+l$bver -- version of backup writing label in standard
+.jbver format.
+
+l$mon -- monitor type (%cnmnt).
+
+l$sver -- system version (%cndvn).
+
+l$apr -- apr processor serial number on which
+this label was written (integer).
+
+l$dev -- physical device on which the tape was written
+in sixbit.
+
+l$mtch -- byte (31) 0 (1) 7-track (1) 0 (3) density.
+Density is 1=200, 2=556, 3=800, 4=1600, 5=6250.
+
+l$rlnm -- reelid in sixbit.
+
+l$dstr -- date/time before which tape can not be scratched.
+Before this time, the only valid operation is to append.
+
+
+l$date==14	;date/time of labeling
+l$fmt==15	;backup format
+l$bver==16	;backup version
+l$mon==17	;monitor type
+l$sver==20	;system version
+l$apr==21	;apr serial number writing label
+l$dev==22	;device id writing label
+l$mtch==23	;tape write paremeters
+l$rlnm==24	;sixbit tape reel name
+l$dstr==25	;date/time for destruction
+l$cusw==37	;reserved customer word
+
+	locations in t$beg, t$end, t$con records
+
+These save set records all have the same format and are distinguished
+by their record types and their location on the tape. All items are
+filled in at the time of writting. The data area contains two non-data
+blocks, types o$sysn and o$ssnm.  Record header locations following
+the first standard twelve words are defined as follows:
+
+
+s$date -- date/time of writing this record in universal format.
+
+s$fmt -- backup tape format (constant = 1).
+
+s$bver -- backup version in .jbver format.
+
+s$mon -- monitor type (%cnmnt).
+
+s$sver -- system version (%cndvn).
+
+s$apr -- apr serial number on which written.
+
+s$dev -- physical name of device on which written in sixbit.
+
+s$mtch -- byte (31) 0 (1) 7-track (1) 0 (3) density.
+Density is 1=200, 2=556, 3=800, 4=1600, 5=6250.
+
+s$rlnm -- reelid in sixbit.
+
+s$lblt -- label type in octal.	[426]
+
+
+s$date==14	;date/time of start/end of save
+s$fmt==15	;retrieval version
+s$bver==16	;backup version
+s$mon==17	;monitor type
+s$sver==20	;system version
+s$apr==21	;apr serial number
+s$dev==22	;device id writing save set
+s$mtch==23	;tape write parameters
+s$rlnm==24	;reelid
+s$lblt==25	;[426] label type
+s$cusw==37	;customer word
+
+	locations in t$ufd record
+
+This record is not written in interchange mode.
+When written, the data portion contains two or three non-data blocks:
+types o$name, o$file (optional) and o$dirt.
+Remaining locations in the header record contain:
+
+d$pchk -- checksum of the o$name full path file name block.
+
+d$lvl -- directory level: 0=ufd, 1=first sfd, etc.
+
+d$str -- file structure name stored in the following format:
+byte (7) data type, length in words, ascii. (Data types
+are defined in the t$fil section.)
+
+d$pchk==14	;path checksum
+d$lvl==15	;ufd level (ufd=0, sfd1=1, etc.)
+d$str==16	;structure of ufd ( max of 12(10) words )
+d$cusw==37	;customer word
+
+	locations in t$fil record
+
+The first tape record for a file contains two non-data blocks,
+types o$name and o$file. There is room for two blocks
+of file data in the first tape record, and if the file will
+completely fit in one tape record, these will be used.
+If the file is longer than two blocks, the file will
+be started in the second tape record, so its pages
+will be lined up with tape records. Each tape record
+identifies the logical disk word with which it starts.
+Remaining locations in the record header are:
+
+f$pchk -- checksum of the full path file name block (o$name).
+This is just a consistency check for consecutive records of the file.
+
+f$rdw -- relative data word of file of the first data word in this tape record.
+
+f$pth -- a twelve word block used to store information
+suitable for a restoration of the file. This area is big enough
+to hold the entire path to a tops-10 file in a ufd and two sfds.
+The path information will be stored in the standard order of
+device, ufd, first sfd, file name, extension; with missing fields omitted.
+The path information will be stored in the format:
+
+byte (7) data type, length in words, ascii
+
+where data types are defined as:
+
+ device = 001
+ file name = 002
+ extension = 003
+ directory = 040
+ (lower directories = 041,042, ...)
+
+f$pchk==14	;path checksum
+f$rdw==15	;relative data word of file
+f$pth==16	;start of path block
+ln$pth==14	;length of f$pth block
+f$cusw==37	;reserved customer word
+
+data types:
+
+.fcdev==1	;device
+.fcnam==2	;file name
+.fcext==3	;extension
+.fcver==4	;version
+.fcgen==5	;generation
+.fcdir==40	;directory
+.fcsf1==41	;first sfd
+.fcsf2==42	;second sfd
+
+;--------
+
+It looks like you will have to decode the contents of the A$PROT word...
+
+Would you mind giving me a copy of whatever comes out of it, one way or
+another?
+
+> Thanks!
+> -Phil
+
+Be my guest,
+
+--Johnny
+

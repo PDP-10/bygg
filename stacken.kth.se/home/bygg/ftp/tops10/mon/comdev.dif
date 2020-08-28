@@ -1,0 +1,154 @@
+File 1)	DSKB:COMDEV.MAC[10,10,SYSTEM,KS,TOPSY,IPTEST]	created: 2248 18-Sep-101
+File 2)	DSKB:COMDEV.MAC[10,7,MON]                    	created: 0751 02-Sep-88
+
+1)1	ifn ftip4,<search ip4sym>
+1)		$RELOC
+****
+2)1		$RELOC
+**************
+1)43	SUBTTL	IPv4 network data base -- FT tests.
+1)	nd m.ip4,0	;Make sure the symbols are defined.
+1)	nd m.duna,0
+1)	nd m.slip,0
+1)	nd m.tcpn,0
+1)	nd m.udpn,0
+1)	ifn m.ip4,<
+1)	    ife ftip4,<
+1)		printx ? IP will not work with FTIP4 = 0.
+1)		printx ? IP will not be included in this monitor.
+1)		m.ip4==:0
+1)	    >
+1)	>;End ifn m.ip4
+1)	ife m.ip4,<
+1)		m.duna==:0	;Can't have interfaces without IP stack.
+1)		m.slip==:0
+1)		m.tcpn==:0	;Can't have protocols without IP stack.
+1)		m.udpn==:0
+1)	>; End ife m.ip4
+1)	ifn m.duna,<
+1)	    ife ftduna,<
+1)		printx ? DEUNA will not work with FTDUNA = 0
+1)		printx ? DEUNA support will not be included in this monitor.
+1)		m.duna==:0
+1)	    >
+1)	>; End ifn m.duna
+1)	ifn m.slip,<
+1)	    ife ftslip,<
+1)		printx ? SLIP will not work with FTSLIP = 0
+1)		printx ? SLIP support will not be included in this monitor.
+1)		m.slip==:0
+1)	    >
+1)	>; End ifn m.slip
+1)	;** IPv4 network data base -- module control.
+1)	;** Main IP service:
+1)	ifn m.ip4,<
+1)		extern ipser, iprout, ip4sub
+1)	>
+1)	ife m.ip4,<
+1)		; fix dummy globals here.
+1)	>
+1)	;** TCP service.
+1)	ifn m.tcpn,<
+1)		extern tcpser
+1)	>
+1)	ife m.tcpn,<
+1)		tcpuuo==:cpopj##
+1)	tcpin::	movei	t1,3		;Destination unreachable, -
+1)		movei	t2,2		; "protocol unreachable".
+1)		jrst	icmp.e##	;Since we have no ports at all.
+1)	>
+File 1)	DSKB:COMDEV.MAC[10,10,SYSTEM,KS,TOPSY,IPTEST]	created: 2248 18-Sep-101
+File 2)	DSKB:COMDEV.MAC[10,7,MON]                    	created: 0751 02-Sep-88
+
+1)	;** UDP service.
+1)	ifn m.udpn,<
+1)		extern udpser
+1)	>
+1)	ife m.udpn,<
+1)		udpuuo==:cpopj##
+1)	udpin::	movei	t1,3		;Destination unreachable, -
+1)		movei	t2,2		; "protocol unreachable".
+1)		jrst	icmp.e##	;Since we have no ports at all.
+1)	>
+1)	;** DEUNA driver.
+1)	ifn m.duna,<
+1)		extern unaser, arpser
+1)	>
+1)	ife m.duna,<		;Fix dummy globals.
+1)		arpuuo==:cpopj##
+1)		unauuo==:cpopj##
+1)	>
+1)	;** SLIP driver.
+1)	ifn m.slip,<
+1)		extern slip
+1)	>
+1)	ife m.slip,<		;Fix dummy globals.
+1)		sliprx==:cpopj##
+1)		sliptx==:cpopj##
+1)		slatt==:cpopj##
+1)		sldet==:cpopj##
+1)	>
+1)	;** IPv4 network data base -- interface blocks.
+1)	ifn m.ip4,<
+1)	  iftab::
+1)	  ift.me::exp if.slf
+1)	ifn M.DUNA,<
+1)	  ift.un::exp if.una
+1)	>;M.DUNA
+1)	ifn M.SLIP,<
+1)		deefine slips,<
+1)			zz==0
+1)			repeat M.SLIP,<
+1)				$slip(\zz)
+1)				zz==zz+1
+1)			>
+1)		>
+1)		define $slip(num),<
+1)			exp <if.s'num>
+1)		>
+1)	  ift.sl::slips
+1)	>
+1)	ifnum==.-iftab
+1)	; Now generate the IF blocks:
+1)	define ifblock(mtu, xmit),<
+1)		..blk==.
+1)		block	ifblen
+1)		reloc	..blk+if.mtu
+1)		exp	mtu
+1)		reloc
+File 1)	DSKB:COMDEV.MAC[10,10,SYSTEM,KS,TOPSY,IPTEST]	created: 2248 18-Sep-101
+File 2)	DSKB:COMDEV.MAC[10,7,MON]                    	created: 0751 02-Sep-88
+
+1)		reloc	..blk+if.snd
+1)		exp	xmit
+1)		reloc
+1)	>
+1)	if.slf::ifblock(^D1500, ipin##)
+1)	ifn M.DUNA,<
+1)	if.una::ifblock(^D1500, unisnd##)
+1)	>
+1)	ifn M.SLIP,<
+1)	    define $slip(num),<
+1)		if.s'num: ifblock(^D1006, slisnd##)
+1)	    >
+1)	    slips
+1)	>;End ifn M.SLIP
+1)	>;End ifn M.IP4
+1)	;** IPv4 network data base -- UDP: table.
+1)	ifn m.udpn,<
+1)	udpmdt::mdcpun  (00,00,00,00,00,00) ;Dummy parameters.
+1)		mdterm
+1)	udptab::repeat m.udpn,<exp 0>
+1)	>
+1)	ife m.udpn,<
+1)	>
+1)	;** IPv4 network data base -- TCP: table.
+1)	ifn m.tcpn,<
+1)	tcpmdt::mdcpun  (00,00,00,00,00,00) ;Dummy parameters.
+1)		mdterm
+1)	tcptab::repeat m.tcpn,<exp 0>
+1)	>
+1)44	SUBTTL	ANF-10 NETWORK DATA BASE -- FEATURE TEST CHECK
+****
+2)43	SUBTTL	ANF-10 NETWORK DATA BASE -- FEATURE TEST CHECK
+**************

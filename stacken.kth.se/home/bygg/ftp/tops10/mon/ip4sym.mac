@@ -1,0 +1,160 @@
+universal ip4sym -- symbols etc. for deuna/delua enhanced KS10.
+.directive .nobinary
+
+search	f,s
+
+lall
+
+syn netoff,ip4off
+syn neton,ip4on
+
+syn netoff,unaoff
+syn neton,unaon
+
+unappl==:4
+
+ifndef debugging,<debugging==-1>
+
+;
+; Nice hexadecimal macro:
+;
+
+define hex(x),<
+	..x==0
+	irpc x,<
+		..x==..x*^D16+<<squoze 0,00000'x>-<squoze 0,000000>>
+	>
+	exp ..x
+>
+
+;
+; Packet descriptor:
+;
+phase	0
+
+pd.nxt:!block	1		;Next in list.
+pd.src:!block	2		;[link] Source address.
+pd.dst:!block	2		;[link] Destination address.
+pd.typ:!block	1		;[link] Type code.
+pd.via:!block	1		;[link] Next hop.
+pd.ifn:!block	1		;Interface #.
+;8
+pd.cbk:!block	1		;Callback after xmit done.
+pd.tag:!block	1		;User (creator) tag for us.
+pd.llb:!block	1		;Non-zero if link level broadcast.
+pd.siz:!block	1		;Size of datagram we hold, in octets.
+pd.len==pd.siz			;Another name for now.
+;12
+pd.all:!block	1		;Allocated length in words (data).
+pd.alp:!block	1		;Allocated pointer.
+pd.foo:!block	1		;(no longer used.)
+pd.ptr:!block	1		;General "pointer", for processing.
+pd.ctr:!block	1		;General "counter", for processing.
+
+pdsize:!block	0		;Size of block.
+
+dephase
+
+;
+; Interface descriptor:
+;
+phase	0
+
+if.ipa:!block	1		;IP (4) address, left justified.
+if.mtu:!block	1		;Current MTU on interface.
+if.num:!block	1		;Interface index.
+if.ldb:!block	1		;Pointer to LDB (slip).
+if.tqh:!block	1		;Transmit queue, head. (tx in progress)
+if.tqt:!block	1		;Transmit queue, tail.
+if.tql:!block	1		;Transmit queue, length.
+if.ist:!block	2		;Saved P1-P2 (state info) for input.
+if.ost:!block	2		;Saved P1-P2 (state info) for output.
+if.snd:!block	1		;Address of routine to transmit packets.
+
+ifsize:!block	0		;Size of block.
+ifblen==ifsize			;Another name (sigh).
+
+dephase
+
+;* define data structure
+;*    nam - name of structure as used in code
+;*    loc - address of data
+;*    pos - position of data within word (leftmost bit number)
+;*    siz - size of data within word
+
+define defstr (nam, loc, pos, siz),<
+	..rad==10
+	radix 10
+	.tstsz (pos, siz)
+	.defst (\..typ, nam, loc, pos, siz)
+	radix ..rad
+>
+
+define .tstsz (pos, siz),<
+	..typ==3		;;Default is random byte.
+	ife siz-36,<..typ==0>	;;Full word, type 0.
+	ife siz-18,<		;;Might be half word:
+	  ife pos-18,<..typ==1>	;;Right half, type 1.
+	  ife pos,<..typ==2>	;;Left half, type 2.
+	>
+>
+
+define .defst (typ, nam, loc, pos, siz),<
+	define nam (ops, ac, y),<
+	  ..c==0
+	  irp ops,<
+	    ife typ-..c,<
+	      stopi
+	      ifn 3-..c,<ops ac,loc+'y>
+	      ife 3-..c,<ops ac,[point siz, loc+'y, pos+siz-1]>
+	    >
+	    ..c=..c+1
+	  >
+	>
+>
+
+define load. (ac, str, y),<str (<move, hrrz, hlrz, ldb>, ac, y)>
+define stor. (ac, str, y),<str (<movem, hrrm, hrlm, dpb>, ac, y)>
+
+;*
+;* IPv4 header:
+;*
+
+repeat 0,<
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |Version|  IHL  |Type of Service|          Total Length         |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |         Identification        |Flags|      Fragment Offset    |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  Time to Live |    Protocol   |         Header Checksum       |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                       Source Address                          |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                    Destination Address                        |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                    Options                    |    Padding    |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+>;end repeat 0
+
+    defstr ih.vrs, 0,  0,  4
+    defstr ih.ihl, 0,  4,  4
+    defstr ih.tos, 0,  8,  8
+    defstr ih.len, 0, 16, 16
+    defstr ih.id,  1,  0, 16
+    defstr ih.df,  1, 17,  1
+    defstr ih.mf,  1, 18,  1
+    defstr ih.fo,  1, 19, 13
+    defstr ih.frg, 1, 18, 18	;MF flag + offset.
+    defstr ih.ttl, 2,  0,  8
+    defstr ih.pro, 2,  8,  8
+    defstr ih.csm, 2, 16, 16
+    defstr ih.sa,  3,  0, 36	;Source, left justified FW.
+    defstr ih.src, 3,  0, 36
+    defstr ih.da,  4,  0, 36	;Destination, left just. FW.
+    defstr ih.dst, 4,  0, 36
+
+end

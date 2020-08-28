@@ -1,0 +1,8 @@
+574d573
+< #define IO_DEUNABASE    0774510                               /* DEUNA base */
+611d609
+< #define INT_V_DEUNA     18                            /* DEUNA */
+620d617
+< #define INT_DEUNA       (1u << INT_V_DEUNA)
+635d631
+< #define VEC_DEUNA       0120

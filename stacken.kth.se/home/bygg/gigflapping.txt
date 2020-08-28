@@ -1,0 +1,75 @@
+
+                                GigFlapping
+                                  MP3 File
+
+                            Packets dropping...
+                             Console locking...
+                            Boss is knocking...
+
+                GigE ports down, wait, now they're up again
+                        and the router's in disarray
+                GigE ports down, wait, now they're up again
+                        Now I think it's time to RMA
+
+                GigE ports down, wait, now they're up again
+                   and they're never going to be the same
+                GigE ports down, wait, now they're up again
+                         gotta find an SE to blame
+
+                           Pinging with no reply
+                           Pinging with no reply
+
+                              You got your STM
+                                 over 1310
+                              You got your SRP
+                                which is DPT
+
+                 You got your Sonet Rings connected via DPT
+                       You got your OC3's to your ISP
+
+               Oh, fiber cut, ports are shut, man this sucks
+
+                GigE ports down, wait, now they're up again
+                        and the router's in disarray
+                GigE ports down, wait, now they're up again
+                        Now I think it's time to RMA
+                GigE ports down, wait, now they're up again
+                   and they're never going to be the same
+                GigE ports down, wait, now they're up again
+                         gotta find an SE to blame
+
+                           Pinging with no reply
+                           Pinging with no reply
+                          You got your Single Mode
+                           you got your Multimode
+                             you got your GBICs
+                             and your new ASICs
+                You had a fiber cut and your service dipped
+               and it's all running through the same conduit
+                Oh, field notice, please help us, failed bus
+                GigE ports down, wait, now they're up again
+                        and the router's in disarray
+                GigE ports down, wait, now they're up again
+                        Now I think it's time to RMA
+  GigE ports down, wait, now they're up again and they're never going to be
+                                  the same
+                GigE ports down, wait, now they're up again
+                         gotta find an SE to blame
+                         [PAUSE - Ad Lib sayings ]
+       GigE ports down, wait, now they're up again (packets dropping)
+               and the router's in disarray (console locking)
+       GigE ports down, wait, now they're up again (boss is knocking)
+                        Now I think it's time to RMA
+    GigE ports down, wait, now they're up again (pinging with no reply)
+       and they're never going to be the same (pinging with no reply)
+    GigE ports down, wait, now they're up again (pinging with no reply)
+           damaging the passive backplane (pinging with no reply)
+       GigE ports down, wait, now they're up again (packets dropping)
+               and the router's in disarray (console locking)
+       GigE ports down, wait, now they're up again (boss is knocking)
+                        Now I think it's time to RMA
+    GigE ports down, wait, now they're up again (pinging with no reply)
+       and they're never going to be the same (pinging with no reply)
+    GigE ports down, wait, now they're up again (pinging with no reply)
+           damaging the passive backplane (pinging with no reply)
+                                 ...[FADE]

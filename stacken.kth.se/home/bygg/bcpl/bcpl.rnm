@@ -1,0 +1,4560 @@
+.PS 60,63
+.FLAG INDEX
+.ST
+.T BCPL REFERENCE MANUAL
+.FG 11
+.C;THE BCPL
+.C;REFERENCE MANUAL
+.FG 17
+.NF
+.TS 5,42
+	2nd Edition	Pete Gardner
+	September 1976	University of Essex
+	Revised November 1978
+.FG 8
+.C;This manual describes the
+.C;language #as implemented in
+.C;compiler version 3H.
+.F
+.PG
+.C;CONTENTS
+.C;--------
+.LS
+.LE;BRIEF DESCRIPTION OF BCPL
+.LS
+.LE;HISTORY OF ESSEX BCPL
+.LE;THE BCPL MACHINE
+.LE;INTRODUCTION TO DATA TYPES
+.LE;FURTHER READING
+.ELS
+.LE;EXPRESSIONS
+.LS
+.LE;SYNTAX OF EXPRESSIONS
+.LE;SEMANTICS OF EXPRESSIONS
+.LE;PRIORITY OF OPERATORS
+.LE;NAMES
+.LE;CONSTANTS
+.LE;NIL
+.LE;STRINGS
+.LE;BRACKETED EXPRESSIONS
+.LE;VALOF
+.LE;FUNCTION APPLICATION
+.LE;UNARY OPERATORS
+.LE;INFIX FUNCTION APPLICATION
+.LE;VECTOR APPLICATION
+.LE;SELECTORS AND BYTES
+.LE;ARITHMETIC OPERATORS
+.LE;SHIFT OPERATORS
+.LE;RELATIONAL OPERATORS
+.LE;LOGICAL OPERATORS
+.LE;CONDITIONAL EXPRESSIONS
+.LE;TABLES
+.LE;CONSTANT EXPRESSIONS
+.ELS
+.LE;DECLARATIONS
+.LS
+.LE;SYNTAX OF DECLARATIONS
+.LE;SEMANTICS OF DECLARATIONS (SCOPE AND EXTENT)
+.LE;STATIC DECLARATIONS (STATIC, LABELS, ROUTINES AND FUNCTIONS)
+.LE;DYNAMIC DECLARATIONS (FORMAL PARAMETERS AND LET)
+.LE;WHERE
+.LE;SIMULTANEOUS DECLARATIONS (AND)
+.LE;MANIFEST DECLARATIONS
+.LE;INTER-FILE AND LIBRARY COMMUNICATION (EXTERNAL AND GLOBAL)
+.ELS
+.LE;COMMANDS
+.LS
+.LE;SYNTAX OF COMMANDS
+.LE;SECTIONS
+.LE;SIMPLE ASSIGNMENT
+.LE;MULTIPLE ASSIGNMENT
+.LE;LEFT HAND SIDE FUNCTION APPLICATION
+.LE;UPDATE ASSIGNMENT
+.LE;ROUTINE APPLICATION
+.LE;RETURN
+.LE;GOTO
+.LE;IF
+.LE;UNLESS
+.LE;TEST
+.LE;WHILE
+.LE;UNTIL
+.LE;FOR
+.LE;REPEAT
+.LE;REPEATWHILE
+.LE;REPEATUNTIL
+.LE;LOOP AND BREAK
+.LE;SWITCHON, CASE, DEFAULT AND ENDCASE
+.LE;FINISH
+.LE;RESULTIS
+.LE;LABELS
+.LE;VERY BINDING SEMICOLON
+.LE;TRACE
+.ELS
+.LE;PROGRAMMING AIDS
+.LS
+.LE;GET
+.LE;THE START ROUTINE
+.LE;LAYOUT CONVENTIONS
+.LE;COMMENTS
+.LE;INPUT FORMAT
+.LE;LISTING CONTROL
+.LE;CONDITIONAL COMPILATION
+.LE;USER LIBRARY AIDS
+.LE;VERSION NUMBER
+.LE;UNIVERSAL FILES
+.ELS
+.LE;THE BCPL LIBRARY
+.LS
+.LE;THE STRUCTURE OF THE LIBRARY
+.LE;INPUT AND OUTPUT SPECIFICATION
+.LE;INPUT ROUTINES
+.LE;OUTPUT ROUTINES
+.LE;FREE STORAGE ROUTINES
+.LE;OTHER UTILITY ROUTINES
+.ELS
+.LE;RUNNING A BCPL PROGRAM
+.LS
+.LE;COMPILER COMMAND FORMAT
+.LE;COMPILER OUTPUT
+.LE;COMPILER ERROR MESSAGES
+.LE;PROGRAM SIZE
+.LE;INTERACTIVE USE
+.LE;BATCH USE
+.LE;THE POSTMORTEM
+.LE;BCPLDT
+.ELS
+.LE;INTCODE
+.LS
+.LE;THE PURPOSE OF INTCODE
+.LE;THE INTCODE MACHINE
+.LE;THE INTCODE ASSEMBLY LANGUAGE
+.ELS
+.ELS
+.LM 5
+APPENDICES
+.LM 9
+.NF
+.S 1
+A.  FULL SYNTAX OF BCPL
+.S 1
+B.  RESERVED WORDS AND SYMBOLS
+.S 1
+C.  CHARACTER CODES
+.S 1
+D.  MACHINE CODE BLOCKS AND OPERATORS
+.S 1
+E.  COMPILER SWITCHES
+.S 1
+F.  CODE CONVENTIONS
+.S 1
+G.  COMPILATION ERROR MESSAGES
+.S 1
+H.  STREAM CONTROL BLOCKS
+.S 1
+I.  EXAMPLE BCPL PROGRAM
+.LM 0
+.F
+.PG
+.HL 1 BRIEF DESCRIPTION OF BCPL
+.HL 2 HISTORY OF ESSEX BCPL
+.LM 5
+BCPL is a (recursive) programming language, originally developed and
+implemented by Martin Richards at MIT project MAC, for general non-numerical
+problems and systems work. It employs sensible and efficient control constructs which largely eliminate the need for
+"goto"s, and achieves both simplicity and generality by providing
+a single data type - the word. A word may function as several
+different conceptual types, although of course it is not possible
+to check that it is consistently so used.
+.S 1
+Richards' original compiler produced object code (OCODE) for an
+idealised stack machine and was itself available in OCODE. Hence
+to transport the compiler to another machine, it was only necessary
+to write a code generator to translate OCODE to the required machine
+code. By this method Richards took BCPL to Cambridge (England),
+from which version the original Essex ICL 1900 BCPL was developed
+via a code generator written by Bernard Sufrin in 1969. It was
+transported onto the PDP-10 in 1970 via a code generator written
+in BCPL by Brian O'Mahoney and David Eyres, with help from Bernard Sufrin.
+.S 1
+By 1973 BCPL had developed into the major software language in use by the Department of Computer Science
+for both research (e.g. in AI) and teaching (e.g.
+Compiler writing), and so with the intention of improving the
+compiler, both in performance and by adding new language features,
+a new compiler was developed by Pete Gardner for release in 1974.
+The performance, as measured by the kilo-core second load on the
+system, has been improved by a factor 3 or 4; the new features
+included are documented in this manual. The main contributory
+factor was the removal of the intermediate OCODE stage which
+required in effect two compilations, one from BCPL to OCODE and
+one from OCODE to machine code.
+.LM 0
+.HL 2 THE BCPL MACHINE
+.LM 5
+BCPL is based on a simple storage model which consists of a set of
+consecutively addressed cells arranged thus:-
+.TP 6
+.NF
+.S 1
+-------------------------------------------------------
+   | n-1 |  n  | n+1 | n+2 | n+3 | n+4 | n+5 | n+6 |
+-------------------------------------------------------
+.S 1
+.F
+All cells are of uniform size, and hold a binary bit pattern called
+a value (usually between 16 and 60 bits, depending on the word size
+of the machine; on the PDP-10 the word size is 36 bits).
+.S 1
+A value is the only primitive data type in BCPL, but it is used to
+represent an integer, character, truth value, address and (of
+course) a bit pattern. Used as an address a value can refer
+to (point to) a vector, a character string, a table, a function or a routine.
+.S 1
+To facilitate the representation of all these conceptual data types
+a large set of useful operators have been provided. For example
++ - * / assume that their operands represent integers and the
+result is consistent with this representation; ROTL and ROTR
+assume their relevant operand is a bit pattern; A!I assumes that
+A points to a group of consecutively addressed cells (a vector)
+and selects the Ith (counting from 0). However no type checking
+is performed by these operations and it is possible, for example,
+to add an integer to a character (e.g. 4+'0' equivalent to '4' on
+the PDP-10).  Such operations are sometimes desirable although
+the user should guard against losing machine independence by using
+too many tricks of this kind. For example, any assumption about
+the precise number of bits in a word could be dangerous.
+.LM 0
+.HL 2 INTRODUCTION TO DATA TYPES
+.LM 5
+.HL 3
+VALUES
+.BR
+.S 1
+Conceptual values can be represented in the written program
+by canonical symbols, thus:-
+.NF
+.TS 14,22,30,38,46
+.S 1
+				Machine dependent bit
+Type		Example		representation on PDP-10
+				(36 bit words)
+.S 1
+OCTAL		_#3777		000000003777
+.S 1
+BINARY		_#B10000		000000000020
+.S 1
+HEXADECIMAL	_#X3C		000000000074
+.S 1
+INTEGER		103		000000000147
+.S 1
+REAL		1.0		172040000000
+.S 1
+CHARACTER	'Q'		000000000121
+.S 1
+BOOLEAN		TRUE		777777777777
+.F
+.HL 3  
+VARIABLES
+.BR
+.S 1
+A variable is a name which is associated with a storage cell -
+by means of a declaration, e.g.
+.S 1
+.NF
+LET A, B = 1, 2_;
+.F
+.S 1
+declares two variables (A and B) and initialises them
+to (the bit pattern equivalent of) the integers 1 and
+2.
+.HL 3  
+MANIFEST CONSTANTS
+.BR
+.S 1
+A manifest constant is the direct association at compile time of
+a name with a value, e.g.
+.NF
+.S 1
+MANIFEST $( TEN = 10_; S.COMMA = _#54 $)
+.F
+.HL 3  
+VECTORS
+.BR
+.S 1
+A vector is the only form of data structure which can be formally
+declared, e.g.
+.S 1
+.NF
+LET P = VEC 5
+.F
+.S 1
+sets up the structure:-
+.NF
+.S 1
+-------     -------------------------------------
+|  ---|-----|--_>  |     |     |     |     |     |
+-------     -------------------------------------
+   P          P!0   P!1   P!2   P!3   P!4   P!5
+.F
+.S 1
+P!<E_> where <E_> is an expression refers to the <E_>th cell of the
+vector. There is no index bound checking.
+.HL 3  
+OTHER DATA STRUCTURES
+.BR
+.S 1
+Other data structures can be modelled using 'pointer' values to construct arrays, lists, trees, etc. Vectors can also be
+dynamically acquired from free storage.
+.HL 3  
+SCOPE AND EXTENT
+.BR
+.S 1
+LET data is allocated in the main stack (as in Algol60). It
+is also possible to declare STATIC data which exists throughout
+the duration of the program. Programs are block structured
+(as in Algol60) each block opening a new level of nomenclature
+for variables. Variables can also be declared EXTERNAL (as
+in PL/1) to enable communication between separately compiled
+segments of a program. (The original GLOBAL vector, which
+served the same purpose; is still available).
+.HL 3  
+FUNCTIONS AND ROUTINES
+.BR
+.S 1
+Parameters are called by value. Names of variables are
+communicated by using their addresses as value parameters, this
+can be done by using @ and ! operators. The value of the expression @A
+is the address of the variable A. If this is
+substituted for formal parameter P then !P in the body of the
+called routine (or function) refers to the original variable A.
+Routines and functions may be called with a variable number of
+parameters. Return from a routine is by RETURN or the textual
+end. Return from a function is upon completion of the evaluation
+of the expression which the function denotes.
+.S 1
+The declaration of a function or routine creates a STATIC data
+item which points to the body of the function or routine. This
+data item can be manipulated in the same way as any other STATIC
+data item and obeys the same SCOPE and EXTENT restrictions.
+.LM 0
+.HL 2 FURTHER READING
+.LM 5
+The BCPL Programming Manual, by Martin Richards.
+University of Cambridge, Computing Laboratory, Corn Exchange Street,
+Cambridge. CB2#3QG. England.
+.S 1
+INTCODE - An Interpretive Machine Code for BCPL, by Martin Richards.
+University of Cambridge, Computing Laboratory, Corn Exchange Street,
+Cambridge. CB2#3QG. England.
+.S 1
+The BCPL User Guide, by Pete Gardner et al.
+Department of Computer Science, Computing Service, University of Essex,
+Wivenhoe Park, Colchester, Essex. CO4#3SQ. England.
+.LM 0
+.PG
+.HL 1 EXPRESSIONS
+.HL 2 SYNTAX OF EXPRESSIONS
+.LM 5
+.NF
+.TS 14,22,30,38,46
+<E_>	::= <P_> <<binop_> <P_>_>* | <E_> -_> <E_>, <E_> |
+	    SELECTOR <E_>:<E_>:<E_> | BYTE <E_>:<E_> |
+	    TABLE <E-list_>
+<P_>	::= <name_> | <integer_> | <real_> | <octal_> |
+	    <charconst_> | <truthvalue_> | $constant |
+	    NIL | <string_> | (<E_>) | VALOF <C_> |
+	    <E_>() | <E_>(<E-list_>) | <unop_><E_> |
+	    <literal_> | <hex_> | <binary_>
+<binop_>	::= %<name_> | ! | :: | _&_& | * | / | REM | _#* |
+	    _#/ | ** | + | - | _#+ | _#- | << | _>_> |
+	    ROTL | ROTR | ALSHIFT | ARSHIFT | LS |
+	    LE | EQ | GE | GR | NE | _#LS | _#LE |
+	    _#EQ | _#GE | _#GR | _#NE | /_\ | _\/ | EQV |
+	    NEQV | BITAND | BITOR
+<unop_>	::= NOT | @ | ! | + | - | ABS | _#+ | _#- |
+	    _#ABS | FIX | FLOAT
+<E-list_>	::= <E_> <,<E_>_>*
+.F
+.S 1
+Alternative representation of operators are listed in Appendix B.
+.LM 0
+.HL 2 SEMANTICS OF EXPRESSIONS
+.LM 5
+Expressions are used to calculate values, which on the PDP-10 are bit-patterns
+of length 36. Unlike languages such as Fortran and Algol,
+there are no explicit notions of type in BCPL. Values are used by
+the programmer to model objects of many different kinds, (e.g. truth
+values, strings, vectors, data structures, bit-patterns) and there
+are a large number of basic operation on values which have been
+provided in order to model the transformation of these objects.
+.S 1
+The simplest kinds of expression are names (see 2.4) and constants
+(see 2.5).
+.LM 0
+.HL 2 PRIORITY OF OPERATORS
+.LM 5
+In an expression which contains more than one operator, some scheme
+must exist to define the priority of evaluations of one operator
+over another. The table below gives the priority of operators in
+BCPL.
+.S 1
+.TP 16
+The top of the list is the highest priority.
+.NF
+.TS 9
+1.	name, constant, bracketed expression, VALOF
+2.	function application
+3.	monadic ops. NOT @ ! + - ABS _#+ _#- _#ABS FIX FLOAT
+4.	%name
+5.	!
+6.	:: _&_&
+7.	* / REM _#* _#/ **
+8.	+ - _#+ _#-
+9.	<< _>_> ROTL ROTR ALSHIFT ARSHIFT
+10.	LS LE EQ GE GR NE _#LS _#LE _#EQ _#EQ _#GE _#GR _#NE
+11.	/_\ BITAND
+12.	_\/ BITOR
+13.	EQV NEQV
+14.	conditional expression
+15.	TABLE SELECTOR BYTE
+.F
+.S 1
+Operators of the same priority level are evaluated from left to
+right (i.e. the left most operation performed first), except
+for _:_: and _&_& which are evaluated from right to left. The
+relational operators are considered to be of equal priority.
+.S 1
+.NF
+Examples.
+.S 1
+.TS 38
+A _\/ B + C * D is evaluated as	A _\/ (B + (C * D))
+A * B * C	(A * B) * C
+A :: B :: C	A :: (B :: C)
+A LE B LE C	A LE B LE C
+.F
+.S 1
+The order of evaluation of the operands of any operator (_> priority 3)
+is undefined, except for those of priority 10, and /_\ and _\/, whose
+left operand is evaluated before its right operand.
+.S 1
+The remainder of this chapter deals with each of the elements of
+expressions in turn.
+.LM 0
+.HL 2 NAMES
+.LM 5
+Names are used to identify objects, these objects may either be a
+storage cell (i.e. a variable) or a constant (i.e. a MANIFEST -
+see 3.6). All objects referred to by a name are full word
+size.
+.S 1
+The name itself may consist of from 1 to 127 alphanumeric
+characters or period; the first character must be alphabetic.
+.S 1
+.NF
+Examples.
+.S 1
+TOTAL   i   J   Version25   A.MUCH.LONGER.NAME
+.F
+.LM 0
+.HL 2 CONSTANTS
+.LM 5
+.HL 3  
+SEMANTICS OF CONSTANTS
+.BR
+.S 1
+All the following forms are shorthand ways of introducing a bit 
+pattern into the program.
+.HL 3  
+INTEGER CONSTANTS
+.BR
+.S 1
+Unsigned decimal no. in the range 0 to 3435938367, it may (like
+all other constants) be negated by a preceding minus sign. If an integer greater
+than 3435938367 is encountered by the PDP 10 compiler, it uses only
+the last 36 bits of the value and gives no error message.
+.S 1
+.NF
+Examples.
+.S 1
+345   8388608
+.F
+.HL 3  
+REAL CONSTANTS
+.BR
+.S 1
+These consist of an integral part, a fractional part and an optional exponent part. The
+integral and fractional parts both consist of any number (_>= 1)
+of digits separated by a decimal point.
+The accuracy of the fractional
+part on the PDP-10 is 8+ digits. The exponent part consists of
+an E followed by an optionally signed decimal integer in the range
+-38 to +38. If an exponent out of this range is given, underflow
+or overflow will occur with no warning given by the compiler.
+.S 1
+.NF
+Examples.
+.S 1
+0.0   3.14159   10.0E6   0.17E-13
+.F
+.HL 3  
+OCTAL CONSTANTS
+.BR
+.S 1
+These consist of any number of octal digits preceded by a _#. The
+last 36 bits of the octal number are used by the compiler.
+$8 or _#O may also be used as alternatives for _#.
+.S 1
+.NF
+Examples.
+.S 2
+_#77   _#77000077   _#4323717
+.F
+.HL 3  
+HEXADECIMAL CONSTANTS
+.BR
+.S 1
+These consist of any number of hexadecimal digits ('0' to '9', 'A' to 'F') preceded by a _#X or _#H. The
+last 36 bits of the hexadecimal number are used by the compiler.
+.S 1
+.NF
+Examples.
+.S 2
+_#XFF   _#XC0   _#H11A7CF
+.F
+.HL 3  
+BINARY CONSTANTS
+.BR
+.S 1
+These consist of any number of binary digits preceded by a _#B. The
+last 36 bits of the binary number are used by the compiler.
+.S 1
+.NF
+Examples.
+.S 2
+_#B10101   _#B100011010011111001111
+.F
+.HL 3  
+CHARACTER CONSTANTS
+.BR
+.S 1
+A character constant is a sequence of BCPL characters between single
+quote characters - '. (See Appendix C). Up to the first 5 characters
+are packed (right aligned) in the word.
+.S 1
+.NF
+Examples.
+.S 1
+.TS 35
+'A'	equivalent to _#101
+'_*C' (carriage return)	equivalent to _#15
+'FOO'	equivalent to _#4323717
+IF 'A' LE CH LE 'Z' DO	...
+.F
+.HL 3  
+TRUTH VALUE
+.BR
+.S 1
+The logical representations of true and false are represented by a
+word with all bits set and a word with all bits clear respectively.
+The reserved words TRUE and FALSE are used to represent these
+values.
+.HL 3   
+'$' CONSTANTS
+.BR
+.S 1
+These are entirely machine dependent, a brief description of them 
+appears below.
+.S 1
+_$DAY is the value of the PDP-10 DATE CALLI UUO at the time of compilation.
+.S 1
+_$TIME is the value of the PDP-10 MSTIME CALLI UUO at the time
+of compilation.
+.S 1
+_$TRACE is the value TRUE or FALSE according to whether the
+program is being compiled with postmortem code enabled or not. (See descriptions of /F and /O switches in Appendix E).
+.S 1
+_$SIXBIT <string_> is the PDP-10 sixbit representation of the first
+6 characters in the BCPL string <string_>, $6 may be used as an abbreviation for $SIXBIT.
+.S 1
+_$ASCII <string_> is the PDP-10 left aligned ASCII representation
+of the first 5 characters in the BCPL string <string_>.
+.S 1
+_$ASCIZ <string_> is the PDP-10 left aligned ASCIZ representation
+of the first 4 characters in the BCPL string <string_>.
+.S 1
+_$STRING <string_> is the value of the first word of the BCPL string
+<string_>.
+.S 1
+$AZ <string_> is the PDP-10 multiword ASCIZ representation of the BCPL
+string <string_>. It is of type <literal_>. Beware of the length limit
+on all BCPL strings (127 characters on the PDP-10).
+.S 1
+_$EXP and _$XWD have the value zero, see Appendix D for examples 
+of use.
+.S 1
+_$opcode is the 9 bit value of the standard PDP-10 mnemonic for
+all opcodes in the range _#40 to _#677. For all the extended TTCALL
+UUOS, the extended CALLI UUOS and the JRST and JFCL extensions,
+it is a 36 bit value, the form of which is described in Appendix D
+.LM 0
+.HL 2 NIL
+.LM 5
+Is an expression which can be used as the initialisation expression
+in STATIC or LET declarations. It is used as a "don't care"
+value. In fact, it eliminates any initialisation of the STATIC
+or LET variable.
+.S 1
+.NF
+Examples.
+.S 1
+STATIC _$( X = NIL _$)
+.S 1
+LET A, B, C = NIL, TRUE, NIL
+.S 1
+.F
+A and C are defined but uninitialised, B is defined and initialised
+to TRUE.
+.LM 0
+.HL 2 STRINGS
+.LM 5
+BCPL strings consist of up to 127 characters bracketed by the
+double quote character ". The full set of ascii characters is
+permitted in the string and the way of representing them can be
+found in appendix C. Strings are packed 5 characters to a word,
+the first character position in the string contains the character
+count and any character positions left over in the last word are
+zero filled. The value used in the BCPL expression is the
+address where the string is stored.
+Strings may be continued on more than one source line if necessary
+by ending the line to be continued with a '*', and restarting the
+string on a subsequent line with another '*'. The '*' characters and
+all layout characters (spaces, newlines etc.) are ignored.
+.S 1
+.NF
+.TP 6
+Examples.
+.S 1
+"A"   "THE SUM IS_*T:N_*C_*L"
+"A VERY SIMPLE STRING"
+"A MULTI-LINE*
+    * STRING"
+.F
+.LM 0
+.HL 2 BRACKETED EXPRESSIONS
+.LM 5
+Brackets in bracketed expressions serve no other purpose than
+that of overriding the normal priority of evaluation of an
+expression.
+.S 1
+.NF
+Example.
+.S 1
+A - B + C - D is evaluated as _[_[A - B_] + C_] - D
+(where _[_] indicate the priority of evaluation)
+.S 1
+but
+.S 1
+A - (B + C) - D is evaluated as _[A - _[B + C_]_] - D
+which may yield a very different result.
+.F
+.LM 0
+.HL 2 VALOF
+.LM 5
+.NF
+VALOF <C_>
+.S 1
+.F
+The value of a VALOF expression is determined by executing the
+command <C_> (usually a section or a block) until a RESULTIS
+command (see 4.22) is executed, which causes execution of <C_>
+to cease. The value of the VALOF expression is the value of
+the <E_> expression in the RESULTIS command.
+.S 1
+.NF
+Example.
+.S 1
+FIRSTZERO := VALOF $(FZ // FINDS FIRST ZERO WORD IN VEC V
+                       LET I = 0
+                       UNTIL V!I = 0 DO I := I + 1
+                       RESULTIS I
+                   $(FZ
+.F
+.LM 0
+.HL 2 FUNCTION APPLICATION
+.LM 5
+<E_>() or <E_>(<E1_>, ..... <En_>)
+.S 1
+The function application is evaluated by first evaluating the
+expressions <E1_>, <En_> and assigning the value of <E1_>
+to <En_> to the first n formal parameters of the function <E_>.
+<E_> is then entered. The result of the function application
+is the value of the expression in the function definition.
+.NF
+.S 1
+Examples.
+.S 1
+CH := INCH()
+LET SINH(X) = (E(X) _#- E(_#-X)) _#/ 2.0
+X := (REAL -_> RDF, RDNO)(INPUT)
+.F
+.LM 0
+.HL 2 UNARY OPERATORS
+.LM 5
+.HL 3
+NOT
+.BR
+.S 1
+This treats its operand as a binary bit pattern and gives the
+logical negation of the operand.
+.NF
+.S 1
+Examples.
+.S 1
+NOT  7        is equivalent to  _#777777777770
+NOT _#12345    is equivalent to  _#777777765432
+.F
+.HL 3
+@
+.BR
+.S 1
+The address of an expression which represents a storage cell
+may be obtained via use of the @ operator. Such expressions
+are ! expressions and non MANIFEST names.
+.NF
+.S 1
+Examples.
+.S 1
+@A     is the address of storage cell A
+@(V!6) is equivalent to V + 6
+@!E    is equivalent to E
+.F
+.HL 3
+MONADIC !
+.BR
+.S 1 
+The value of a monadic ! expression is the value of the storage
+cell whose address is the operand of the !. Thus @!E = !@E = E,
+(providing E is an expression of the class described in
+2.11.2).
+.NF
+.S 1
+Examples.
+.S 1
+!X := Y   Stores the value of Y into the storage cell
+          whose address is the value of X.
+P := !P   Stores the value of the cell whose address
+          is the value of P, as the new value of P.
+.F
+.HL 3
+MONADIC PLUS AND MINUS
+.BR
+.S 1
+Monadic plus is in effect a null operation, it is provided for
+completeness. Monadic minus provides the negative of its operand.
+The _# versions are used for real operands.
+.HL 3
+ABS AND _#ABS
+.BR
+.S 1
+These provide the absolute (i.e. magnitude) of their operand.
+The _# version is used for real operands.
+.NF
+.S 1
+Examples.
+.S 1
+ABS  -5   is equivalent to  5
+ABS  73   is equivalent to 73
+.F
+.HL 3
+FIX
+.BR
+.S 1
+This gives the integral value of its real operand, rounded to
+the nearest integer. (Rule for rounding is as for ALGOL 60).
+.S 1
+.NF
+Examples.
+.S 1
+FIX 1.432  is equivalent to  1
+FIX 73.78  is equivalent to 74
+.F
+.HL 3
+FLOAT
+.BR
+.S 1
+This gives the real value of its integer operand.
+.LM 0
+.HL 2 INFIX FUNCTION APPLICATION
+.LM 5
+This provides a way of intoducing a binary operator which is
+defined as a BCPL function and then invoking it as a function.
+The form is %<name_>.
+.NF
+.S 1
+Example.
+.S 1
+LET ADD(A,B) = A + B  _/_/ function definition
+X := Y %ADD Z         _/_/ same as Y + Z
+.F
+.LM 0
+.HL 2 VECTOR APPLICATION
+.LM 5
+Provides a way of selecting an element of a vector. A vector
+is any set consecutive storage cells, one way of introducing
+such a set is described under vector declaration (see 3.4.3).
+.S 1
+.NF
+The basic form of a vector application is E1 _! E2.
+.S 1
+Notes:-
+.S 1
+.TS 17
+E1 _! E2	is the same as _! (E1 + E2)
+E1 _! 0	is the same as _! E1
+E1 _! E2	is the same as E2 _! E1
+_@(E1 _! E2)	is the address of cell E2 in vector E1.
+_@(E1 _! E2)	is the same as E1 + E2
+.S 1
+_!E is interpreted as monadic (See 2.11.3).
+.F
+.LM 0
+.HL 2 SELECTORS AND BYTES
+.LM 5
+.HL 3
+SELECTOR AND BYTE CONSTRUCTION
+.BR
+.S 1
+SELECTOR and BYTE are used to construct a special kind of pointer,
+used to extract a portion of a given word (see 2.14.2 and 2.14.3).
+.S 1
+.NF
+[On the PDP-10 these are PDP 10 byte pointers
+(BYTE 6:30)  is the bit position field of a byte pointer.
+(BYTE 6:24)  is the byte size field of a byte pointer.
+(BYTE 18:0)  is the address field (SELECTOR only).]
+.F
+.S 1
+A byte size of -1 in a SELECTOR or a BYTE construction gives a 
+full word size byte.
+.S 1
+SELECTOR E1:E2:E3
+.S 1
+constructs a pointer to extract a byte of size E1 bits,
+E2 bits from the right hand end of the word whose address is
+given by adding E3 to the value of the right hand operand
+of any selector application in which it is used.
+.S 1
+BYTE E1:E2
+.S 1
+constructs a pointer as above, but without the address
+field. BYTE operators act directly on the
+word indicated as the object of the BYTE application.
+.S 1
+.NF
+Note.
+.S 1
+(SELECTOR E1:E2:O)::@E3 is equivalent to (BYTE E1:E2)_&_&E3
+.F
+.HL 3
+SELECTOR APPLICATION
+.BR
+.S 1
+SELECTOR application is the process of applying a SELECTOR (constructed as
+in 2.14.1), to perform a byte extraction on the given data structure.
+SELECTOR application is denoted by _:_:.
+.NF
+.S 1
+.TP 5
+Example.
+.S 1
+.TS 25
+(SELECTOR 7:0:3)::V	// refers to a byte 7 bits wide
+	// in the least significant 7 bits
+	// of the third word of vector V
+.F
+.HL 3
+BYTE APPLICATION
+.BR
+.S 1
+BYTE application is the process of applying a BYTE pointer
+(constructed as in 2.14.1), to extract a byte from a given word.
+BYTE application is denoted by _&_&.
+.NF
+.S 1
+Example.
+.S 1
+(BYTE 18:18)_&_&X     // left half of X.
+.F
+.LM 0
+.HL 2 ARITHMETIC OPERATORS
+.LM 5
+.HL 3
+HIGH PRIORITY OPERATORS
+.BR
+.S 1
+.NF
+*   is integer multiply.          e.g. 2 * 3 = 6
+/   is integer divide.            e.g. 7 / 5 = 1
+REM is integer remainder.         e.g. 7 REM 5 = 2
+_#*  is rounded real multiply.     e.g. 2.5 _#* 3.25 = 8.125
+_#/  is rounded real divide.       e.g. 8.125 _#/ 2.5 = 3.25
+**  is real raised to integer power. e.g. 3.5 ** 2 = 12.25
+.F
+.S 1
+The integer (real) operators above interpret the values of their
+operands as integers (reals) and yield integer (real) results.
+.HL 3
+LOW PRIORITY OPERATORS
+.BR
+.S 1
+.NF
++  is integer add.             e.g.  2 + 3 = 5
+-  is integer subract.         e.g.  2 - 3 = -1
+_#+ is rounded real add.        e.g.  2.5 _#+ 3.25 = 5.75
+_#- is rounded real subtract.   e.g.  2.5 _#- 3.25 = _#-0.75
+.F
+.S 1
+The integer (real) operators above interpret the values of
+their operands as integers (reals) and yield (real)
+results.
+.LM 0
+.HL 2 SHIFT OPERATORS
+.LM 5
+.NF
+.TP 2
+<<       is logical left shift. Zero bits shifted
+         in on the right, bits lost on the left.
+.TP 2
+_>_>       is logical right shift. Zero bits shifted
+         in on the left, bits lost on the right.
+.TP 2
+ROTL     is left rotate. Bits shifted off the left
+         are inserted on the right.
+.TP 2
+ROTR     is right rotate. Bits shifted off the right
+         are inserted on the left.
+.TP 2
+ALSHIFT  is arithmetic left shift. Zero bits
+         shifted in on the right, bits lost on the left.
+.TP 2
+ARSHIFT  is arithmetic right shift. Sign bit
+         shifted in on the left, bits lost on the right.
+.F
+.LM 0
+.HL 2 RELATIONAL OPERATORS
+.LM 5
+These give the value true or false according to whether the
+condition is satisfied. The _# versions are for real value
+relations. Relations have equal left to right priority,
+but the operands are evaluated in left to right order.
+.NF
+.S 1
+E1 relop1 E2 relop2 E3
+is equivalent to
+E1 relop1 E2 /_\ E2 relop2 E3
+except that E2 is only evaluated once.
+.S 1
+.TS 33
+LS  less than	LE less than or equal to
+_#LS  less than	_#LE less than or equal to
+EQ  equal to	GE greater than or equal to
+_#EQ  equal to	_#GE greater than or equal to
+GR  greater than	NE not equal to
+_#GR  greater than	_#NE not equal to
+.F
+.LM 0
+.HL 2 LOGICAL OPERATORS
+.LM 5
+These treat their operands as binary bit patterns.
+.NF
+.S 1
+/_\      specifies the AND operation.
+_\/      specifies the inclusive OR operation.
+EQV     specifies the equivalence operation.
+NEQV    specifies the non equivalence operation.
+BITAND  specifies a bitwise AND operation.
+BITOR   specifies a bitwise inclusive OR operation.
+.S 1
+Examples.
+.S 1
+3 /_\ 5 = 1	3 _\/ 5 = 7
+3 EQV 6 = _#777777777772	3 NEQV 6 = 5
+3 BITAND 5 = 1	3 BITOR 5 = 7
+.F
+.S 1
+Note.
+.S 1
+The difference between BITAND and /_\ (and similarly BITOR and _\/),
+is that /_\ and _\/ are only supposed to be used on truth values, whereas BITAND and BITOR are used on any bit pattern.
+The effect
+may best be demonstrated by the following example:-
+.S 1
+.NF
+LET A, B = 1, 2
+IF A /_\ B THEN      // The body will be executed.
+IF A BITAND B THEN  // The body will not be executed.
+.F
+.S 1
+In the first IF, A is interpreted as TRUE (i.e. not FALSE) also B is interpreted
+as TRUE (i.e. not FALSE) and so the body of the IF will be executed.
+In the second IF, the operation A BITAND B will yield 0 (FALSE)
+and so the body of the IF will not be executed.
+This difference of interpretation only applies in the interpretation
+of conditional expressions and conditional commands.
+(See 2.19 and section 4).
+.LM 0
+.HL 2 CONDITIONAL EXPRESSIONS
+.LM 5
+<E1_> -_> <E2_>, <E3_>
+.BR
+.S 1
+The expression <E1_> is evaluated and if it yields the result
+not FALSE then the expression <E2_> is evaluated as the result
+of the conditional, if <E1_> however yields FALSE then the
+expression <E3_> is evaluated as the result of the conditional.
+.S 1
+Example.
+.S 1
+A _> B -_> A, B // gives as result the larger of A and B.
+.LM 0
+.HL 2 TABLES
+.LM 5
+.NF
+.S 1
+TABLE <L-list_>
+.S 1
+.F
+The value of a TABLE is a pointer to a STATIC list which
+contains a set of initial values. It can be used as a
+vector. All the elements of the table must be load time
+constants or compile time constants (see 2.21).
+.NF
+.S 1
+Examples.
+.S 1
+TABLE 1, "ONE", @ONE, 2, "TWO", @TWO, 3, "THREE", @THREE
+DAY!(TABLE "MON","TUE","WED","THU","FRI","SAT","SUN")
+.F
+.LM 0
+.HL 2 CONSTANT EXPRESSIONS
+.LM 5
+.HL 3
+SEMANTICS
+.BR
+.S 1
+The BCPL compiler attempts to reduce all expressions, or parts
+of expressions, by evaluating the constant part. A compile
+time constant is one in which the expression can be reduced
+totally to a single constant. There are some places (e.g.
+vector declarations) where this is required, and others where
+the compiler can shorten the code it produces if it finds such
+a constant (see 5.7).
+.TP 18
+.HL 3
+COMPILE TIME CONSTANTS
+.BR
+.S 1
+.NF
+Consist of any expression containing only:-
+.S 1
+<name_>             (manifest only)
+<integer_>
+<real_>
+<octal_>
+<hex_>
+<binary_>
+<charconst_>
+<truthvalue_>
+$constant
+<unop_>             (except @ !)
+<binop_>            (except %name ! ::)
+<E1_> -_> <E2_>, <E3_> (providing E1 is a compile time
+                   constant and that either E1 yeilds
+                   not FALSE and E2 is a compile time
+                   constant or E1 yields FALSE and E3
+                   is a compile time constant).
+.F
+.TP 17
+.HL 3
+LOAD TIME CONSTANTS
+.BR
+.S 1
+.NF
+Consist of any expression containing only:
+.S 1
+Any compile time constant.
+.S 1
+<string_>
+<literal_>
+TABLE <E-list_>
+@ <name_>           (which is of STATIC data type)
+<E1_> -_> <E2_>, <E3_> (providing E1 is a compile time
+                   constant and that either E1 yields
+                   not FALSE and E2 is a load time
+                   constant or E1 yields FALSE and E3
+                   is a load time constant).
+VEC <K_>            which gives a pointer to a STATIC
+                   uninitialised vector of K words long.
+.PG
+.LM 0
+.HL 1 DECLARATIONS
+.HL 2 SYNTAX OF DECLARATIONS
+.LM 5
+.NF
+<D_>    ::=    LET <dec1_> <AND <dec1_>_>* | STATIC <body_> |
+              MANIFEST <body_> | EXTERNAL <E_>** <body_> |
+              GLOBAL <body_>
+<dec1_> ::=    <name_>(<name list_>**) < = <E_> | BE <C_>_> |
+              <name_> = <E_> | <name list_> = <E-list_>
+<body_> ::=    $( <def_> <_; <def_>_> $)
+<def_>  ::=    <name_> = <E_> | <name_> : <E_>
+.F
+.LM 0
+.HL 2 SEMANTICS OF DECLARATIONS (SCOPE AND EXTENT)
+.LM 5
+Declarations are used to associate names with values, these
+values are either constant (MANIFEST) or the addresses of
+storage cells.
+.S 1
+The SCOPE of a name N is the textual region of the program in
+which that name can be used to refer to the same data
+item. The EXTENT of an item is its period of existence.
+There are two underlying types of data item, DYNAMIC and
+STATIC. DYNAMIC data items are allocated space on a STACK
+when they come into existence. The space which they are
+allocated becomes available for reuse when they cease to exist.
+Thus if a function or routine is called recursively, there may
+be more than one instance of a dynamic data item on the stack.
+STATIC data items exist for the whole execution of the program,
+there is only one copy of a static item.
+.S 1
+A DYNAMIC data item may only be referred to within the body of
+the routine or function in which it is declared. It may not
+be referred to in any other function or routine.
+.S 1
+Two data items with the same name may not be declared (either
+explicitly or implicitly) in the same block or formal parameter
+list.
+.S 1
+.NF
+Example.
+.S 1
+LET A, B = 1, 2
+LET F(X) = A * X + B
+.S 1
+is illegal, but may be rewritten as
+.S 1
+STATIC $( A=1_; B=2 $)
+LET F(X) = A * X + B
+.F
+.LM 0
+.HL 2 STATIC DECLARATIONS
+.LM 5
+(STATIC, LABELS, ROUTINES AND FUNCTIONS)
+.S 1
+.HL 3
+STATIC
+.BR
+.S 1
+STATIC $( <name_> <:|=_> <L_> < _; <name_> <:|=_> <L_>_>* $)
+.S 1
+This declares static data items whose scope is the rest of the
+block body in which the declaration appears, and whose extent
+is the entire program execution. It declares the <name_>s to
+be associated with the data items which are initialised at
+start of execution of the program to the value(s) (<L_>) given.
+The value(s) may be any load time constant or compile time
+constant (see 2.21). Exceptions:- NIL and VEC give uninitialised
+static areas.
+.S 1
+Examples.
+.S 1
+.NF
+STATIC $( X = 0 $)
+STATIC $( ENDROUTINE = @ENDR_; MESSAGE = "TERMINATOR" $)
+STATIC $( IOVEC = VEC 650_; INPUT = NIL_; OUTPUT = NIL $)
+.F
+.HL 3
+LABEL
+.BR
+.S 1
+.NF
+<name_>: <C_>
+.S 1
+.F
+This declares a static data item whose scope is the command
+sequence of the BLOCK in which the label appears and whose
+extent is as for all static data. It declares the <name_>
+to be associated with a data item which is initialised at start of
+execution of the program to the address of the point of code at
+which the label appears. Because a label is a static data
+item, it may be used in any expression, or be assigned to.
+If its value is altered during execution of the program, then
+any further use of the label (even in GOTOs) will refer to the
+new value.
+.S 1
+Example.
+.S 1
+.NF
+GOTO !((TABLE @ADD, @SUB, @MUL, @DIV)!OP)
+ADD: RES := A + B _; GOTO END
+SUB: RES := A - B _; GOTO END
+MUL: RES := A * B _; GOTO END
+DIV: RES := A _/ B
+END:
+.F
+.HL 3
+ROUTINES
+.BR
+.S 1
+.NF
+LET <name_>(<name list_>) BE <C_>
+LET <name_>() BE <C_>
+.S 1
+.F
+These define a routine, and an associated static data item, whose
+scope is the declaration itself and the rest of the block body in
+which the declaration appears, and whose extent is as for all static
+data. It defines the <name_> to be associated with the data item
+which is initialised at the start execution to point to the
+code of the routine. Because a routine is thus a static data
+item it can be used in any expression and assigned to. If the
+value of the data item is altered during execution of the program,
+then any further invokation of the routine will refer to the new
+value.
+.S 1
+A routine does not yield a value and hence should not be used
+in expressions, but only as a command.
+.S 1
+Example.
+.S 1
+.NF
+LET OUTPN (N) BE
+$( IF N GR 9 DO OUTPN (N/10)
+   OUTCH (N REM 10 + '0')
+$)
+.F
+.HL 3
+FUNCTIONS
+.BR
+.S 1
+.NF
+LET <name_>() = <E_>
+LET <name_>(<namelist_>) = <E_>
+.S 1
+.F
+Functions have the same semantics as ROUTINES (see 3.3.3);
+except that functions yield a value and thus may appear in
+expressions.
+.S 1
+Examples.
+.NF
+.S 1
+LET FACTORIAL(N) = N = 0 -_> 1, N * FACTORIAL (N-1)
+.S 1
+LET ALPHA(CH) = VALOF
+$( IF 'A' LE CH LE 'Z' DO RESULTIS TRUE
+   WARN(CH)
+   RESULTIS FALSE
+$)
+.F
+.LM 0
+.TP 10
+.TP 15
+.HL 2 DYNAMIC DECLARATIONS (FORMAL PARAMETERS AND LET)
+.LM 5
+.S 1
+.HL 3
+THE STACK
+.BR
+.S 1
+The STACK is used for all DYNAMIC data items. Space is allocated
+to the formal parameters of a routine or function when the
+routine or function is called, and subsequently space is allocated
+to local variables as each block in turn is entered. The
+space used for a) formal parameters and b) local variables is
+returned automatically to the stack for reuse when a) the
+function or routine is terminated or b) the block is exited.
+All dynamic data items thus have the SCOPE of the declaration
+itself and all enclosed blocks, their EXTENT is the duration 
+of execution of the block (or in the case of formal parameters
+- the routine or function).
+.HL 3
+FORMAL PARAMETERS
+.BR
+.S 1 
+The appearance of a formal parameter in the namelist in a
+routine or function definition (see 3.3.3 and 3.3.4) defines
+a dynamic data item on the stack (see 3.4.1). Formal parameters
+may or may not be initialised according to whether or not a
+corresponding actual parameter appears in the call of the routine
+or function. Formal parameters are allocated consecutive cells
+on the stack, thus the address of the second formal parameter
+is the address of the formal parameter + 1, etc. All
+parameters in BCPL are passed by value, thus changing the value
+of a formal parameter will not change the value of the
+corresponding actual parameter. "Call by reference" can be
+achieved by using the @ operator in the call of a routine or
+function and the ! operator when referring to the parameter in
+the body of the routine or function.
+.S 1
+Examples. See 3.3.3 and 3.3.4
+.HL 3
+(DYNAMIC) LET
+.BR
+.S 1
+.NF
+LET <namelist_> = <E-list_>
+LET <namelist_> = VEC <K_> <, VEC <K_>_>*
+.F
+.S 1
+These forms of the LET declaration are used to define dynamic data
+items on the stack (see 3.4.1). The simple (first) form is used
+to define individual data items. When execution reaches the
+declaration on entry to the enclosing block, then the data item
+comes into existence and is initialised to the value <E_>
+(unless <E_> is NIL, in which case the data item is uninitialised).
+.S 1
+The vector (second) form is similar to the simple form, except
+that the data item is initialised to the address of a vector
+(set of consecutively addressed cells) on the stack, whose
+subscript range is from zero to <K_> (a compile time constant
+- see 2.21.2). The vector itself has the same EXTENT as the
+dynamic declaration in which it is defined. Simple LETs
+and vector LETs can be mixed together in ESSEX BCPL.
+.S 1
+Examples.
+.S 1
+.NF
+LET IOV = VEC 65O
+LET IOVP, IOVT = IOV, IOV + 65O
+LET V, P, X = VEC 3, NIL, O
+.F
+.HL 3
+WHERE
+.BR
+.S 1
+<C_> WHERE <decl_>
+.S 1
+WHERE is used to associate a declaration with a particular
+command, it thus makes the declaration local to the command.
+The SCOPE of a WHERE declaration is the command which the WHERE
+follows, the EXTENT is as for other dynamic declarations. A WHERE
+can introduce any declaration normally introduced by LET. (See
+3.3.3, 3.3.4 and 3.4.3).
+.S 1
+.TP 6
+Examples.
+.S 1
+.NF
+OUTS(DAY!TAB) WHERE TAB = TABLE
+  "Mon","Tue","Wed","Thu","Fri","Sat","Sun"
+.S 1
+N := F(X) WHERE F(N) = N = 0 -_> 1, N * F(N-1)
+.F
+.LM 0
+.HL 2 SIMULTANEOUS DECLARATIONS (AND)
+.LM 5
+AND joins together any declarations normally introduced by LET
+or WHERE, and is used to common the scope of the declarations,
+usually so that the body of one or more of the declarations may
+contain references to the name(s) of the data item(s) declared in the 
+other declaration(s).
+.S 1
+.NF
+.TP 6
+Examples.
+.S 1
+LET A, AV = @BV, VEC 6
+AND B, BV = @AV, VEC 6
+LET F(X) BE G(X + 1)
+AND G(X) BE F(X - 1)
+.F
+.LM 0
+.HL 2 MANIFEST DECLARATIONS
+.LM 5
+MANIFEST $( <name_> = <K_> <_; <name_> = <K_>_>*  $)
+.S 1
+This declares each <name_> as a manifest constant whose value
+is the expression <K_> which must be a compile time constant
+(see 2.21.2). Wherever the <name_> appears, it is used as if
+it were a numeric constant. Manifest constants serve three
+very useful functions. Firstly they enable the programmer
+to give mnemonic names to constants, which aid readability
+of the program. Secondly they can be used for constants which
+may change in further compilations, such as vector sizes.
+Thirdly, they can be used to write machine independent programs
+that depend on machine dependent factors, such as the number
+of characters held in a word etc. The scope of a MANIFEST
+declaration is the rest of the block body in which the MANIFEST
+is declared.
+.S 1
+.NF
+Examples.
+.S 1
+MANIFEST $( WORKSIZE = 1024_; BELLCHARACTER = _#7 $)
+LET V = VEC WORKSIZE
+MANIFEST $( MAXSTRLENGTH = 127_; CHARSPERWORD = 5 $)
+LET PACKVEC = VEC MAXSTRLENGTH/CHARSPERWORD + 1
+.LM 0
+.HL 2 INTER-FILE AND LIBRARY COMMUNICATION (EXTERNAL AND GLOBAL)
+.LM 5
+.HL 3
+USE OF EXTERNAL AND GLOBAL
+.BR
+.S 1
+EXTERNAL and GLOBAL provide a mechanism by which static data
+items within a file can be referenced from within another file.
+This serves two purposes. Firstly, the programmer can split
+his complete program into small manageable pieces (individual
+files), which can be seperately compiled and then loaded
+together by the system loader and executed. This means that
+if a "bug" is detected, and one piece (file), requires alteration,
+then only that piece (file) need be recompiled. This results
+in a considerable saving in machine time. Secondly, a standard
+library of pre-compiled BCPL files containing routines and
+functions can be made available to all users. Such a library,
+containing a complete Input/Output system and many other useful
+routines, exists for ESSEX BCPL. It (and the way of
+communicating with it via a standard set of EXTERNAL declarations)
+is described in section 6 of this manual.
+.HL 3
+THE EXTERNAL DECLARATION
+.BR
+.S 1
+.NF
+EXTERNAL <prefix_>** $( <definition_> < _; <definition_>_>* $)
+<prefix_>     ::= <name_> | <string_>
+<definition_> ::= <inname_> | <inname_> = <extname_> |
+                 <inname_> : <extname_>
+<extname_>    ::= <name_> | <string_>
+<inname_>     ::= <name_>
+.F
+.S 1
+The internal name <inname_> is the name by which the item is
+known WITHIN the scope of the EXTERNAL declaration (which is
+the remainder of the block body in which the declaration appears).
+.S 1
+The external name <extname_> is the name by which the item is
+known OUTSIDE the scope of the EXTERNAL declaration. If the
+<extname_> part is missing, <inname_> is used.  On the PDP-10,
+because of a system loader restriction, only the first 6
+characters of the external name are used for inter-file
+communication.
+.S 1
+The <prefix_> part, if it appears, is prefixed to the external
+name. It is intended for use mainly with library names in
+order to help make the external names within the library
+unique and protected.
+.S 1
+EXTERNALS are used by putting the same EXTERNAL declaration at
+the top of each file in which the data is referenced
+(including the file in which the item is defined). All
+references to the internal name of a data item within the
+scope of the EXTERNAL declaration cause referance to be made
+to its external name. A static declaration (either implicit
+- labels, functions, routines - or explicit - STATIC) within
+the scope of the EXTERNAL declaration defines the static as
+normal and makes the external name available to other files.
+.S 1
+.NF
+Examples.
+.S 1
+EXTERNAL $( READPHASE $)
+EXTERNAL "%" $( OUTNO _; WRITENO : WRNO $) 
+.F
+.HL 3
+THE GLOBAL DECLARATION
+.BR
+.NF
+.S 1
+GLOBAL $( <name_> : <K_> < _; <name_> : <K_>_>* $)
+.F
+.S 1
+GLOBAL has been retained in ESSEX BCPL for historical
+reasons, and because programs obtained from other sources may
+rely on them. EXTERNAL provides a much more powerful mechanism
+for interfile communication.
+.S 1
+.TP 14
+Now GLOBAL items are treated as if they were EXTERNAL and the
+rules for EXTERNAL now apply to GLOBAL. GLOBAL declarations
+are processed as follows:-
+.S 1
+.NF
+.TP 3
+For positive global offsets.
+GLOBAL $( name:n $)  is equivalent to
+                     EXTERNAL ".G" $( name:"n" $)
+.S 1
+.TP 3
+For negative global offsets.
+GLOBAL $( name:n $)  is equivalent to
+                     EXTERNAL ".N" $( name:"n" $)
+.S 1
+.F
+where "n" is expanded to 4 digits with leading zeros if necessary.
+.NF
+.S 1
+.TP 4
+Example.
+.S 1
+GLOBAL $( PRINT:37 $)
+equivalent to EXTERNAL ".G" $( PRINT:"0037" $)
+.S 1
+.F
+Unless all GLOBALs in a program have associated static data items,
+the segments that use GLOBAL should have
+.BR
+$LIBRARY "BCL:GLOBAL"
+.BR
+in them to satisfy GLOBAL references between -200 and +400
+with no associated STATICs.
+.S 1
+Note. The assumption that global items appear next to each other
+in a consecutively addressed vector at run time will probably
+cause failure in this implementation.
+.HL 3
+SPLITTING UP A BCPL PROGRAM
+.BR
+.S 1
+This is done by putting routines and functions that can be
+seperately compiled into different files. Communication is
+then achieved between files using the EXTERNAL facility. It
+is usually advisable to put such EXTERNAL declarations into a
+GET file (see 5.1), so that if it is necessary to change the
+external name of an EXTERNAL then only one alteration need be
+made to the source files and there is less chance of error occuring.
+.PG
+.LM 0
+.HL 1 COMMANDS
+.HL 2 SYNTAX OF COMMANDS
+.LM 5
+.NF
+<C_> ::= <IF|UNLESS|WHILE|UNTIL_> <E_> DO <C_> |
+        TEST <E_> THEN <C_> OR <C_> |
+        SWITCHON <E_> INTO <C_> |
+        FOR <name_> = <E_> TO <E_> <BY <E_>_>** DO <C_> |
+        <name_>:<C_> | CASE <E_><...<E_>_>**:<C_> |
+        DEFAULT <<E_>...<E_>_>**:<C_> | <C_> <_> <C_> |
+        <C_> REPEAT | <C_> <REPEATWHILE|REPEATUNTIL_> <E_>> |
+        <C_> WHERE <D_> <AND <D_>_>*  |
+        GOTO <E_> | RESULTIS <E_> | BREAK | LOOP |
+        RETURN | FINISH | ENDCASE |
+        $( <D_>** <C_>** $) | $[ <codeblock_> $] |
+        <E_>() | <E_>(<E-list_>) |
+        <E-list_> := <E-list_> |
+        <E-list_> <binop_>:= <E-list_> |
+        TRACE <name_>() | TRACE <name_>(<E-list_>)
+.F
+.LM 0
+.HL 2 SECTIONS
+.LM 5
+$( <D_>** <C_>** $)
+.S 1
+Sections are either blocks or compound statements depending on whether
+they contain any declarations or not.  This is only
+semantically important in that a block is scanned for labels and
+a compound statement is not.  Syntactically they both provide a
+mechanism for grouping statements together.  A machine code block
+is a special case, it is described in Appendix D.
+.LM 0
+.HL 2 SIMPLE ASSIGNMENT
+.LM 5
+E1 := E2
+.S 1
+E2 is evaluated then the result is stored in the item denoted by
+E1.  E1 should be either an expression which represents a storage
+cell or a selector or byte expression which indicates
+that the specified byte is to be overwritten with the value E2
+(truncated if necessary).
+.NF
+.S 1
+.TP 6
+Examples.
+.S 1
+X := Y
+!V := 0
+V!1 := 1
+(BYTE 6:12)_&_&Z := Q
+.LM 0
+.HL 2 MULTIPLE ASSIGNMENT
+.LM 5
+<E-list_> := <E-list_>
+.S 1
+.NF
+Example.
+Same as in 4.3, but order of evaluation undefined.
+.S 1
+X, !V, V!1, (BYTE 6:12)_&_&Z := Y, 0, 1, Q
+.F
+.LM 0
+.HL 2 LEFT HAND SIDE FUNCTION APPLICATION
+.LM 5
+If a function application appears on the left hand side of an
+assignment then the function is called as a routine with an
+extra parameter. Viz the value on the right side of the
+assignment. A routine invoked in this way will get the reply
+TRUE from the library function LHS (see 6.6.3). Useful for
+modelling arrays.
+.S 1
+Example.
+.NF
+.S 1
+ARRAY(X,Y) := 2
+   is equivalent to the command
+ARRAY(X,Y,2)
+   but LHS() will return TRUE in the first
+   case and FALSE in the second.
+.LM 0
+.HL 2  UPDATE ASSIGNMENT
+.LM 5
+<E-list_> <binop_>:= <E-list_>
+.S 1
+.F
+This represents an update assignment (<binop_> can be any binary
+operator except %<name_>).  <binop_>:= can be used instead of
+:= in all cases discussed in 4.3, 4.4 and 4.5.
+.S 1
+.NF
+E1 <binop_>:= E2 is equivalent to E1 := E1 <binop_> E2
+E1(E5,E6) <binop_>:= E2 is equivalent to
+    E1(E5, E6) := E1(E5, E6) <binop_> E2
+.S 1
+Examples.
+.S 1
+X +:= 1    updates X by 1
+V !:= 0    assigns 0!V to V
+.LM 0
+.HL 2 ROUTINE APPLICATION
+.LM 5
+<E_>() or <E_>(<E-list_>)
+.S 1
+.F
+This is similar to function application (see 2.10) except that no
+result is returned.
+.NF
+.S 2
+Example.
+.S 1
+PRINT("PRINT CALLED")
+.LM 0
+.HL 2 RETURN
+.LM 5
+.F
+This command is used to return control from the currently active
+routine to its point of invokation.
+.NF
+.LM 0
+.HL 2 GOTO
+.LM 5
+GOTO <E_>
+.S 1
+.F
+The expression is evaluated to yield a value (assumed to be a
+label in the program) to which control is passed. Control should
+not be passed to labels outside the function or routine in which
+the GOTO appears. Such transfers should only be performed by the
+library routines LEVEL/LONGJUMP or LABEL/JUMP. (See 6.6.5 to 6.6.8).
+.S 1
+Examples.
+.S 1
+.NF
+GOTO NEXT
+GOTO X = Y -_> EQUALS, NOTEQUALS 
+.LM 0
+.HL 2 IF
+.LM 5 
+IF <E_> DO <C_>
+.S 1
+<E_> is evaluated and if the result is not FALSE <C_> is executed.
+.S 1
+Example.
+.S 1
+IF TRACING DO PRINT("ENTERED")
+.LM 0
+.HL 2 UNLESS
+.LM 5
+UNLESS <E_> DO <C_>
+.S 1
+<E_> is evaluated and if the result is FALSE, <C_> is executed.
+.S 1
+Example.
+.S 1
+UNLESS N=0 DO PRINT(N)
+.LM 0
+.HL 2 TEST
+.LM 5
+TEST <E_> THEN <C1_> OR <C2_>
+.S 1
+.F
+<E_> is evaluated and if the result is not FALSE, <C1_> is
+executed, otherwise if the result of <E_> is FALSE, <C2_> is
+executed.
+.NF
+.S 1
+Example.
+.S 1
+TEST REAL THEN RES := A _#+ B OR RES := A + B
+.LM 0
+.HL 2 WHILE
+.LM 5
+WHILE <E_> DO <C_>
+.S 1
+.NF
+A) <E_> is evaluated
+B) if the result is not FALSE, <C_> is executed and
+   control returned to A), otherwise the WHILE
+   command is terminated.
+.S 1
+Example.
+.S 1
+WHILE 'A' LE CH LE 'Z' DO CH := INCH()
+.LM 0
+.HL 2 UNTIL
+.LM 5
+UNTIL <E_> DO <C_>
+.S 1
+.NF
+A) <E_> is evaluated
+B) if the result is FALSE, <C_> is executed and
+   control returned to A), otherwise the UNTIL
+   command is terminated.
+.S 1
+Example.
+.S 1
+UNTIL FINISHED DO ROUTINE()
+.LM 0
+.HL 2 FOR
+.LM 5
+FOR <name_> = <E1_> TO <E2_> <BY <K_>_>** DO <C_>
+.S 1
+The FOR command is best described by giving the semantic equivalent which is:-
+.S 1
+.TP 7
+.NF
+$( LET <name_> = <E1_>
+   LET    ?    = <E2_>
+   UNTIL <K_> _> 0 -_> N GR ?, N LS ? DO
+   $( <C_>
+      <name_> +:= <K_>
+   $)
+$)
+.S 1
+.F
+If <BY <K_>_> is omitted <K_> is assumed to be 1. ? is a compiler
+generated local variable, note that <name_> is implicitly declared
+as a local (dynamic) variable by the FOR command and has only the
+scope shown in the semantic equivalent above.
+.S 1
+Examples.
+.S 1
+.NF
+FOR I = 0 TO 10 DO V!I := 0
+FOR I = START() TO END() - 1 BY - 5 DO STEP(I)
+.F
+.LM 0
+.HL 2 REPEAT
+.LM 5
+<C_> REPEAT
+.S 1
+<C_> is repeated indefinitely. <C_> is usually a section
+containing a BREAK command to terminate the repetition.
+.S 1
+Example.
+.S 1
+.NF
+$( IF !V = 0 DO BREAK
+   V !:= 0
+$) REPEAT
+.F
+.LM 0
+.HL 2 REPEATWHILE 
+.LM 5
+<C_> REPEATWHILE <E_>
+.S 1
+A) <C_> IS EXECUTED.
+.NF
+B) <E_> is evaluated and if the result is not FALSE control
+   is returned to A), otherwise the REPEATWHILE command is
+   terminated.
+.F
+.S 1
+This differs from WHILE in that in this case <C_> is executed
+at least once.
+.S 1
+Example.
+.S 1
+CH := INCH() REPEATWHILE 'A' LE CH LE 'Z'
+.LM 0
+.HL 2 REPEATUNTIL
+.LM 5
+<C_> REPEATUNTIL <E_>
+.S 1
+.NF
+A) <C_> is executed.
+.NF
+B) <E_> is evaluated and if the result is FALSE control is
+   returned to A), otherwise the REPEATUNTIL command is
+   terminated.
+.F
+.S 1
+This differs from UNTIL in that this case <C_> is executed
+at least once.
+.S 1
+Example.
+.S 1
+ROUTINE() REPEATUNTIL FINISHED
+.LM 0
+.HL 2 LOOP AND BREAK
+.LM 5
+These commands can appear in the body (<C_>) of any of the loop
+commands. (i.e. those described in sections 4.13 to 4.18).
+BREAK transfers control to immediately after the loop command.
+LOOP transfers control to :-
+.S 1
+The start of the command for WHILE, UNTIL and REPEAT.
+.BR
+The test for REPEATWHILE and REPEATUNTIL.
+.BR
+The increment and test for FOR.
+.S 1
+.TP 7
+Example.
+.S 1
+.NF
+FOR I = 1 TO 100 DO
+$( IF V!I = 0 DO BREAK      //END OF VECTOR
+   IF V!I < 0 DO LOOP       //IGNORE NEGATIVE
+   POS(V, I)
+$)
+.F
+.LM 0
+.HL 2 SWITCHON, CASE, DEFAULT AND ENDCASE
+.LM 5
+SWITCHON <E_> INTO <C1_>
+.S 1
+Where <C1_> is usually a compound statement containing labelled
+commands of the form:-
+.NF
+.S 1
+CASE  K: <C2_>
+DEFAULT: <C2_>
+.F
+.S 1
+<E_> is evaluated and compared with the values <K_> of the CASE
+labels, if a match is found then control is passed to the command
+<C2_> following the CASE label. If no match is found then control
+is passed to the DEFAULT case. IF there is no DEFAULT case an
+automatic ENDCASE is performed. <K_> must be a compile time constant
+(see 2.21.2).
+.S 1
+An ENDCASE command causes control to pass immediately to a point
+just following the command <C1_>, that is it effectively ends the
+execution of the SWITCHON command.
+.S 1
+Two further CASE and DEFAULT constructions are available, they are:-
+.S 1
+.NF
+.TP 3
+CASE <K1_> ... <Kn_>:  <C2_>
+   which is equivalent to
+   CASE <K1_>: CASE <K2_>: etc to CASE <Kn_>: <C2_>
+.S 1
+and
+.S 1
+DEFAULT <K1_> ... <Kn_>: <C2_>
+   which tells the compiler that <E_> in the SWITCHON will
+   always lie in the range <K1_> to <Kn_>. (This may enable
+   the compiler to produce faster code under certain
+   circumstances).
+.S 1
+.F
+Beware, the construct <K1_> ... may be confused by the compiler as a badly written real number if
+A) <K1_> is an integer and B) no space is left between <K1_> and the '...'.
+Remember that '.' is also a vaild character in a BCPL name (see 2.4),
+so the compiler will read 'A...B' as a single name and not a CASE range.
+.NF
+.S 1
+Example.
+.TP 10
+.S 1
+.NF
+MANIFEST $( CHA='A'; CHZ='Z' $)
+SWITCHON NEXT() INTO
+$(  CASE CHA ... CHZ: ALPHA()_; ENDCASE
+    CASE '0' ... '9':
+    CASE '.': NUMBER()_; ENDCASE
+    CASE _#177: CASE O: ENDCASE
+    DEFAULT O ... _#177: ERROR()
+$)
+.F
+.LM 0
+.HL 2 FINISH
+.LM 5
+This command causes execution of the program to cease.
+.LM 0
+.HL 2 RESULTIS
+.LM 5
+RESULTIS <E_>
+.S 1
+This command is used to return the value of the expression <E_>
+as the result of a VALOF expression (see 2.9).
+.LM 0
+.HL 2 LABELS
+.LM 5
+<name_>: <C_>
+.S 1
+This makes the <name_> known as a static data item, which is
+initialised at start of execution of the program to the address
+of the point of code at which the labels appears. (see 3.3.2).
+.LM 0
+.HL 2 VERY BINDING SEMICOLON
+.LM 5
+<C1_> <_> <C2_>
+.S 1
+This is used to join commands together as if they were a section. It is equivalent to writing
+.S 1
+$( <C1_>_; <C2_> $)
+.S 1
+but is more convenient to write and often more readable.
+.S 1
+Example.
+.S 1
+IF LIST = 0 DO LIST := NEWVEC(3) <_> LIST!0 := 0
+.LM 0
+.HL 2 TRACE
+.LM 5
+.NF
+TRACE <name_>()
+TRACE <name_>(<E-list_>)
+.S 1
+.F
+This command creates a pseudo routine call to a trace package.
+It is only compiled if the program is being compiled with postmortem code.
+The <E-list_> expressions together with the <name_> (which is used
+to identify the particular TRACE command) are passed as parameters to
+the trace package. The normal call format is a similar parameter list
+to that expected by OUT (see 6.4.8).
+.S 1
+In the PDP-10 implementation TRACE points are always handled by the
+default library when the compiled program is running in a batch mode.
+If the compiled program is running interactively then the user is
+queried on the first encounter of each TRACE point as to whether he
+requires the trace information or not.
+.S 1
+.NF
+Example.
+.S 1
+TRACE BREAK1("TOP=:8, CHAIN=:8*C*L", LH_&_&PTR, RH_&_&PTR)
+.PG
+.LM 0
+.HL 1 PROGRAMMING AIDS
+.HL 2 GET
+.LM 5
+GET "PDP-10 FILESPEC"
+.S 1
+.F
+This directive may occur anywhere in a BCPL file on a line by
+itself. The GET directive is replaced by the text of the
+specified file.
+.S 1
+It is used to read in a common piece of BCPL source text,
+and as such is usually used for common MANIFEST, EXTERNAL and
+GLOBAL declarations. These can be kept in a single file,
+which is compiled with all the files of a complete program. As
+described in 3.7, equivalent EXTERNAL (and GLOBAL) declarations
+should appear at the top of each file in which the EXTERNALs
+(or GLOBALs) are used or defined. GET provides the mechanism
+for doing this economically without the risk of writing the
+declarations differently in separate files.
+.S 1
+The EXTERNALS used for the BCPL library described in section 6 are
+declared in a single GET file "BCL:BCPLIB.GET".
+.S 1
+.NF
+The default device, extension and ppn are
+DSK:filename.GET[user]
+or failing that
+DSK:filename.BCL[user].
+or failing that
+BCL:filename.GET
+or failing that
+BCL:filename.BCL
+.LM 0
+.HL 2 THE START ROUTINE
+.LM 5
+.F
+By convention execution of a BCPL program starts at the routine
+named START which should be supplied by the user and declared
+to be EXTERNAL. (Such a declaration exists in BCL:BCPLIB.GET -
+see section 6).
+.LM 0
+.HL 2 LAYOUT CONVENTIONS
+.LM 5
+.HL 3
+SEMICOLONS
+.BR
+.S 1
+Semicolons between commands (declarations) in a section may be
+omitted provided that the commands (declarations) are each
+written on separate lines.
+.HL 3
+CONTINUATION OF EXPRESSIONS
+.BR
+.S 1
+Expressions may be written on more than one line, provided
+that each line ends with a dyadic operator, or in the case of
+an <E-list_>, a comma.
+.S 1
+.NF
+.TP 7
+Examples.
+.S 1
+A + B +
+C
+.S 1
+TABLE O, O, O,
+      O, O, O
+.F
+.HL 3
+OMISSION OF DO OR THEN
+.BR
+.S 1
+The keywords DO and THEN are interchangeable, and may be
+omitted (when no ambiguity occurs from doing so).
+.S 1
+Example.
+.S 1
+.NF
+IF X=O X:=5
+.S 1
+but beware of
+.S 1
+IF X=O !X:=3
+.F
+.HL 3
+TAGGING OF SECTION BRACKETS
+.BR
+.S 1
+Section brackets may be tagged with either a BCPL name or a
+positive integer. The tag must be connected to the bracket
+with no space between. Tags serve two purposes, one is to
+name a section to give readability, the second is to ensure
+section brackets are closed. A tagged closing bracket closes
+all unclosed brackets up to the matching named bracket.
+.S 1
+.NF
+.TP 9
+Example.
+.S 1
+$(A
+    $(1
+        $(2    $)A
+is the same as
+$(A
+    $(1
+        $(2    $)2    $)1    $)A
+.LM 0
+.HL 2 COMMENTS
+.LM 5
+.F
+There are three ways of introducing comments into a BCPL
+segment.
+.S 1
+.TP 4
+.NF
+Comments introduced by
+.S 1
+//  continue up to the end of the line
+/*  continue up to a matching */
+.S 1
+The sequence
+.S 1
+). and any characters up to a (
+is equivalent to a comma.
+.S 1
+.TP 8
+Example.
+.S 1
+LET F(S). APPLIED TO (M) BE
+/* TESTS M TO SEE IF POSITIVE
+   AND THEN APPLIES S TO IT */
+$(F IF M_>=0 DO S(M) <_> RETURN
+    IF S=SQRT DO ERROR(M) // SQRT OF NEG NO. FORBIDDEN
+$)F
+.F
+.LM 0
+.HL 2 INPUT FORMAT
+.LM 5
+The Input lines to the BCPL compiler may contain up to 150
+characters and should be terminated by a carriage return-
+line feed sequence. All input files are read in ascii line
+mode, editor line numbers are ignored, but listed if listing enabled.
+The input file can be terminated by an end of file mark, a _^Z (control Z)
+or a '.' (point) appearing as the first symbol on a line.
+.LM 0
+.HL 2 LISTING CONTROL
+.LM 5
+The following escape words are used only to control the
+compilers listing of the source program.
+.S 1
+.NF
+$NOLIST    Turns listing off, unless /L or /C
+           compiler switch is on.
+.S 1
+$LIST      Turns listing back on.
+.S 1
+$EJECT     Skips listing to the top of a new page.
+.S 1
+$SPACE n   Skips n lines in the listing.
+.F
+.LM 0
+.HL 2 CONDITIONAL COMPILATION
+.LM 5
+If the expression which controls the execution of a command
+is a constant, and the value of the constant is such that it
+would inhibit the execution of the command, then the compiler
+will not plant the code for that command, unless it contains
+an alternative way of entering it (e.g. via a label).
+Commands that fall into this category are IF, UNLESS, TEST,
+WHILE, UNTIL, REPEATWHILE and REPEATUNTIL. Conditional
+expressions are treated in the same way.
+.S 1
+Example.
+.S 1
+IF DEBUGGING DO OUT("SUBROUTINE ENTERED")
+.S 1
+If DEBUGGING is a manifest constant and if its value is FALSE
+then no code at all would be planted for the above. If its
+value is TRUE then the code planted would only be for
+.S 1
+OUT("SUBROUTINE ENTERED")
+.S 1
+During program development debugging code can be enabled with
+a MANIFEST constant set to TRUE; when the program is complete
+and working the debugging code can be effectively removed just
+by recompiling with the same MANIFEST constant set to FALSE.
+.S 1
+Two further kinds of conditional compilation are available.
+.BR
+a) $TRACE returns TRUE or FALSE according to whether the
+program is being compiled with postmortem code enabled or not, and
+can be used in conjunction with the feature described above.
+.BR
+b) Comments of the form
+.BR
+//? comment
+.BR
+are normally ignored by the compiler. If, however, the /U compiler
+switch is turned on then the //? itself is ignored and the rest of the
+line compiled as if it were not a comment.
+.LM 0
+.HL 2 USER LIBRARY AIDS
+.LM 5
+The following are produced for aiding the preparation of
+libraries of user programs. They cause entries to be made in
+the LINK loader tables type 4, 16 and 17, prospective users of
+these should familiarise themselves with the functions of these
+tables.
+.S 1
+.LM 35
+.TS 35
+.I -30
+$ENTRY "<name_>"	Puts <name_> in the ENTRY block.
+.S 1
+.TP 4
+.I -30
+$NEEDS "PDP 10 FILE SPEC"	Causes the specified file to be
+loaded with this segment and prior
+to searching any libraries.
+.S 1
+.I -30
+$LIBRARY "PDP 10 FILESPEC"	Causes the specified file to be
+searched at the end of normal loading
+but prior to the system library
+search, for any unsatisfied external
+references.
+.S 1
+.I -30
+$LDTEXT "STRING"	Causes the string to be put out as
+it appears into the code file.
+.LM 5
+.S 1
+Any EXTERNALS defined within a file that do not appear in a $ENTRY
+will be of type INTERNAL. I.E. they will satisfy any references
+if the file is loaded, but a reference will not cause the loader
+to load the file in library search mode.
+.LM 0
+.HL 2 VERSION NUMBER
+.LM 5
+$VERSION n will set the version field to n in the loaded program.
+n should be an octal constant.
+.LM 0
+.HL 2 UNIVERSAL FILES
+.LM 5
+$SEARCH "filespec" or $UNIVERSAL "filespec" will make BCPL read
+in the specified MACRO Universal file.  Device is defaulted to
+DSK: and UNV: in turn, and extension is defaulted to .UNV.
+.S 1
+All names within the Universal file that appear to be similar to
+EXTERNAL or MANIFEST definitions are declared in a series of
+EXTERNAL and/or MANIFEST declarations surrounding the outermost
+block of the program; relocatable symbols, macros, polish symbols
+and left-hand equivalenced symbols are ignored.
+.S 1
+Some names which are valid in MACRO are not normally valid in BCPL;
+by prefixing the name with either ` (accent grave) or _#_#, the user
+may have any combination of A-Z, 0-9, ., % and $ appearing in a symbol.
+.S 1
+.NF
+Example.
+.S 1
+$UNIVERSAL "UUOSYM"
+LET DATETIME() = GETTAB(_#_#.GTPRV, _#_#%CNDTM)
+.F
+.PG
+.LM 0
+.HL 1 THE BCPL LIBRARY
+.HL 2 THE STRUCTURE OF THE LIBRARY
+.LM 5
+It is possible to compile files of a complete program separately
+and link them together at load time using EXTERNAL or GLOBAL
+declaration (see 3.7).
+.S 1
+The BCPL library consists of a collection of BCPL routines in
+a system file (SYS:BCPLIB.REL), which is searched by the loader
+after all the user supplied files have been loaded; any EXTERNAL
+names referred to, but not defined in the user files, are searched
+for in the library and, if found, the correct code is loaded.
+.S 1
+The file BCL:BCPLIB.GET contains EXTERNAL declarations for the
+more widely used routines, which are described in this section.
+.S 1
+A standard header file (such as BCL:BCPLIB.GET) should always
+be used for communication with a library, as the loader names of
+the library routines may be changed from time to time but the
+'internal' names, used below, will always remain the same.
+.S 1
+There are many more routines in the library than are listed below.
+The other routines, and some other useful libraries are
+described in the BCPL USER GUIDE.
+.S 1
+.LM 0
+.HL 2 INPUT AND OUTPUT SPECIFICATION
+.LM 5
+.HL 3
+STREAMS AND STREAM CONTROL BLOCKS
+.BR
+.S 1
+The basic primitive of the BCPL input/output system is the STREAM.
+Within a BCPL program, a stream corresponds to a file on an external
+medium (such as a disc or a teletype). Routines for reading and
+writing manipulate data structures called STREAM CONTROL BLOCKS,
+which contain all the information necessary to communicate with
+the external media (with the help of the PDP-10 monitor).
+Stream control blocks are sometimes known as SCBs. Further
+details of SCBs can be found in Appendix H.
+.S 1
+In general, communication with external media follows the
+schema below:-
+.S 1
+.LM 9
+.TS 9
+.I -4
+1.	Create a stream which corresponds to the external file,
+(usually by one of the functions which follow), assign
+the SCB corresponding to this stream to some variable.
+.S 1
+.I -4
+2.	Perform the I/O functions required.
+.S 1
+.I -4
+3.	Inform the I/O system that the stream is no longer
+required.
+.LM 5
+.HL 3
+FINDFILE
+.BR
+.S 1
+Finds a monitor input stream. This takes the following
+parameter list:-
+.S 1
+FINDFILE(DEV,FILE,EXT,PPN,ERROR,MODE,BUFFS,PROT,TIME,DATE)
+.S 1
+the parameter list may be abbreviated to cover as few parameters
+as the user wishes to supply. Any which are omitted will be
+defaulted to zero. If a completely null parameter list is given
+then the standard teletype stream (TTY) is returned.
+.LM 12
+.I -7
+.TS 12
+.S 1
+DEV	is the device in sixbit or BCPL string form. Zero implies "DSK".
+.S 1
+.I -7
+FILE	is the filename in sixbit or BCPL string form.
+.S 1
+.I -7
+EXT	is the file extension in sixbit or BCPL string form.
+.S 1
+.I -7
+PPN	contains in the left half word the project number and in the right
+half word the programmer number.
+.S 1
+.I -7
+ERROR	should be an error label constructed via the LABEL routine
+(see 6.6.7) this is JUMP'ed to if an I/O error occurs.
+.S 1
+.I -7
+MODE	is the PDP 10 I/O mode.
+.S 1
+.I -7
+BUFFS	the number of buffers. Zero implies the default for the
+device.
+.S 1
+.I -7
+PROT	as defined for the monitor LOOKUP/ENTER block.
+.S 1
+.I -7
+TIME	as defined for the monitor LOOKUP/ENTER block.
+.S 1
+.I -7
+DATE	as defined for the monitor LOOKUP/ENTER block.
+.LM 5
+.S 1
+FINDFILE returns a SCB for use with the routines described in
+section 6.3. The space for the SCB and any required buffer
+space is obtained via a call to NEWVEC (see 6.5.4), so
+INITIALISEO (see 6.5.2) should have been called before any
+calls to FINDFILE are made.
+.S 1
+[The size of the SCB allocated by FINDFILE is controlled by the
+static SCBSIZE (see BCL:SCB.GET) which may be increased by the
+user before calling FINDFILE if extra space in the SCB is
+required.]
+.S 1
+The LOOKUP/ENTER block used is the 4-word block, as described in
+the DECsystem-10 Monitor Calls Manual.
+.S 1
+.TP 3
+Example.
+.S 1
+INPUT := FINDFILE("DSK", "TEST", "SRC")
+.HL 3
+CREATEFILE
+.BR
+.S 1
+Finds a monitor output stream. It has the same parameter
+specifications as FINDFILE. The SCB returned can be used with
+any of the routines described in Section 6.4.
+.HL 3
+UPDATEFILE
+.BR
+.S 1
+Finds a monitor update stream, which can be used for both input
+and output. It has the same parameter specifications as FINDFILE.
+The SCB returned can be used with any of the routines described
+in sections 6.3 and 6.4.
+.HL 3
+FINDTTY
+.BR
+.S 1
+This function which takes no parameters returns a pointer to the
+SCB for the jobs controllng stream (TTY). This corresponds to
+the user's console for interactive users, or the command/log file
+for batch users. The SCB returned can be used with any of the
+routines described in sections 6.3 and 6.4.
+.S 1
+Example.
+.S 1
+OUTPUT := FINDTTY()
+.HL 3
+TTY
+.BR
+.S 1
+This is a static in the library which is set initially to point
+to the SCB for the the jobs controlling stream (see 6.2.5). This
+stream can be used for both input and output.
+.TP 5
+.HL 3
+INPUT, OUTPUT, MONITOR AND CONSOLE.
+.BR 
+.S 1
+These are four statics in the library which are initially unset
+but which are conventionally used for holding I/O SCB pointers.
+.LM 15
+.TS 15
+.I -10
+.S 1
+.TP 6
+INPUT	- conventionally used for current main data input
+stream, all the functions with names prefixed by
+IN described in section 6.3, assume that the SCB
+pointed to by INPUT is the stream on which their
+action is to apply.
+.S 1
+.I -10
+.TP 6
+OUTPUT	- conventionally used for current main data output
+stream, all the routines with names prefixed by
+OUT described in section 6.4, assume that the 
+SCB pointed to by OUTPUT is the stream on
+which their action is to apply.
+.S 1
+.I -10
+.TP 3
+CONSOLE	- conventionally used for current command or 
+control input stream.
+.S 1
+.I -10
+.TP 3
+MONITOR	- conventionally used for current monitoring 
+stream for error messages, progress reports
+and tracing information.
+.LM 5
+.F
+.HL 3
+ENDREAD, ENDWRITE AND CLOSE
+.BR
+.S 1
+All these routines take an SCB as their parameter and invoke the
+closing routine of the SCB. For FINDFILE, CREATEFILE and
+UPDATEFILE the default action is to empty the buffers, release
+the monitor channel and give the SCB and any buffer space back
+to the freespace system. For FINDTTY the default action is 
+to empty the teletype buffer.
+.LM 0
+.HL 2 INPUT ROUTINES
+.LM 5
+.HL 3
+STRUCTURE OF INPUT ROUTINES
+.BR
+.S 1
+For each input function there are three standard formats available.
+.S 1
+.NF
+.TS 17
+INroutine   which is a function which returns a value read
+	from the stream INPUT (see 6.2.7)
+.S 1
+RDroutine   which is a function which returns a value read
+	from the stream which is its first parameter
+.S 1
+READroutine which is a routine which assigns a value, read
+	from the stream which is its first parameter
+	to the location which is its second parameter.
+.S 1
+.TP 3
+Example.
+.S 1
+All the following have the same action 
+.S 1
+.TP 3
+CH := INCH()
+CH := RDCH(INPUT)
+READCH(INPUT, @CH)
+.F
+.HL 3
+INCH RDCH AND READCH
+.BR
+.S 1
+READCH is the basic input routine, all the other input routines
+described in section 6.3 invoke READCH. READCH invokes the
+read routine for the stream which is its first parameter. The
+streams set up by FINDINPUT or FINDUPDATE behave according to
+the 'mode' of the file:-
+.S 1
+.LM 17
+.TS 17
+.I -12
+Modes 0-1	return a 7 bit ascii character, ignoring line
+numbers, returns '*E' end-of-stream character
+at end of file.
+.S 1
+.I -12
+Modes 2-14	return a 36 bit (full word) byte, 
+jumps to error label at end of file.
+.S 1
+.I -12
+Modes 15-17	READCH only - the second and subsequent parameters 
+are a command list, each element of
+which is an 'IOWD', the left half
+of which is the negative of the word count, 
+and in right half of which is the address-1
+of the data area for the transfer. If there are
+not enough words left in the file to satisfy
+the command list then a jump is made to the
+error closure. The last word of the command 
+list must be zero.
+.LM 5
+.S 1
+The read routine in the TTY SCB returns 7 bit ascii characters.
+.S 1
+For example see 6.3.1
+.HL 3
+INNO RDNO AND READNO
+.BR
+.S 1
+.F
+Reads an (optionally signed) decimal number. All characters
+up to + - or a digit are ignored. The number is terminated by
+any non digit character, which will be the next character read
+from the stream.
+.S 1
+.TP 3
+Example.
+.S 1
+.NF
+All the following have the same action.
+.S 1
+.TP 3
+NO := INNO()
+NO := RDNO(INPUT)
+READNO(INPUT, @NO)
+.HL 3
+INF RDF AND READF
+.BR
+.S 1
+.F
+Reads an (optionally signed) real number. All characters up to
++ - or a digit are ignored. The number read should conform to
+BCPL real number syntax. The character following the number
+will be the next one read from the stream.
+.S 1
+.TP 3
+Example.
+.S 1
+All the following have the same action.
+.S 1
+.NF
+.TP 3
+F := INF()
+F := RDF(INPUT)
+READF(INPUT,@F)
+.F
+.LM 0
+.HL 2 OUTPUT ROUTINES
+.LM 5
+.HL 3
+STRUCTURE OF OUTPUT ROUTINES
+.BR
+.TS 19
+.S 1
+.NF
+Most of the output routines have two standard formats:-
+.S 1
+OUTroutine    which writes its value(s) to the stream
+	OUTPUT (see 6.2.7)
+.S 1
+WRITEroutine  which expects as its first parameter a 
+	stream to which it writes its value(s).
+.S 1
+.F
+NEWLINE, NEWLINES, SPACE and SPACES write to the stream OUTPUT.
+.S 1
+.NF
+.TP 6
+Example.    
+.S 1
+Both the following have the same effect.
+.S 1
+OUTCH(CH)
+WRITECH(OUTPUT,CH)
+.HL 3
+OUTCH AND WRITECH
+.BR
+.S 1
+.F
+WRITECH is the basic output routine, all other output routines
+described in section 6.4 invoke WRITECH. WRITECH invokes the
+write routine for the stream which is its first parameter. WRITECH
+is the direct counterpart of READCH (see 6.3.2 for discussion of
+modes).
+.S 1
+For example see 6.4.1
+.HL 3
+OUTNO AND WRITENO
+.BR
+.S 1
+Write a (possibly negative) decimal number in as few character
+positions as are necessary.
+.S 1
+.NF
+.TP 6
+Example.
+.S 1
+Both the following have the same effect.
+.S 1
+OUTNO(NO)
+WRITENO(OUTPUT,NO)
+.F
+.HL 3
+OUTF AND WRITEF
+.BR
+.S 1
+Write a (possibly negative) real number in standard BCPL real
+number syntax, if the decimal exponent lies in the range -1 to
++6 then the exponent is suppressed.
+.S 1
+.NF
+.TP 6
+Example.
+.S 1
+Both the following have the same effect.
+.S 1
+OUTF(F)
+WRITEF(OUTPUT,F)
+.HL 3
+OUTS AND WRITES
+.BR
+.S 1
+Write a BCPL string.
+.S 1
+.NF
+.TP 6
+Example.
+.S 1
+Both the follwing have the same effect.
+.S 1
+OUTS("STRING")
+WRITES(OUTPUT,"STRING")
+.HL 3
+OUTO, WRITEO, OUTOCT AND WRITEOCT
+.BR
+.S 1
+.F
+Write the specified number of rightmost (least significant) octal digits
+of the number. OUTO and OUTOCT are synonymous, as are WRITEO and
+WRITEOCT.
+.S 1
+.NF
+.TP 6
+Example.
+.S 1
+Both the following have the same effect.
+.S 1
+OUTO(OCTVAL,PLACES)
+WRITEO(OUTPUT,OCTVAL,PLACES)
+.HL 3
+OUTI AND WRITEI
+.BR
+.S 1
+.F
+Write the decimal number to the number of places specified,
+padded on the left with spaces if necessary.
+.S 1 
+.TP 6
+Example.
+.S 1
+.NF
+Both the following have the same effect.
+.S 1
+OUTI(DECVAL,PLACES)
+WRITEI(OUTPUT,DECVAL,PLACES)
+.F
+.HL 3
+OUT AND WRITE
+.BR
+.S 1
+.NF
+OUT(FORMAT, P1, P2 ... P26)
+WRITE(STREAM, FORMAT, P1, P2 ... P26)
+.S 1
+.F
+Write the parameters P1 to P26 according to the format list in the
+BCPL string FORMAT. The FORMAT string is written out character
+by character until the escape character ':' is found. If the
+character following the ':' is one of the following then the
+next parameter is written out by the appropriate routine.
+.S 1 
+.NF
+.TP 7
+:C   Use WRITECH to write the next parameter
+:N    "  WRITENO  "   "     "   "      " 
+:F    "  WRITEF   "   "     "   "      "
+:S    "  WRITES   "   "     "   "      "
+:On   "  WRITEO   "   "     "   "      "      to n places
+:In   "  WRITEI   "   "     "   "      "       " "    "
+::   write the character ':'.
+.F 
+.S 1
+The action is undefined for other characters.
+.S 1 
+.TP 7
+Example.
+.S 1
+.NF
+Both the following have the same effect.
+.S 1
+OUT("*C*L:N ERROR:C DETECTED", EC, EC _> 1 'S', ' ')
+WRITE(OUTPUT,
+    "*C*L:N ERROR:C DETECTED", EC, EC _> 1 'S', ' ')
+.HL 3
+NEWLINE, NEWLINES, SPACE AND SPACES
+.BR
+.S 1
+.NF
+NEWLINE() writes a newline.
+NEWLINES(n) writes n new lines.
+SPACE() writes a space.
+SPACES(n) writes n spaces.
+.S 1
+On the stream held in OUTPUT.
+.LM 0
+.HL 2 FREE STORAGE ROUTINES
+.LM 5
+.HL 3
+PURPOSE
+.BR
+.S 1
+.F
+The free storage system is used to maintain a vector which is
+used by the I/O system for SCB and buffer space. It also provides
+a mechanism by which the user obtains dynamically (and frees
+dynamically) vectors of arbitrary size.
+In BCPL systems 3F and later, it is not strictly necessary to call
+INITIALISEIO or FREESPACE when running on a virtual memory system.
+.HL 3
+INITIALISEIO
+.BR
+.S 1
+INITIALISEIO(IOVECTOR, SIZE)
+.S 1
+This routine is used to initialise the I/O system and must be
+called before any of INNO, RDNO, READNO, INF, RDF, READF, FINDFILE, CREATEFILE and UPDATEFILE. The
+IOVECTOR is passed to FREESPACE (see 6.5.3). Approximately 350
+words of IOVECTOR space are used for normal input and output
+streams set up by FINDFILE and CREATEFILE, and 650 words for
+update streams set up by UPDATEFILE.
+.HL 3
+FREESPACE
+.BR
+.S 1
+FREESPACE(VECTOR, SIZE)
+.S 1
+Gives the vector to the free storage system to be allocated by
+NEWVEC (see 6.5.4). If input and output via FINDFILE, CREATEFILE
+or UPDATEFILE is required then INITIALISEIO should be called
+instead (see 6.5.2).
+.HL 3
+NEWVEC
+.BR
+.S 1
+NEWVEC(SIZE)
+.S 1
+This function returns a vector of SIZE+1 elements (i.e. having
+subscripts ZERO to SIZE), from the free space vector supplied
+to INITIALISEIO or FREESPACE. If NEWVEC is called (either
+directly or indirectly from FINDFILE, CREATEFILE or UPDATEFILE)
+before INITIALISEIO or FREESPACE have been called - then the
+message
+.BR
+.S 1
+?BCLNFS NEITHER INITIALISEIO NOR FREESPACE HAVE BEEN CALLED
+.S 1
+will be printed and the job terminated.
+.S 1
+If NEWVEC is called and there is no space left in the free space
+vector then the message
+.BR
+.S 1
+?BCLFSE BCPL I-O FREESPACE EXHAUSTED
+.BR
+.S 1
+will be printed and the job terminated.
+.HL 3
+FREEVEC AND FREE
+.BR
+.S 1
+FREEVEC(VECTOR)
+.S 1
+FREEVEC and FREE are synonyms for the same routine, which is used
+to return a vector previously allocated by NEWVEC back to the free
+storage system.
+.LM 0
+.HL 2 OTHER UTILITY ROUTINES
+.LM 5
+.HL 3
+UNPACKSTRING
+.BR
+.S 1
+UNPACKSTRING(S, V)
+.S 1
+This routine unpacks the BCPL string S into the vector V, one
+character per word, V!O will hold the length of the string. It
+returns V as its result.
+.HL 3
+PACKSTRING
+.BR
+.S 1
+PACKSTRING(V, S)
+.S 1
+Packs the n characters in V+1 to V+n into the vector S in standard
+BCPL string format (see 2.7). V!0 contains the value n. It
+returns the packed vector S as its result.
+.HL 3
+LHS
+.BR
+.S 1
+This function returns the value TRUE only if the routine that
+calls it, was itself invoked as a result of appearing on the left
+hand side of an assignment statement (see 4.5). LHS otherwise
+returns the value FALSE. [This routine will not work if the LHS/
+NUMBARGS suppress switch to the compiler is used.]
+.HL 3
+NUMBARGS
+.BR
+.S 1
+This function returns the number of actual parameters that were
+passed to the routine that invoked NUMBARGS. It is used to write
+routines which can have varying numbers of parameters. (E.G.
+FINDFILE).
+.S 1
+WARNING: The BCPL library relies on NUMBARGS for its variable parameter routines such as PRINT, FINDFILE etc. The NUMBARGS code
+should not be suppressed (via the appropriate compiler switch) if the library
+is to be used.
+.HL 3
+LEVEL
+.BR
+.S 1
+This function returns the value of the current environment, (stack 
+level), which can be used with LONGJUMP (see 6.6.6).
+.HL 3
+LONGJUMP
+.BR
+.S 1
+LONGJUMP(LEVEL, LABEL)
+.S 1
+Jumps to the label LABEL, re-setting the environment to that
+held in LEVEL (obtained from LEVEL function - see 6.6.5). The
+LEVEL and LONGJUMP routines used together give a completely
+machine independent way of breaking out of a set of nested
+routine invokations.
+.S 1
+.TP 17
+Example.
+.S 1
+.NF
+LET R() BE
+$(R
+  STATIC $( LL=0;LB=0 $)
+  LET S(N) BE
+  $(S TEST N = O THEN LONGJUMP(LL,LB)  // JUMPS OUT IN
+.TS 24
+	//ONE ACTION TO LAB, RESETTING THE
+	//ENVIRONMENT (STACK) TO THAT OF R
+      OR S(N-1)
+  $)S
+  LL := LEVEL()	//RETURNS THE ENVIRONMENT (STACK)
+	//OF THE INVOKATION OF R
+  LB := LAB	//USE A STATIC IN SCOPE OF S
+  S(40)
+  LAB:
+$)R
+.HL 3
+LABEL
+.BR
+.S 1
+LABEL(LAB)
+.S 1
+.F
+This function returns an object consisting of the label
+LAB and the current environment  (stack level); the value can be
+used with JUMP (see 6.6.8). Values returned from LABEL are
+often referred to as CLOSURES.
+.HL 3
+JUMP
+.BR
+.S 1
+JUMP(CLOSURE)
+.S 1
+Jumps to the label component CLOSURE, resetting the environment
+to that indicated by CLOSURE (obtained from LABEL function - see
+6.6.7). LABEL and JUMP can be used as a way of breaking out of
+a set of nested routine invokations. A LABEL closure is used 
+for the ERROR parameter to the FINDFILE, CREATEFILE and UPDATEFILE
+functions, so that when an error occurs a jump can be made to a
+predefined point in the program, and the environment re-set.
+.S 1
+.TP 18
+Example.
+.S 1
+This has the same effect as the example in 6.6.6.
+.S 1
+.NF
+.TS 32
+LET R() BE
+$(R
+  LET S(N,E) BE
+  $(S TEST N=O THEN JUMP(E)    // JUMPS OUT IN ONE ACTION
+	// TO LAB, RESETTING THE
+	// ENVIRONMENT TO THAT OF R
+      OR S(N-1, E)
+  $)S
+  S(40, LABEL(LAB))	//LABEL RETURNS THE ENVIRONMENT
+	//(STACK) OF THE INVOKATION OF
+	//R, WITH THE VALUE OF LAB
+  LAB:
+$)R
+.S 1
+.TP 8
+Example.
+.S 1
+INPUT := FINDFILE("DSK", "INPUT", "SRC", 0, LABEL(ERR))
+ .
+ .
+ .
+ERR: WRITES(TTY,"*C*LCAN*'T FIND INPUT.SRC")
+FINISH
+.S 1
+.PG
+.LM 0
+.HL 1 RUNNING A BCPL PROGRAM
+.HL 2 COMPILER COMMAND FORMAT
+.LM 5
+.NF
+The compiler is run by the command
+.S 1
+_.R BCPL
+.S 1
+when the compiler is ready it responds with
+.S 1
+*
+.S 1
+The form of the command string is
+.S 1
+*REFILESPEC,LISTFILESPEC=INPUTFILELIST
+OR
+*REFILESPEC=INPUTFILELIST
+OR
+*INPUTFILELIST
+.S 1
+= CAN BE REPLACED BY __.
+.S 1
+INPUTFILELIST
+is optional GETFILESPECS followed by INPUTFILESPEC
+.S 1
+.F
+Compiler switches (listed in Appendix E) can appear after any
+file spec, in the form
+.S 1
+.NF
+/SWITCH:N   (:N is optional)
+or
+(SWITCH:N,SWITCH:N ... SWITCH:N)   (:N is optional)
+.S 1
+Default INPUTFILESPEC is DSK:filename.BCL[user]
+                      or DSK:filename.BCP[user]
+Default RELFILESPEC is DSK:filename.REL[user]
+                    or DSK:filename.INT[user] (INTCODE)
+                    or DSK:filename.OUT[user] (TREE)
+Default LISTFILESPEC is DSK:filename.LST[user]
+Default GETFILESPEC is DSK:filename.GET[user]
+                    or DSK:filename.BCL[user]
+.S 1
+.F
+Any filename missing is defaulted to that of the input file.
+.S 1
+A relfile is always produced (unless inhibited by the 'G' switch)
+and a listfile is not normally produced (unless required by the
+'L' or 'C' switch).
+.S 1
+If the 'D' switch is enabled then a symbol file DSK:relfilename.SMB[user]
+is produced for use by the debugger.
+.S 1
+If LISTFILESPEC appears then a list file is always produced.
+.LM 0
+.HL 2 COMPILER OUTPUT
+.LM 5
+The RELFILE normally produced by the compiler is a standard
+relocatable binary suitable for loading with LINK loader. The
+compiler compiles TWOSEG code, but the 'P' switch forces it to
+produce low code only. The TWOSEG code is restartable and
+re-entrant, unless the 'V' switch is used in which case it may
+not be restartable.
+.S 1
+The LISTFILE normally produced lists the source line number
+and the block nesting level in two columns on the left side of
+the page and the source lines on the right. Erroneous lines
+are listed even if listing is temporarily suppressed (see 5.6).
+The line numbers are indented one space for each nesting level.
+.S 1
+INTCODE output is in ascii text form, described in section 8.
+.S 1
+The symbol file, if produced, contains BCPLDT debugging information
+in ascii text form.
+.LM 0
+.HL 2 COMPILER ERROR MESSAGES
+.LM 5
+Error messages are of two levels, ERROR (E) level and WARNING
+(W) levels. The latter being errors from which the compiler
+thinks it can recover. The errors are two kinds, Syntactic
+Errors and Semantic Errors. Syntax errors are detected during
+the first scan of the program; the erroneous source line is
+listed on the error medium with a pointer to the next symbol
+after the error. (If the error is at the end of a line, the
+pointer may point to the start of the next line).
+If the error has occurred in a GETfile, this is indicated in the
+error message.
+.S 1
+Semantic errors are detected during the second scan of the
+program; the part of the parse tree that is erroneous is
+printed.
+.S 1
+The final ERROR count is printed on the Teletype (LOG file for
+batch users).
+.S 1
+Error messages are normally put on the Teletype (LOG file for
+batch users), unless the compiler is running on a BATCH job
+with LISTFILE present in which case the LISTFILE is used as well.
+Error messages on the Teletype are abbreviated. They are
+preceded by a code in brackets consisting of a letter (E for
+ERROR, W for WARNING) and the error message number (see
+Appendix G) followed by the line no on which the error was
+detected.
+If the error was in a getfile this is indicated by (G:getfilename).
+.LM 0
+.HL 2 PROGRAM SIZE
+.LM 5
+.HL 3
+NON VIRTUAL MEMORY SYSTEMS
+.S 1
+The compiler has workspace to handle up to approximately 200
+source lines. It is advisable to split files larger than this
+into separate parts. If, however, you wish to increase the
+workspace of the compiler, this can be done with the 'S' switch.
+An indication that the workspace is near full is when the _% figure
+(printed by the compiler at the end of the compilation) approaches 100_%.
+.HL 3
+VIRTUAL MEMORY SYSTEMS
+.S 1
+The compiler acquires workspace for compiling source programs until
+it reaches the limit imposed by the Monitor.  It is, however
+still advisable to split large files into separate parts, as this
+makes better use of the separate compilation facility, and optimises
+use of machine time during program development.
+The 'S' switch is not strictly necessary for compiling on a Virtual
+Memory system, however since the internal tables of the compiler
+are laid out in accordance with the predicted size of the program,
+use of the 'S' switch will speed up compilation in cases of large
+programs.
+.LM 0
+.HL 2 INTERACTIVE USE
+.LM 5
+The compiler is best run interactively by use of COMPIL class
+commands, see 5.5 for description of input files.
+.S 1
+.NF
+_.COMPILE
+_.LOAD
+_.EXECUTE
+_.DEBUG
+.F
+.S 1
+which all recognise .BCL and .BCP extensions as requiring the BCPL
+compiler, and generate the correct command string for the
+compiler. See the time-sharing manual for a complete
+description of COMPIL and how to pass switches to the compiler
+via COMPIL. Source errors detected by the compiler are
+usually reported to the controlling teletype.
+.S 1
+The postmortem, described below (see 7.7) can be obtained at any
+point during the execution of the program by "control-C"ing
+out of the program and then typing
+.S 1
+_.REENTER
+.S 1
+This can also be performed upon completion of execution.
+.S 1
+The program can be debugged either using DDT or BCPLDT.
+The user is advised to look at some BCPL generated code (use
+the /M switch) before attempting to use DDT. All the statics
+in the program are put into the symbol table for the segment.
+[For a description of the generated code see Appendix F.]
+.LM 0
+.HL 2 BATCH USE 
+.LM 5
+The following deck will list, compile and execute a two file
+BCPL program with a common GET file, and provide a postmortem if
+the program fails:-
+.NF
+.S 1
+.TS 33
+.TP 28
+$SEQUENCE nnnnn	// get this from open shop
+$JOB name [proj,prog]	// program name and user no.
+$DECK header.GET
+        .
+        .	// "GET" header file
+        .
+$EOD
+$BCPL name.BCL
+        .
+        .	// first BCPL file
+        .
+$EOD
+$BCPL name.BCL
+        .
+        .	// second BCPL file
+        .
+$EOD
+$DATA	// must appear to 
+        .	// force execution
+        .	// data (if any -
+        .	// can be null)
+        .
+$EOD
+%ERR:	// these cards ensure clean
+%FIN:	// termination and postmortem
+_.REENTER	// under all circumstances
+end-of-file card	// from open shop.
+.S 1
+To get access to the data following the $DATA card use
+INPUT:=FINDFILE("CDR"), see 6.2.2.
+.S 1     
+To create lineprinter output files use
+OUTPUT:=CREATEFILE("LPT"), see 6.2.3.
+.S 1
+.F
+Source errors are listed on the source listing file
+and the Teletype.
+.LM 0
+.HL 2 THE POSTMORTEM
+.LM 5
+When BCPLDT has not been loaded the postmortem consists of three parts:-
+.S 1
+The STACK BACKTRACK gives the hierarchical nesting of routines,
+I.E. who called who called who etc. The last routine entered is
+printed first.
+.S 1
+The HISTORY gives the last 64 interesting events (routine entries and exits, labels and trace point calls).
+Exits have '=' after them labels have ':' after them and trace points are indicated by '*'.
+.S 1
+The PROFILE gives the number of times each routine was activated,
+each label passed and each trace point activated.
+.S 1
+The library routines do not feature in the POSTMORTEM. The postmortem slows
+down program execution slightly. The postmortem can be removed from working
+programs by recompiling with the compiler switch 'F' set.
+.LM 0
+.HL 2 BCPLDT
+.LM 5
+BCPLDT is a purpose built BCPL debugger, it is designed primarily
+for interactive debugging, but can also be used under batch.
+Compiling programs with the 'D' compiler switch set creates a symbol
+file which can be used by the debugger.
+.S 1
+Text and/or BCPLDT commands can be put into the symbol file (if one
+is being created) by puting lines of the form:
+.BR
+$SYMBOL "BCPL string"
+.BR
+into the source file. The strings are appended in the order of occurrence to the normal BCPLDT symbol file.
+.S 1
+The debugger is described fully in the BCPL USER GUIDE.
+.PG
+.LM 0
+.HL 1 INTCODE
+.HL 2 THE PURPOSE OF INTCODE
+.LM 5
+INTCODE was designed by Martin Richards as a simple machine language
+with a primitive underlying machine structure, and as such, suitable for
+interpretation. Its uses are a) to allow BCPL programs to be run on small
+machines and b) permit transportability of BCPL programs (especially the
+BCPL compiler).
+.S 1
+The INTCODE generator running at ESSEX is a version written by
+Vasiliki Kollias as part of an M.Sc. project, and was incorporated
+into the standard running BCPL compiler by Dave Lyons and Pete Gardner.
+It produces slightly different INTCODE from the original Martin Richards
+specification, and this section describes the new INTCODE.
+This section is paraphrased from part of Vasiliki Kollias' M.Sc. Thesis, and also from the original description
+of INTCODE by Martin Richards.
+All the features of the language are inplemented except for floating point
+operators, exponentiation, static and dynamic selectors and bytes, and the TRACE command.
+.S 1
+INTCODE is obtained by using /P:2 compiler switch, the compiler tells
+you the maximum local label used in the segment, so that the
+local label vector in your assembler can be adjusted accordingly.
+.LM 0
+.HL 2 THE INTCODE MACHINE
+.LM 5
+.HL 3
+WORDS
+.BR
+.S 1
+The basic unit of information is the word. According to the specification of the language
+the word size is implementation dependent, but it should ideally contain
+at least 18 bits in order to hold all the fields of an instruction.
+.HL 3
+REGISTERS
+.BR
+.S 1
+There are 5 registers in the INTCODE machine:
+.S 1
+.TS 12
+.LM 12
+.I -7
+A _& B:	The Accumulator and Auxiliary accumulator.
+.S 1
+.I -7
+C:	The Control register giving the location of the next
+instruction to be executed.
+.S 1
+.I -7
+D:	The address register used to hold the effective address of
+an instruction.
+.S 1
+.I -7
+P:	A pointer used to address the local work area
+and function arguments.
+.LM 5
+.HL 3
+INSTRUCTION FORMAT
+.BR
+.S 1
+.NF
+-------------------------------------------------------
+|  F  | I | P |                  A                    |
+-------------------------------------------------------
+.S 1
+.F
+The instruction format comprises four fields: the function part F
+(3 bits - used to store one of the 8 machine instructions). The I bit (the
+Indirection bit) which when set then the D register is replaced by the
+contents of the location addressed by D. The P bit specifies whether P
+is to be added into D. The A field (remaining bits)
+stores the word address.
+.HL 3
+MACHINE INSTRUCTIONS
+.BR
+.S 1
+.NF
+.TP 12
+Opcode  Mnemonic  Meaning
+.S 1
+   0        L     B := A; A := D
+   1        S     Location (D) := A
+   2        A     A := A + D
+   3        J     C := D
+   4        T     IF A _\= 0 DO C := D
+   5        F     IF A = 0 DO C := D
+   6        K     P := P + D;
+                  Location (P), Location (P + 1) := D, C;
+                  C := A
+   7        X     See below
+.S 1
+The X instructions (the A field indicates one of):
+.S 1
+X1    A := Location (A)
+X2    A := -A
+X3    A := _\A
+X4    This causes return from the current function;
+      by convention the result is left in the accumulator.
+      C := Location (P + 1); P := P - Location (P)
+X5    A := B * A
+X6    A := B / A
+X7    A := B REM A
+X8    A := B + A
+X9    A := B - A
+X10   A := B = A
+X11   A := B _\= A
+X12   A := B < A
+X13   A := B _>= A
+X14   A := B _> A
+X15   A := B <= A
+X16   A := B << A
+X17   A := B _>_> A
+X18   A := B /_\ A
+X19   A := B _\/ A
+X20   A := B NEQV A
+X21   A := B EQV A
+X22   FINISH
+X23   Switch on the value of A using data in the
+      locations addressed by C, C+1 etc.
+      B, D := Location (C), Location (C+1);
+      UNTIL B = 0 DO
+      $( B, C := B - 1, C + 2
+         IF A = Location (C) DO
+         $( D := Location (C + 1)
+            BREAK
+         $)
+      $)
+      C := D
+X24   This causes an escape from intcode into the 
+      interpreter to perform the function
+      indicated by the value in the accumulator.
+.S 1
+As well as these instructions specified in the original
+INTCODE, ESSEX INTCODE defines the following:
+.S 1
+X26   Selector apply. The parameters to this function
+      are held in the 3 words following the instruction.
+      A := A + Location (C)
+      A := Location (A)
+      A := A _>_> (- Location (C + 1))
+      A := A /_\ Location (C + 2)
+      C := C + 3
+X27   Selector store. The parameters to this function
+      are held in the 3 words following the instruction.
+      A := A + Location (C)
+      D := Location (A)
+      D := D /_\ _\Location (C + 2)
+      B := B << (- Location (C + 1))
+      B := B /_\ Location (C + 2)
+      Location (A) := B + D
+      C := C + 3
+X37   Byte apply. The parameters to this function
+      are held in the 2 words following the instruction.
+      A := A _>_> (- Location (C))
+      A := A /_\ Location (C + 1)
+      C := C + 2
+X38   Byte store. The parameters to this function
+      are held in the 2 words following the instruction.
+      D := Location (A)
+      D := D /_\ Location (C + 1)
+      B := B << (- Location (C))
+      B := B /_\ Location (C + 1)
+      Location (A) := D + B
+      C := C + 2
+X39   A := B ROTL A
+X40   A := B ROTR A
+X41   A := B ALSHIFT A
+X42   A := B ARSHIFT A
+X43   A := B BITOR A
+X44   A := B BITAND A
+X45   A := ABS A
+.F
+.LM 0
+.HL 2 THE INTCODE ASSEMBLY LANGUAGE
+.LM 5
+.HL 3
+GENERAL LAYOUT
+.BR
+.S 1
+The assembly language for INTCODE has been designed primarily to be compact and simple to assemble, 
+but some care has also been taken so that it can be read and modified
+with reasonable ease by the programmer.
+The text of the assembly language consists of letters, digits, spaces,
+newlines and the characters '/' '$' '_#' '"' and '.'.
+.S 1
+'/' is used as a continuation symbol; it is skipped and
+the remaining characters of the line up to and including the next newline
+are ignored. Its main purpose is to simplify the use of card images as
+a medium for transfering INTCODE programs. The maximum length of an
+INTCODE line up to a '/' is 72 characters.
+.S 1
+'$' marks the entry point of a function or routine, and is followed by
+the internal name of the routine. This can be ignored unless
+the interpreter is to include run time tracing facilities.
+.S 1
+'_#' marks the end of a routine or function and is matched to '$'.
+It can be used if an assembler is attempting to record the stack
+high water mark reached in a routine, it should otherwise be ignored.
+.S 1
+'.' occurs in the names of routines and functions and in the external
+names. It should be treated as an alphanumeric character for this purpose.
+.S 1
+'Z' is used to indicate the end of the segment. Local labels can be unset.
+.S 1
+An example assembler/interpreter which runs on the PDP-10 can be seen in BCL:ASSINT.MAS.
+.HL 3
+INSTRUCTIONS
+.BR
+.S 1
+The assembly form of an instruction consists of the mnemonic
+letter for the machine function, optionally followed by 'I' if
+indirection is specified, optionally followed by 'P' if the P modification
+is specified, followed by the address which is either a decimal integer
+or a label.
+.HL 3
+LABELS
+.BR
+.S 1
+There are 3 forms of labels, local, GLOBAL and EXTERNAL.
+.S 1
+Local labels
+are referenced by 'L' followed by a decimal integer; they refer to
+a label local to this segment.
+.S 1
+GLOBAL labels are referenced by 'G' followed by a decimal integer.
+.S 1
+EXTERNAL labels are referenced by 'E' followed by a BCPL string in
+string quotes '"'.
+.S 1
+A number not preceded by a letter is interpreted as a local label;
+it should be set to the address of the next location to be loaded.
+.S 1
+GLOBAL labels are initialised during assembly when a directive
+is found of the form 'G'
+followed by a GLOBAL number (decimal integer) followed by 'L'
+followed by a local label number.
+This can be interpreted in one of two ways.
+Either a)
+The address of the location referred to by the local label should
+now be known globally by the GLOBAL number, referable to in other
+segments,
+or b)
+A global vector, at some point in the work area (P), is established
+and the GLOBAL number is interpreted as pointing into this area.
+To set the GLOBAL, the value of the location referred to by the
+local label is copied into the GLOBAL location.
+.S 1
+EXTERNAL labels are intialised during assembly when a directive
+is found of the form 'E' followed by an EXTERNAL name (in quotes - '"')
+followed by 'L' followed by a local label number. This should
+be handled similarly to GLOBAL format a) above.
+.S 1
+It is usually easiest, in the early stages of implementing an
+assembler/interpreter to permit intersegment communication via
+GLOBALs only, and to implement them via format b) above.
+.HL 3
+DATA
+.BR
+.S 1
+Data may be assembled by a statement consisting of 'D'
+followed by a signed decimal integer for constant values, or
+'DL' followed by a local label number for pointers.
+.S 1
+Characters may be packed and assembled using character 
+statements of the form 'C' followed by the integer value
+of the character. On the PDP-10 the characters are ASCII
+codes and the first character is usually a character count.
+The characters should be packed up in the manner
+most suitable for the interpreting machine.
+.S 1
+'Y' followed by an integer count indicates a static vector, whose
+subscripts are from 0 to the count. The designated number of
+words should either be skipped or set to zero.
+.NF
+.S 1
+.TP 15
+Example program.
+.S 1
+GLOBAL $( START:1 $)
+EXTERNAL $( CREATEFILE; INITIALISEIO
+            WRITE; OUTPUT $)
+STATIC $( V = VEC 10 $)
+STATIC $( OUTPUT = 0 $)
+.S 1
+LET START() BE
+$( LET IOV = VEC 650
+   LET FACT(N) = N = 1 -_> 1, N * FACT(N-1)
+   INITIALISEIO(IOV, 650)
+   OUTPUT := CREATEFILE("TTY")
+   FOR I=1 TO 10 DO WRITE(OUTPUT,
+      "FACT(:N) IS :N*C*L", I, FACT(I))
+$)
+.S 1
+.TP 22
+Produces the following INTCODE.
+.S 1
+ JL6
+$START 4 LP3 SP2 JL9
+$FACT 7 LIP2 L1 X10 FL10 L1 JL11 10 LIP2 L1 X9 SP5 LIL8 K/
+3 LIP2 X5 11 X4
+_#
+ 1 Y10
+ 2 DL1 3 D0 5 DL4 8 DL7
+ 9 LIP2 SP656 L650 SP657 LIE"INITIALISEIO" K654 LL12 SP65/
+6 LIE"CREATEFILE" K654 SL3 L1 SP654 JL13 14 LIL3 SP657 LL/
+15 SP658 LIP654 SP659 LIP654 SP662 LIL8 K660 SP660 LIE"WR/
+ITE" K655 LIP654 A1 SP654 13 L10 X15 TL14 X4
+_#
+ 12 C3 C84 C84 C89 15 C16 C70 C65 C67 C84 C40 C58 C78 C41/
+ C32 C73 C83 C32 C58 C78 C13 C10
+ 6 X22
+.S 1
+ E"OUTPUT"L3
+ G1L5
+Z
+.PG
+.LM 0
+.APPENDIX FULL SYNTAX OF BCPL
+.TS 22
+.LM 5
+.NF
+PROGRAM      ::= <segment_>*
+<segment_>    ::= <rblock_>
+<rblock_>     ::= <block_> | <compound_>
+<block_>      ::= <D_> <;<D_>* <; <C_>_>*
+<D_>          ::= LET <declaration_> <AND <declaration_>_>* |
+	EXTERNAL <ebody_> |
+	MANIFEST <mgbody_> |
+	GLOBAL   <mgbody_> |
+	STATIC   <sbody_>
+<ebody_>      ::= <E_><ebody2_> |<ebody2_>
+<ebody2_>     ::= $( <edef_> <; <edef_>_>* $)
+<edef_>       ::= <name_> | <name_> = <E_> | <name_> : <E_>
+<mgbody_>     ::= $( <mgdef_> <;<mgdef_>_>* $)
+<mgdef_>      ::= <name_><K_> | <name_> = <K_> | <name_> : <K_>
+<sbody_>      ::= $( <sdef_> <; <sdef_>_>* $)
+<sdef_>       ::= <name_> <L_> | <name_> = <L_> | <name_> : <L_>
+<declaration_>::= <name_>(<namelist_>**) < = <E_> | BE <C_>_> |
+	<name_> = <VE_> |
+	<namelist_> = <VE list_>
+<C_>          ::= <C1_> | <C2_>
+<C1_>         ::= IF <E_> DO <C_> |
+	WHILE <E_> DO <C_> |
+	UNLESS <E_> DO <C_> |
+	UNTIL <E_> DO <C_> |
+	TEST <E_> THEN <C_> OR <C_> |
+	SWITCHON <E_> INTO <C_> |
+	FOR <name_>=<E_> TO <E_> <BY <K_>_>** DO <C_> |
+	<name_> : <C_> |
+	CASE <K_> <... <K_>_>**: <C_> |
+	DEFAULT <<K_> ... <K_>_>**: <C_>
+<C2_>         ::= <C3_> |
+	<C2_> <_> <C1_> |
+	<C2_> <_> <C3_> |
+	<C2_> REPEAT |
+	<C2_> REPEATWHILE <E_> |
+	<C2_> REPEATWHILE <E_> |
+	<C2_> WHERE <declaration_>
+	<AND <declaration_>_>*
+<C3_>         ::= GOTO <E_> |
+	RESULTIS <E_> |
+	BREAK |
+	LOOP | 
+	RETURN |  
+	FINISH |  
+	ENDCASE | 
+	$( <rblock_> $) |
+	<E_>() |
+	<E_>(<Elist_>) |
+	<Elist_> ::= <Elist_> |
+	<Elist_> <binop_>:= <Elist_> |
+	TRACE <name_>() |
+	TRACE <name_>(<Elist_>)
+<binop_>      ::= <opl_> | <op2_> | <op3_> | <op4_> |
+	<op5_> | <op6_>| <op7_> | <op8_> | !
+<namelist_>   ::= <name_> <, <name_>_>*
+<VElist_>     ::= <E_> <, <E_>_>*
+<Llist_>      ::= <L_> <, <L_>_>*
+<L_>          ::= <VE_>
+<K_>          ::= <E_>
+<VE_>         ::= VEC <K_> | <E_>
+<E_>          ::= <Sexpr_> | TABLE <Llist_>
+<Sexpr_>      ::= <Cexpr_> | SELECTOR <E_> : <E_> : <E_> | 
+	BYTE <E_> : <E_>
+<Cexpr_>      ::= <logical1_> |
+	<logical1_> -_> <Sexpr_>, <Sexpr_>
+<logical1_>   ::= <logical2_> | <logical1_> <opl_> <logical2_>
+<opl_>        ::= EQV | NEQV
+<logical2_>   ::= <logical3_> | <logical2_> <op7_> <logical3_>
+<logical3_>   ::= relational_> |
+	<logical3_> <op8_> <relational1_>
+<relational_> ::= <shift_> <<op2_> <shift_>_>*
+<op2_>        ::= LS | LE | EQ | GE | GR | NE | _#LS | _#LE | 
+	_#EQ |_#GE | _#GR | _#NE 
+<op7_>        ::= _\/ | BITOR
+<op8_>        ::= /_\ | BITAND
+<shift_>      ::= <arith_> | <shift_> <op3_> <arith_>
+<op3_>        ::=  LSHIFT | RSHIFT | ROTL | ROTR | 
+	ALSHIFT | ARSHIFT
+<arith1_>     ::= <arith2_> | <arith_> <op4_> <arith2_>
+<op4_>        ::= + | = | _#+ | _#-
+<arith2_>     ::= <appl_> | <arith2_> <op5_> <app1_>
+<appl_>       ::= <app12_> | <app12_> <op6_> <app11_>
+<op6_>        ::= :: | _&_&
+<app12_>      ::= <app13_> | <app12_> ! <app13_>
+<app13_>      ::= <unary_> | <app13_> %<name_> <unary_>
+<unary_>      ::= <primary_> | <op7_> <unary_>
+<op7_>        ::= NOT | @ | ! | + | - | ABS | _#+ | _#- | 
+	_#ABS | FIX | FLOAT |
+<primary_>    ::= <name_> | <constant_> | (<E_>) | 
+	<primary_>() | <primary_>(<Elist_>) |
+	NIL | VALOF <C_>
+<constant_>   ::= <real_> | <integer_> | <octal_> | 
+	<truthvalue_> | <string_> | <charconst_> | 
+	$constant1 | <literal_> | <hex_> | <binary_>
+<real_>       ::= <fraction_> <exponent_>**
+<fraction_>   ::= <integer_>.<integer_>
+<exponent_>   ::= E< + | -_>** <integer_>
+<integer_>    ::= <d_><d_>*
+<octal_>      ::= _#<od_><od_>*
+<hex_>        ::= _#X<hd_><hd_>*
+<binary_>     ::= _#B<bd_><bd_>*
+<truthvalue_> ::= TRUE | FALSE
+<charconst_>  ::= '<c_>*'
+<string_>     ::= "<c_>*"
+<literal_>    ::= $constant2
+<hd_>         ::= <d_> | A | B | C | D | E | F
+<d_>          ::= <od_> | 8 | 9
+<od_>         ::= <bd_> | 2 | 3 | 4 | 5 | 6 | 7
+<bd_>         ::= 0 | 1
+<name_>       ::= <l_><<l_> | . | <d_>_>*
+<l_>          ::= A | B | ... | Z | a | b | ... | z
+<c_>          ::= any BCPL character - see Appendix C.
+.F
+.S 1
+Notes.
+.S 1
+The syntax is expressed in near BNF. The symbol '*' following a non
+terminal symbol (i.e. on in <_> pairs), indicates indefinate repetition
+(i.e. from zero to infinity). Similarly, the symbol '**' following a non
+terminal symbol indicates optional occurrence (i.e. zero or one occurrence).
+.S 1
+The syntax expressed at the start of the other sections of this manual is not necessarily the actual
+syntax recognised by the compiler. It is merely intended to give a reminder or flavour
+of the syntactic constructs being described in that section.
+.PG
+.LM 0
+.APPENDIX RESERVED WORDS AND SYMBOLS
+.TS 16,33,49
+.NF
+Reserved	Equivalent	Reserved	Equivalent
+word	symbol	word	symbol
+.S 1
+ALSHIFT		LS	<
+AND		LSHIFT	<<
+ARSHIFT		LV	@
+BE	IS	MANIFEST
+BITAND		NE	_\=
+BITOR		NEQV
+BREAK		NIL	?
+BY		NOT	_\ ~
+BYTE		OF	:: _^
+CASE		OR
+DEFAULT		REM
+DO	THEN	REPEAT
+ENDCASE		REPEATUNTIL
+EQ	=	REPEATWHILE
+EQV		RESULTIS
+EXTERNAL		RETURN
+FALSE		ROTL
+FINISH		ROTR
+FIX		RSHIFT	_>_>
+FLOAT		RV	!
+FOR		SELECTOR
+FROM	_&_&	STATIC
+GE	_>=	SWITCHON
+GET		TABLE
+GLOBAL		TEST
+GOTO		THEN	DO
+GR	_>	TO
+IF		TRACE
+INTO		TRUE
+IS	BE	UNLESS
+LE	<=	UNTIL
+LET		VALOF
+LOGAND	/_\ _&	VEC
+LOGOR	_\/ |	WHERE
+LOOP		WHILE
+_#ABS		|	_\/ LOGOR
+_#EQ	_#=	~	_\  NOT
+_#GE	_#_>=	_\	~ NOT
+_#GR	_#_>	_&_&	FROM
+_#LE	_#<=	_^	:: OF
+_#LS	_#<	::	_^ OF
+_#NE	_#_\=	__	:=
+_#=	_#EQ	:=	__
+_#_>=	_#GE	<<	LSHIFT
+_#_>	_#GR	_>_>	RSHIFT
+_#<=	_#LE	<_>	;;
+_#<	_#LS	;;	<_>
+_#_\=	_#NE	$(	{	
+_#+		{	$(
+_#-		$)	}
+_#*		}	$)
+_#/		(	[
+=	EQ	[	(
+_>=	GE	)	]
+_>	GR	]	)
+<=	LE	$[
+<	LS	$]
+_\=	NE	'
++		"
+-		:
+*		,	).any string(
+/		;
+**		!
+/_\	_& LOGAND	@	LV
+_&	/_\ LOGAND	%
+_\	| LOGOR	...
+-_>		?	NIL
+_#_#	`	`	_#_#
+.S 1
+// introduces a comment up to the end of line
+/* introduces a comment up to a matching */
+//? introduces a "user debugging" comment (see 5.7).
+_. as first symbol on a line ends the input file.
+.S 1
+Note.
+.S 1
+.F
+This list does not include the many ways of introducing a constant, all of which begin witn _# or $.
+.PG
+.LM 0
+.APPENDIX CHARACTER CODES.
+.LM 5
+.F
+Characters are in general represented by themselves in a
+character or string constant.  The exceptions are *, line ending characters, and '
+(for a character constant) and " (for a string constant).
+Layout characters (tab, space etc. except for newline and newpage) may be represented by
+themselves, but are usually represented by one of the escape
+forms listed below.
+.S 1
+.NF
+The following are the most common escape forms:-
+.S 1
+**      stands for	*
+*'        "     "	'
+*"        "     "	"
+*C        "     "	Carriage return
+*L        "     "	Line feed
+*T        "     "	Tab
+*S        "     "	Space
+*P        "     "	Form feed (newpage)
+*E        "     "	End of stream (file)
+.S 1
+.F
+In order to help when a string spreads over one line, * followed
+by spaces, tabs or newlines up to a matching * is ignored.
+.S 1
+.NF
+Examples.
+.S 1
+"A NEWLINE IS USUALLY REPRESENTED BY *C*L"
+.S 1
+"HE*  *LLO" is equivalent to
+"HELLO".
+.S 1
+.F
+Below is a table showing how to represent all the characters in
+the PDP-10 character set.
+.BR
+Top line is the ASCII (PDP-10) character.
+.BR
+Bottom line is the BCPL character (string) representation.
+.S 1
+Strings are limited to a maximum 127 characters.
+.PG
+.NF
+.LM 0
+  x=    0      1      2      3      4      5      6      7
+    ---------------------------------------------------------
+    | Null |  _^A  |  _^B  |  _^C  |  _^D  |  _^E  |  _^F  |  _^G  |
+00x |  *O  | *_^A  | *_^B  | *_^C  | *_^D  | *_^E  | *_^F  | *_^G  |
+    ---------------------------------------------------------
+    | Bksp | Tab  | Line |  VT  |  FF  |  CR  |  _^N  |  _^O  |
+01x |  *B  |  *T  |  *L  |  *V  |  *P  |  *C  | *_^N  | *_^O  |
+    ---------------------------------------------------------
+    |  _^P  |  _^Q  |  _^R  |  _^S  |  _^T  |  _^U  |  _^V  |  _^W  |
+02x | *_^P  | *_^Q  | *_^R  | *_^S  | *_^T  | *_^U  | *_^V  | *_^W  |
+    ---------------------------------------------------------
+    |  _^X  |  _^Y  |Eofile|Escape|  _^_\  |  _^]  |  _^_^  |  _^__  |
+03x | *_^X  | *_^Y  |  *E  |  *$  | *_^_\  | *_^]  | *_^_^  | *_^__  |
+    ---------------------------------------------------------
+    |Space |  !   |  "   |  _#   |  $   |  %   |  _&   |  '   |
+04x |  *S  |  !   |  *"  |  _#   |  $   |  %   |  _&   |  *'  |
+    ---------------------------------------------------------
+    |  (   |  )   |  *   |  +   |  ,   |  -   |  .   |  /   |
+05x |  (   |  )   |  **  |  +   |  ,   |  -   |  .   |  /   |
+    ---------------------------------------------------------
+    |  0   |  1   |  2   |  3   |  4   |  5   |  6   |  7   |
+06x |  0   |  1   |  2   |  3   |  4   |  5   |  6   |  7   |
+    ---------------------------------------------------------
+    |  8   |  9   |  :   |  ;   |  <   |  =   |  _>   |  ?   |
+07x |  8   |  9   |  :   |  ;   |  <   |  =   |  _>   |  ?   |
+    ---------------------------------------------------------
+    |  @   |  A   |  B   |  C   |  D   |  E   |  F   |  G   |
+10x |  @   |  A   |  B   |  C   |  D   |  E   |  F   |  G   |
+    ---------------------------------------------------------
+    |  H   |  I   |  J   |  K   |  L   |  M   |  N   |  O   |
+11x |  H   |  I   |  J   |  K   |  L   |  M   |  N   |  O   |
+    ---------------------------------------------------------
+    |  P   |  Q   |  R   |  S   |  T   |  U   |  V   |  W   |
+12x |  P   |  Q   |  R   |  S   |  T   |  U   |  V   |  W   |
+    ---------------------------------------------------------
+    |  X   |  Y   |  Z   |  [   |  _\   |  ]   |  _^   |  __   |
+13x |  X   |  Y   |  Z   |  [   |  _\   |  ]   |  _^   |  __   |
+    ---------------------------------------------------------
+    |  `   |  a   |  b   |  c   |  d   |  e   |  f   |  g   |
+14x |  `   |  a   |  b   |  c   |  d   |  e   |  f   |  g   |
+    ---------------------------------------------------------
+    |  h   |  i   |  j   |  k   |  l   |  m   |  n   |  o   |
+15x |  h   |  i   |  j   |  k   |  l   |  m   |  n   |  o   |
+    ---------------------------------------------------------
+    |  p   |  q   |  r   |  s   |  t   |  u   |  v   |  w   |
+16x |  p   |  q   |  r   |  s   |  t   |  u   |  v   |  w   |
+    ---------------------------------------------------------
+    |  x   |  y   |  z   |  {   |  |   |  }   |  ~   |Delete|
+17x |  x   |  y   |  z   |  {   |  |   |  }   |  ~   |  *D  |
+    ---------------------------------------------------------
+.PG
+.LM 0                           
+.APPENDIX MACHINE CODE BLOCKS AND OPERATORS
+.LM 5
+.NF
+.TS 20
+Syntax:-
+    $ [ <macinstr_> < ; <macinstr_>_>* $]
+<macinstr_> ::= <label_> : <instfield_> | <instfield_>
+<instfield_>::= <opcode_> |
+	<opcpde_> <addrpart_> |
+	<opcode_> <accpart_>, <addrpart_> |
+	$EXP <addrpart_> |
+	$XWD <lhvalue_>, <addrpart_> |
+	$( <block_> $)
+<opcode_>   ::= <K_>
+<accpart_>  ::= <K_>
+<1hvalue_>  ::= <K_>
+<addrpart_> ::= @ <indpart_> | <indpart_>
+<indpart_>  ::= ! <litpart_> | <litpart_>
+<litpart_>  ::= <addr_> | <addr_> (<modpart_>)
+<addr_>     ::= <K_> | <name_> | <string_> | <literal_>
+<modpart_>  ::= <K_>
+.S 1
+.F
+Opcode is expected to be a constant either in the range 0 to _#777,
+in which case it is put into bits 27 to 35, otherwise it is
+expected to be a full word value. To this end the standard opcodes
+in the range _#40 to _#677 are provided in the form $opcode,
+evaluating to a 9 bit value. Extended opcodes for all
+of the CALLI and TTCALL UUOs, JRST and JFCL evaluate to a full
+word value.
+.S 1
+Examples.
+.S 1
+.NF
+$MOVE     evaluates to  _#200
+$JRST     evaluates to  _#254
+$JRSTF    evaluates to  _#254100000000
+$SKPINC   evaluates to  _#051540000000
+$MSTIME   evaluates to  _#041000000023 
+.S 1
+@ <indpart_> sets the indirect bit.
+.S 1
+.F
+! <litpart_> causes <litpart_> to be put in the literal table
+and the pointer substituted for <addr_>. <litpart_> should be
+a compile time constant in this case.
+.S 1
+The instruction word is constructed as follows.
+.S 1
+The <addr_> part is put into the (BYTE 18:00) field.
+.BR
+(BYTE 18:18) is zeroed.
+.BR
+A 9 bit <opcode_> is put into the (BYTE 9:27) field,
+a full word <opcode_> is added into the instruction word.
+.BR
+The <accpart_> is ORed into the (BYTE 4:23) field.
+.BR
+The indirect bit is ORed into the (BYTE 1:22) field.
+.BR
+The <modpart_> has its left and right halves swapped and is
+ORed into the instruction word.
+.BR
+Finally - if <addr_> was <name_> the correct address, and modifier
+are put into the instruction word.
+.BR
+The $EXP and $XWD forms are used for setting data words.
+.S 1
+Labels in a machine code segment are manifest labels (ie they
+do not create a data item like normal BCPL labels).
+.BR
+A GET file (BCL:ACS.GET) has all the register assignment
+mnemonics for use in machine code blocks.
+See the BCPL USER GUIDE for a description of BCL:ACS.GET.
+.S 1
+Commas between fields in machine code statements are treated as spaces,
+hence:-
+.S 1
+####$POPJ###P,
+.BR
+and#$POPJ###P
+.S 1
+are the same, and probably not the instruction intended by the programmer, who
+should write:-
+.S 1
+####$POPJ###P,0
+.S 1
+.NF 
+Example.
+.S 1
+.TS 30  
+GET "BCL:ACS"	// GET REGISTER ASSIGNMENTS
+LET ALPHA(L) = VALOF	// SETS UP ENTRY AND POSTMORTEM
+$[ $SETZ AC, O	// FALSE INTO RESULT REG
+   $MOVE  B, L	// LOAD PARAMETER
+   $CAIG  B, 'Z'	// SKIP IF GREATER THAN Z
+   $CAIGE B, 'A'	// SKIP IF GR/EQ TO A 
+   $( RETURN $)	// NOT ALPHA, RETURN FALSE
+   $SETO  AC, O	// TRUE INTO RESULT REG
+$]	// RETURN TRUE
+.PG
+.LM 0
+.APPENDIX COMPILER SWITCHES
+.LM 5
+Can be listed with /H compiler switch.
+.S 1
+.NF
+Valid switches are:-
+.S 1
+/A   Allocate undefined names as 'EXTERNAL'.
+/B   Batch mode compilation forced if job run 
+     interactively, messages are listed on listing
+     file if listing on or TTY if listing off.
+/C   Cross reference listing.
+/D   Debugger symbol tables required.
+/E   Error abort.  Abort on single error.
+/E:n Error abort if more than n errors. If n = 0 (Default
+     case) then aborts on 30 errors for interactive run,
+     200 for batch run.
+/F   Fast code, contains no postmortem code.
+/G   Generation of code suppressed.
+/G:n Syntax check only.
+/H   Help text printed on TTY.
+/H:n Helpful BCPL news printed on TTY.
+/I   Interactive mode compilation forced if job run as 
+     batch, messages are listed on TTY.
+/J   Restore stack limit register after subroutine calls.
+/K   Keywords in upper case, lower and upper case not
+     equivalent.
+/K:n 0 = (default) keywords in, lower and upper case
+         upper case equivalent.
+     1 = keywords in upper case, lower and upper case
+         not equivalent.
+     2 = keywords in lower and upper case, lower and
+         upper case not equivalent.
+     >2  keywords in lower case, lower and upper case
+         not equivalent.
+/L   List all source program regardless of any
+     $NOLISTs found.
+/M   Machine code listed on message medium.
+/N   No real GETfiles, ignore all GET commands.
+/O   Optimise trace code, no postmortem
+     or stackcheck code.
+/P   Pure/Impure code selector (Pure default).
+/P:n Alternative code generator selector.
+     2=INTCODE, 3=Parse tree.
+/Q   Include GETfile declarations in cross reference
+     listing.
+/R   Reset all switches to zero or false (default 
+     condition).
+/S   Size of workspace increased by 1K.
+/S:n Size of workspace set to nK, default is 3K.
+/T   Tree from parser listed on message medium.
+/U   User debugging code enabled.
+/V   Non reinitialised data.
+/W   Warning messages suppressed.
+/X   Processor type. 0=default. 1=KA10. 2=KI10.
+/Y   Yank out NUMBARGS/LHS code.
+/Z   Generate library type rel file.
+.S 1 
+n is read as octal unless preceded by
++ or - in which case it is read as decimal.
+.S 1
+.F
+Switches start at zero or false, and values are retained until
+reset or compiler is reloaded.
+.S 1  
+Repeated occurrences of a switch without a value increments the
+previous value by 1. For this purpose non zero switches are
+interpreted as true.
+.PG
+.LM 0
+.APPENDIX CODE CONVENTIONS
+.LM 5
+Register Allocation:
+.S 1
+.NF
+.TS 13
+0	- JRST to a special routine to catch jump to zero.
+1	- result register, results from VALOF and function 
+	  calls.
+2 to 12	- working registers.
+13	- stack shadow register.
+14	- link register.
+15	- the constant 1.
+16	- stack register.
+17	- system pushdown list
+.S 1
+.F
+Registers 1 to 12 can be assumed free for programmer use in
+any subroutine or machine code block.
+.BR
+All other registers may be used in a subroutine, but 0,15,16
+and 17 should be reset before returning control to BCPL code.
+Register 13 is only used if stackchecking is enabled.
+.NF
+.S 1
+The subroutine entry code is
+     ADDI   16,@O(14)
+     MOVEM  14,O(16)
+This is followed by (if postmortem enabled):
+     MOVEI  13,n(16)  where n is extent of stack used.
+     JSP    14,.TE
+     XWD    Pointer to profile count,,
+	        Pointer to BCPL name of routine.
+.S 1
+or the following if only stack check enabled
+     MOVEI  13,n(16)
+     CAMLE  13,.SL
+     JSP    14,.SO
+.S 1
+The subroutine exit code (if postmortem enabled):  
+     JSP    14,.TX
+.S 1
+otherwise it is
+     JRSTF  @O(16)
+.S 1
+.TP 9
+.TS 12
+Subroutine call when NUMBARGS/LHS code is enabled is
+	JSP   14,subroutine
+	SUBI  16,@word
+	MOVEI 13,n(16) if restore stack limit enabled.
+	[where word is of the form
+	(BYTE 1:35) set if LHS true
+	(BYTE 12:23) count of NUMBARGS
+	(BYTE 5:18) zero
+	(BYTE 18:0) stack increment]
+.S 1
+otherwise it is
+	JSP   14, subroutine
+	SUBI  16, stack increment
+	MOVEI 13,n(16) if restore stack limit enabled.
+.S 1
+A source error causes the following code to be planted
+	JSP   14,.ER
+	XWD   Lineno, Pointer to BCPL file name.
+	XWD   Errno, Pointer to BCPL error message.
+.S 1
+A label trap, planted if postmortem enabled is
+	JSP   14,.TL
+	XWD   Pointer to profile count,,
+	          Pointer to BCPL name of label.
+.S 1
+A TRACE point trap, planted if postmortem enabled is
+	Move parameters to stack
+	JSP   14,.TT
+	SUBI  (see subroutine call)
+	MOVEI 13,n(16) always restore stack limit
+	CAIA  Pointer to BCPL name of trace point.
+	CAI   Pointer to profile count.
+.S 1
+The finish code is
+	JSP   14,.FN
+.S 1
+If a debugging symbol file is being produced the
+segment is headed by:
+	JSP   14,.SY
+	XWD   Pointer to name of symbol file,,
+	          Continuation address.
+.PG  
+.LM 0
+.APPENDIX COMPILATION ERROR MESSAGES.
+.LM 5
+.F
+.I -5
+Syntax error messages:-
+.S 1
+.TS 5
+.I -5
+1.	UNMATCHED '$)' TAG
+.BR
+There is a tagged closing section bracket whose tag
+name does not match any tag name on the unclosed
+opening section brackets in your segment.  The top
+level is closed.
+.S 1
+.I -5
+2.	UNMATCHED '$(' TAG
+.BR
+The compiler has encountered a closing section bracket
+which has no tag name, but appears to close an opening
+section which has a tag name.  The top level
+is closed.
+.S 1
+.I -5
+3.	'BYTE' OR 'SELECTOR' OUT OF PLACE
+.BR
+The BYTE and SELECTOR construction operators must be
+either an expression on their own, or within brackets,
+because they have such low priority.
+.S 1
+.I -5
+4.	COMMAND EXPECTED
+.BR
+The compiler has either a) found a declaration while
+scanning commands, in which case it will process the
+declaration, giving the names within it the scope of
+the remainder of the current block or b) found
+something incomprehensible while scanning commands.
+.S 1
+.I -5
+5.	UNBRACKETED 'TABLE' IN EXPRESSION LIST
+.BR
+.S 1
+.I -5
+6.	')' EXPECTED AFTER EXPRESSION LIST
+.BR
+In a function or routine call.
+.S 1
+.I -5
+7.	EXPRESSION MALFORMED
+.BR
+The compiler, when reading what it believes to be an
+expression (or sub expression), cannot understand the
+start of the expression (or sub expression).
+.S 1
+.I -5
+8.	':' MISSING
+.BR
+One of the fields is missing in a SELECTOR or BYTE 
+construction, it is assumed to be zero.
+.S 1
+.I -5
+9.	',' MISSING IN CONDITIONAL
+.BR
+After the true branch.
+.S 1
+.I -5
+10.	UNMATCHED '(' IN EXPRESSION
+.BR        
+The closing bracket on a sub expression appears to be
+missing.
+.S 1
+.I -5
+11.	'LET' EXPECTED
+.BR
+An 'AND' has been found without preceding 'LET', it is
+treated as 'LET'.
+.S 1
+.I -5
+12.	'$(' MISSING
+.BR
+Before EXTERNAL, STATIC, MANIFEST or GLOBAL list.
+.S 1
+.I -5
+13.	')' MISSING AFTER NAMELIST
+.BR
+The closing bracket is missing in the () or (<namelist_>)
+in a function or routine declaration.
+.S 1
+.I -5
+14.	'=' OR 'BE' MISSING
+.BR
+After function or routine header.
+.S 1
+.I -5
+15.	'=' MISSING
+.BR
+In what appears to be a simple LET declaration, the =
+has been left out or := used instead.
+.S 1
+.I -5
+16.	DECLARATION EXPECTED
+.BR
+LET or WHERE have been found without a normal LET type
+declaration following.
+.S 1
+.I -5
+17.	NAME EXPECTED
+.BR
+The compiler expects to find a name as part of a
+declaration list.  Caused usually by missing the
+closing section bracket on an EXTERNAL, STATIC,
+MANIFEST or GLOBAL, or using a reserved word where
+a name is intended.
+.S 1
+.I -5
+18.	'OR' MISSING AFTER 'TEST'
+.BR
+.S 1
+.I -5
+19.	'=' MISSING IN 'FOR'
+.BR
+After the FOR loop control variable.
+.S 1
+.I -5
+20.	'TO' MISSING IN 'FOR'
+.BR
+.S 1
+.I -5
+21.	'INTO' MISSING AFTER 'SWITCHON'
+.BR    
+.S 1
+.I -5
+22.	':' MISSING AFTER 'CASE' OR 'DEFAULT'
+.BR
+.S 1
+.I -5
+23.	RANGE BADLY FORMED AFTER 'DEFAULT'
+.BR
+The range after DEFAULT should have both lower and upper
+values.
+.S 1
+.I -5
+24.	NAME EXPECTED AS LABEL
+.BR
+The compiler has found what it believes to be a label,
+indicated by ':', but the expression is not simply a name.
+.S 1
+.I -5
+25.	ASSIGN OPERATOR MISSING
+.BR
+The compiler thinks it has seen an expression list on the
+left hand side of an assignment.  This error message
+sometimes is caused by misspelling a keyword.
+.S 1
+.I -5
+26.	END OF PROGAM FOUND
+.BR
+Before the end of the file;
+this is usally caused by a mismatch of $( and $) pairs.
+.S 1
+.I -5
+27.	STRING MISSING AFTER 'GET'
+.BR
+There should be a BCPL string after GET, indicating which
+file the compiler is to GET.
+.S 1
+.I -5
+28.	'_#' OUT OF CONTEXT
+.BR
+_# is used to indicate an octal number, or to indicate
+floating point interpretation of operators.  It must be
+adjacent to the number or operator it qualifies.
+.S 1
+.I -5
+29.	STRING TOO LONG OR " OR ' MISSING
+.BR
+A string exceeds the maximum permitted length.  This is
+usually caused by using " or ' or * in a string instead
+of *" or *' or **.
+.S 1
+.I -5
+30.	BINARY, OCTAL OR HEX DIGIT EXPECTED
+.BR
+There should be at least one digit to the required radix in a binary, octal or hexadecimal constant.
+.S 1
+.I -5
+31.	CHARACTER FOUND OUT OF PLACE
+.BR
+A character which is meaningless to BCPL has been found
+in the input file.  It is ignored.
+.S 1
+.I -5
+32.	'*N' INTERPRETED AS '*C*L'
+.BR
+Some BCPL compilers on machines with a single new line
+character, accept *N for newline.  The compiler converts
+this to *C*L.
+.S 1
+.I -5
+33.	FRACTION MISSING
+.BR
+A fractional part must always appear in a real number
+constant.
+.S 1
+.I -5
+34.	EXPONENT MISSING
+.BR
+If E is given it must be followed by a valid exponent in 
+a real number constant.
+.S 1
+.I -5
+35.	END OF FILE FOUND
+.BR
+Before logical end of program;
+this is usually caused by a mismatch of $( and $) pairs.
+.S 1
+.I -5
+36.	UNABLE TO GET GETFILE
+.BR
+There is either a) some error in the file specification for the
+getfile requested or b) the file is inaccessible.
+.S 1
+.I -5
+37.	END OF LINE FOUND WHILE READING STRING
+.BR
+A string is not permitted to span more than one line unless
+specifically indicated. Often caused by using " or ' or * in
+a string instead of *" or *' or **.
+.S 1
+.I -5
+38.	TRACE ROUTINE CALL EXPECTED
+.BR
+The syntax of the TRACE command has been infringed.
+.S 1
+.I -5
+39.	MONADIC OPERATORS ARE MORE BINDING THAN VECTOR APPLY
+.BR
+This warning is intended to advise that an expression of
+the form @A!B is interpreted as (@A)!B and not @(A!B).
+.S 1
+.I -5
+Semantic error messages:-
+.S 1
+.I -5
+40.	'BREAK' NOT INSIDE A LOOP
+.BR
+BREAK can only be used inside a loop command such as
+FOR, UNTIL, WHILE and the REPEATs.
+.S 1
+.I -5
+41.	'LOOP' NOT INSIDE A LOOP
+.BR
+Same as 40.
+.S 1
+.I -5
+42.	'ENDCASE' NOT INSIDE A 'SWITCHON'
+.BR
+.S 1
+.I -5
+43.	'RESULTIS' NOT INSIDE A 'VALOF'
+.BR
+.S 1
+.I -5
+44.	'CASE' NOT INSIDE A 'SWITCHON'
+.BR
+.S 1
+.I -5
+45.	'DEFAULT' NOT INSIDE A 'SWITCHON'
+.BR
+.S 1
+.I -5
+50.	NAME NOT DECLARED
+.BR
+Name is treated as EXTERNAL.  Repetitions of this error
+for the same name can be suppressed by use of the /A switch.
+.S 1
+.I -5
+51.	MULTIPLY DECLARED NAME
+.BR
+A name may be declared by using it as a routine name, or a
+label or as a FOR loop variable; all names with
+identically the same scope must be unique.
+.S 1
+.I -5
+52.	DYNAMIC FREE VARIABLE
+.BR
+Local variables declared by simple or vector LET declarations,
+may only be referenced in the routine in which they are
+declared, not even in any routines embedded in the declaring 
+one.
+.S 1
+.I -5
+53.	NON 'MANIFEST' NAME IN CONSTANT
+.BR
+Any names appearing in a constant expression must have been
+previously declared as MANIFEST.  This message may occur
+if the name is undeclared altogether.
+.S 1
+.I -5
+54.	LOCAL OR 'MANIFEST' NAME USED WITH @ IN LOAD TIME CONSTANT
+.BR
+The address of a local or MANIFEST can not be used in the
+constant expression for a STATIC or TABLE element.
+.S 1
+.I -5
+55.	ADDRESS OF 'MANIFEST' CONSTANT USED
+.BR
+Since a MANIFEST is merely a way of attaching a mnemonic
+name to a constant, the address of such a constant is
+meaningless.
+.S 1
+.I -5
+56.	VALUE ASSIGNED TO 'MANIFEST' CONSTANT
+.BR
+See 55.  Such an assignment is meaningless.
+.S 1
+.I -5
+57.	'GLOBAL' OUT OF RANGE
+.BR 
+must be in range -9999 to +9999.
+.S 1
+
+.I -5
+60.	'CASE' VALUES OVERLAP
+.BR
+Two CASE values are the same or overlap in a single
+SWITCHON command body.
+.S 1
+.I -5
+61.	MORE THAN ONE 'DEFAULT'
+.BR
+In a single SWITCHON command body.
+.S 1
+.I -5
+70.	UNMATCHED LHS/RHS
+.BR
+In a LET declaration or an assignment
+there are too many or too few values on the right of the
+declaration or assignment for the number of locations named on the left.
+.S 1
+.I -5
+71.	ADDRESS EXPECTED
+.BR
+The expression (either operand of @ or on the left of an
+assignment) is expected to indicate an address.
+.S 1
+.I -5
+72.	LOAD TIME CONSTANT EXPECTED
+.BR
+The expression which is the value of a STATIC or TABLE
+element must be a load time constant.
+.S 1
+.I -5
+73.	NAME EXPECTED IN @ EXPRESSION
+.BR
+The name of a static (inplicit or explicit) is the only
+expression permissible as the operand of @ in a load
+time constant.
+.S 1
+.I -5
+74.	CONSTANT EXPECTED
+.BR
+The expression must be a compile time constant.
+.S 1
+.I -5
+75.	STRING OR NAME EXPECTED AS EXTERNAL NAME
+.BR
+The equivalent name of an EXTERNAL (that on the right
+of = or :) must be a BCPL name or a BCPL string.
+.S 1
+.I -5
+76.	STRING OR NAME EXPECTED AS 'EXTERNAL' PREFIX
+.BR
+The prefix to an EXTERNAL list should be a BCPL name
+or a BCPL string.
+.S 1
+.I -5
+INTCODE version error messages:-
+.S 1
+.I -5
+85.	STATIC SELECTORS/BYTES ARE NOT IMPLEMENTED IN THIS VERSION
+.S 1
+.I -5
+86.	DYNAMIC SELECTORS/BYTES ARE NOT IMPLEMENTED IN THIS VERSION
+.S 1
+.I -5
+87.	EXPONENTIATION IS NOT IMPLEMENTED IN THIS VERSION
+.S 1
+.I -5
+88.	TRACE IS NOT IMPLEMENTED IN THIS VERSION
+.S 1
+.I -5
+89.	FLOATING POINT OPERATORS ARE NOT IMPLEMENTED IN THIS VERSION
+.S 1
+.I -5
+General error messages:-
+.S 1
+.I -5
+96.	LINE TOO LONG
+.BR
+Source lines are limited to 150 characters. The rest of the line is ignored.
+.S 1
+.I -5
+97.	
+.BR
+These errors are machine dependent and the text describes
+the error.
+.S 1
+.I -5
+98.	COMPILER ERROR - PLEASE REPORT TO SOFTWARE STAFF
+.BR
+Retain all the documentation/cards/listings you have of 
+your program.  Make a note of the time and date of the 
+compilation run and take all that information to your
+software representative.
+.S 1
+.I -5
+99.	COMPILER WORKSPACE FULL, RECOMPILE WITH MORE SPACE
+.BR
+The compiler utilises a limited workspace.  If you should
+get this message either a) split the segment into two or
+more pieces (better solution) or b) increase the compilers
+workspace via the compiler switches.  While developing
+a program, indication that this error is impending will be
+apparent if the % figure printed by the compiler after
+each compilation approaches 100%.
+.PG
+.LM 0
+.APPENDIX STREAM CONTROL BLOCKS.
+.LM 5
+The format of the SCB is described in terms of SELECTORS in
+the file BCL:SCB.GET, and users should consult this for the
+current allocation of the fields in the SCB.
+.S 1
+.NF
+Words 0 to 10 (Octal) are the same for all SCB's. They are
+.S 1
+SC.FLAGS    Word 0 : flag word
+SC.READER   Word 1 : read routine for this stream
+SC.WRITER   Word 2 : write routine for this stream
+SC.CLOSER   Word 3 : close routine for this stream
+SC.ERROR    Word 4 : error "LABEL" closure for this stream
+SC.OLDREAD  Word 5 : putback word
+SC.PUTSTACK Word 5 :    "      "
+SC.USER6    Word 6 : reserved for user
+SC.USER7    Word 7 :     "     "    "
+SC.USER10   Word 10:     "     "    "
+.S 1
+The flag word (word 0) has the following bit allocations.
+SC.MONITORSTREAM (BYTE 1:35) set for Monitor SCB
+SC.SIZE          (BYTE 6:12) size of SCB.
+SC.SCB           (BYTE 1:0)  always set in SCB.
+.PG
+.LM 0
+.APPENDIX EXAMPLE BCPL PROGRAM
+.NF
+.LM 5
+GET "BCL:BCPLIB"
+.S 1
+/* THIS PROGRAM CREATES A LINEPRINTER FILE WHICH SHOWS
+   WHICH CHARACTERS IN THE SOURCE FILE (DSK:DEMO.BCL)
+   ARE IN UPPER CASE. IT DOES THIS BY OVERPRINTING ALL
+   UPPER CASE CHARACTERS.
+*/
+.S 1
+MANIFEST $( IOSIZE=650; LINESIZE=150 $)
+.S 1
+STATIC $( V = VEC LINESIZE $)
+.S 1
+LET START() BE
+$(MAIN
+    LET IOV = VEC IOSIZE
+    AND C, OVERPRINT, VC = NIL, NIL, NIL
+    INITIALISEIO(IOV, IOSIZE)
+    INPUT := FINDFILE("DSK","DEMO","BCL")
+    OUTPUT := CREATEFILE("LPT")
+.S 1
+    C := INCH()
+.S 1
+    $(A
+        OVERPRINT, VC := FALSE, 0
+        UNTIL LINECH(C) _\/ C = '*E' DO
+        $(B // READS AN INPUT LINE INTO V
+            VC +:= 1
+            V!VC := C
+            C := INCH()
+        $)B
+        PRINTLINE(VC)
+        FOR I = 1 TO VC DO // REMOVE NON INTERESTING CHARS
+            SWITCHON V!I INTO
+            $(C
+                CASE 'A' ... 'Z': OVERPRINT := TRUE
+                CASE '*T': ENDCASE
+                DEFAULT 0 ... _#177: V!I := '*S'
+            $)C
+        IF OVERPRINT DO
+            FOR I=1 TO 2 DO OUTCH('*C')<_>PRINTLINE(VC)
+        IF C = '*E' BREAK
+        $( OUTCH(C); C:=INCH() $) REPEATWHILE LINECH(C)
+    $)A REPEAT
+    CLOSE(INPUT)
+    CLOSE(OUTPUT)
+$)MAIN
+.S 1
+AND PRINTLINE(CT) BE
+    FOR I = 1 TO CT DO OUTCH(V!I)
+.S 1
+AND LINECH(CH) = '*L' LE CH LE '*C'
+                                                                                                                                                                                                                                                                                                                                                

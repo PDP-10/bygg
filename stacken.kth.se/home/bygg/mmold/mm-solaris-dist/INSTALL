@@ -1,0 +1,4 @@
+To build MM for solaris,
+
+(cd ccmd; make solaris)
+(cd mm; make -f Makefile.solaris)

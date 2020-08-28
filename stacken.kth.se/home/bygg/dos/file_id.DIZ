@@ -1,0 +1,5 @@
+Int2Txi 1.1.0: a application to convert
+Ralph Brown's Interrupt List to TeXinfo format.
+Then it can be converted to Info format and can
+be read with RHIDE InfoViewer, DJGPP Info or
+SET's Editor.

@@ -1,0 +1,393 @@
+title	htrain
+search	notdef(mus:notdef.unv)
+
+init
+
+define base(chord1,chord2),<
+   s2 <
+     repeat 2,<
+	staccato 10
+	note chord1,%8.
+	staccato 0
+	note chord1,%16
+	staccato 10
+	note chord2,%8.
+	staccato 0
+	note chord2,%16
+     >;repeat
+   >;s2
+>;base
+
+define trem,<
+    s1 <
+	note g5,%8.3
+	note g5
+	note g5+1
+	note g5
+	note f5
+	note f5+1
+	note f5
+	note d5+1
+	note e5
+	note d5+1
+	note d5
+	note d5
+    >;s1
+>;trem
+
+define tune<
+
+	speed 1500
+
+	s1 dly 10
+
+;intro--
+
+	x b4,%8. ,c4+1,%8.
+	x h4,%16+%8. ,d4,%16+%8.
+	x b4,%16 ,c4+1,%16
+	x h4,%8. ,d4,%8.
+	x b4,%16 ,c4+1,%16
+	x a4,%8. ,c4,%8.
+	x g4,%16 ,h4,%16
+;1--
+	base Gx,D7
+	x h4,%4
+	x -,%4
+	x -,%2
+;2--
+	base Gx,D7
+	x -,%4
+	x b3,%8.
+	x b3,%16
+	x h3,%8
+	x b3,%4
+	x d4,%8
+;3--
+	base Gx,D7
+	x g4,%4
+	x -,%4
+	x h3,%8.
+	x g4,%16
+	x c4+1,%8.
+	x c4,%16
+;4--
+	base Gx,D7
+	x h3,%8.
+	x g4,%16
+	x g4,%4
+	x -,%4
+	x a3,%8.3
+	x b3
+	x h3
+;5--
+	s1 staccato 10
+	base Cx,G7
+	x b3,%4.3
+	x b3
+	x b3
+	x -,%4
+	x -,%8
+	x b3,%8
+;6--
+	base Cx,G7
+	x b3,%8
+	x b3,%4
+	x -,%8
+	x -,%4.3
+	x b3,%4.3
+	x b3
+	s1 staccato 0
+;7--
+	base Gx,D7
+	x h3,%8.
+	x h3,%16
+	x -,%8
+	x d4,%8
+	x e4,%8.
+	x d4,%16
+	x e4,%8.
+	x d4,%16
+;8--
+	base Gx,D7
+	x g4,%8
+	x a3,%16.3
+	x b3
+	x h3
+	x e4,%8.
+	x e4,%16
+	x g4,%8
+	x g4,%4
+	x c4,%16
+	x c4+1
+;9--
+	base D7,D
+	x d4,%8.
+	x d5,%16
+	x b4,%4
+	x b4,%4
+	x -,%8
+	x c4+1,%16
+	x d4
+;10--
+	base D7,D
+	x b4,%8
+	x c4+1,%16
+	x d4
+	x b4,%8
+	x c4+1,%16
+	x d4
+	x b4,%8
+	x c4+1,%16
+	x d4
+	x b4,%8.
+	x d4,%16
+;11--
+	base Gx,D7
+	x g3,%8.3
+	x a3
+	x b3
+	x h3,%8.3
+	x d4
+	x e4
+	x g4,%8.3
+	x d4
+	x e4
+	x g4,%8.3
+	x d4
+	x e4
+;12--
+	base Gx,D7
+	x g4,%8.
+	x e4,%16
+	x d4,%8
+	s1 staccato 5
+	x g4,%8
+	x g4,%8.3
+	x g4,%8.3
+	x a4
+	x b4,%8.3
+	x b4
+	x h4
+;13--
+	base Gx,D7
+	repeat 7,<x h4,%8.3>
+	x b4,%8.3
+	x a4,%8.3
+	x g4,%8
+	x g4,%8
+;14--
+	base Gx,D7
+	x -,%2
+	x -,%8.3
+	x g4,%8.3
+	x a4
+	x b4
+	x b4
+	x h4
+;15--
+	base Gx,D7
+	repeat 7,<x h4,%8.3>
+	x b4,%8.3
+	x a4,%8.3
+	x g4,%8
+	x g4,%8
+;16--
+	base Gx,D7
+	x -,%2
+	x -,%8.3
+	x g4,%8.3
+	x a4
+	x b4,%8.
+	x h4,%16
+;17--
+	base Cx,G7
+	x b4,%8.
+	x h4,%16
+	x b4,%8.
+	x a4,%16
+	x g4,%8
+	x g4
+	x g4,%8.3
+	x g4
+	x a4
+;18--
+	base Cx,G7
+	x b4,%8.
+	x h4,%16
+	x b4,%8.
+	x a4,%16
+	x g4,%8
+	x g4,%4
+	x g4,%8
+;19--
+	base Gx,D7
+	s1 staccato 10
+	repeat 6,<x h3,%4.3>
+;20--
+	base Gx,D7
+	repeat 3,<x h3,%4.3>
+	s1 staccato 0
+	x h3,%8.
+	x h3
+	x c4,%16
+	x c4+1
+;21--
+	base D7,D
+	x d4,%8.
+	x d5,%16
+	x b4,%4
+	x b4,%4
+	x -,%8
+	x c4+1,%16
+	x d4
+;22--
+	base D7,D
+	x b4,%8
+	x c4+1,%16
+	x d4
+	x b4,%8
+	x c4+1,%16
+	x d4
+	x b4,%8
+	x c4+1,%16
+	x d4
+	x b4,%8.
+	x d4,%16
+;23--
+	base Gx,D7
+	x g3,%8.3
+	x a3
+	x b3
+	x h3,%8.3
+	x d4
+	x e4
+	x g4,%8.3
+	x d4
+	x e4
+	x g4,%8.3
+	x d4
+	x e4
+;24--
+	base Gx,D7
+	x g4,%8.
+	x e4,%16
+	x d4,%8
+	x g4,%8
+	x g4,%4.
+	x -,%8
+;25,26,27--
+    repeat 3,<
+	base Gx,D7
+	s1 vform 2
+	trem
+	s1 vform 1
+    >;repeat 3
+;28--
+	base Gx,D7
+	s1 staccato 10
+	x -,%32
+	repeat 5,<x h4,%8.>
+	x -,%32
+	s1 staccato 0
+;29--
+	base Cx,G7
+	x d4+1,%8.
+	x e4,%16
+	x e4,%8.
+	x -,%16
+	x -,%2
+;30--
+	base Cx,G7
+	x d4+1,%8.
+	x e4,%16
+	x d4+1,%8.
+	x e4,%16
+	x d4+1,%4.3
+	x d4
+	x d4
+;31--
+	base Gx,D7
+	x h3,%4.
+	x -,%8
+	x b3,%8.
+	x h3,%16
+	x b3,%8.
+	x a3,%16
+;32--
+	base Gx,D7
+	x g3,%8
+	x a3,%16.3
+	x b3
+	x h3
+	x e4,%8.
+	x e4,%16
+	x g4,%8
+	x g4,%4
+	x c4,%16
+	x c4+1
+;33--
+	base D7,D
+	x d4,%8.
+	x d5,%16
+	x b4,%4
+	x b4,%4
+	x -,%8
+	x c4+1,%16
+	x d4
+;34--
+	base D7,D
+	x b4,%8
+	x c4+1,%16
+	x d4
+	x b4,%8
+	x c4+1,%16
+	x d4
+	x b4,%8
+	x c4+1,%16
+	x d4
+	x b4,%8.
+	x d4,%16
+;35--
+	s2 staccato 10
+	x g3,%8.3,Gx,%8.
+	x a3
+	s2 staccato 0
+	x b3,,Gx,%16
+
+	s2 staccato 10
+	x h3,%8.3,D7,%8.
+	x d4
+	s2 staccato 0
+	x e4,,D7,%16
+
+	rit 10
+	s2 staccato 10
+	x g4,%8.3,Gx,%8.
+	x d4
+	s2 staccato 0
+	x e4,,Gx,%16
+
+	rit 10
+	s2 staccato 10
+	x g4,%8.3,D7,%8.
+	x d4
+	s2 staccato 0
+	x e4,,D7,%16
+;36--	
+	rit 20
+	x g4,%8.,Gx,%4
+	x e4,%16
+	rit 40
+	x d4,%8.,D7
+	x e4,%16
+	s1 dly 20
+	rit 60
+	x f3,%8.,Gx,%8.
+;;;;;	x h3,%8.,Dx,%8.
+	pause %8
+>;tune
+
+tables
+
+end

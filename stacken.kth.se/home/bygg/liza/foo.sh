@@ -1,0 +1,9 @@
+../un64 <tshirt01.jpg.64 >tshirt01.jpg
+../un64 <tshirt02.jpg.64 >tshirt02.jpg
+../un64 <tshirt03.jpg.64 >tshirt03.jpg
+../un64 <tshirt04.jpg.64 >tshirt04.jpg
+../un64 <tshirt05.jpg.64 >tshirt05.jpg
+../un64 <tshirt06.jpg.64 >tshirt06.jpg
+../un64 <tshirt07.jpg.64 >tshirt07.jpg
+../un64 <tshirt08.jpg.64 >tshirt08.jpg
+../un64 <tshirt09.jpg.64 >tshirt09.jpg

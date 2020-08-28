@@ -1,0 +1,30 @@
+	.opdef ttcall [(0xe8000000)]
+
+sp=15
+
+start:	movea sp, stack
+	movea 1, msg
+loop:	move8 2, (1)
+	jumpe 2, done
+	pushj sp, putchr
+	aoja 1, loop
+
+done:	jumpa .
+
+
+chr:	.blkw 1
+
+putchr:	movem 2,chr
+	ttcall 1,chr
+	popj sp,
+
+msg:	.ascii  "hello, world"
+	.byte 13, 10, 0
+
+	.align 8
+
+stksize=20
+	
+stack:	.blkw stksize
+
+	.end

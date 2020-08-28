@@ -1,0 +1,1420 @@
+.PG
+.PS 60,63;.FLAG INDEX
+.T BCPL USER GUIDE
+.ST
+.LM 0
+.F
+.HL 1  THE MAIN BCPL LIBRARY
+The main BCPL library  consists largely of those routines listed in section
+6 of the BCPL reference manual, together with lower level routines used by them.
+There are also numerous other useful routines in the library available for
+use by the more experienced BCPL programmer. In this section of the BCPL
+users guide, those routines, entry points and manifest constants in the
+library, not described in section 6 of the BCPL reference manual will
+be described.
+.S 1
+The 'EXTERNAL' names and 'MANIFEST' values used in the library are declared
+in a number of GETfiles, all normally kept on BCL:, the library will
+be described in sections relating to those GETfiles. They are:
+.S 1
+.LS;
+.LE;BCL:BCPLIB.GET	The GETfile containing all the 'EXTERNAL'
+.INDEX BCL:BCPLIB.GET
+declarations for those routines described in section 6 of the BCPL
+reference manual. No further description will be given here.
+.LE;BCL:IOPACK.GET	Contains 'EXTERNAL' declarations for other useful
+.INDEX BCL:IOPACK.GET
+I/O based routines.
+.LE;BCL:IOUUO.GET	Contains 'EXTERNAL' declarations for a set of routines
+.INDEX BCL:IOUUO.GET
+to perform all the monitor UUOs on a given stream.
+.LE;BCL:USEFUL.GET	Contains mostly 'EXTERNAL' declarations for other
+.INDEX BCL:USEFUL.GET
+useful non I/O based routines.
+.LE;BCL:IOLIB.GET	Contains 'EXTERNAL' declarations for the basic entry
+.INDEX BCL:IOLIB.GET
+points for the I/O routines in the library. It also GETs the other four
+GETfiles listed above.
+.LE;BCL:KERNEL.GET	Contains 'EXTERNAL' declarations for the routines and
+.INDEX BCL:KERNEL.GET
+entry points at the very heart of the BCPL library.
+.LE;BCL:ERRORS.GET	Contains mostly 'MANIFEST' declarations for the error
+.INDEX BCL:ERRORS.GET
+codes used internally by the I/O and storage routines in the library.
+.LE;BCL:SCB.GET	Contains mostly 'MANIFEST' declarations of word offsets and
+.INDEX BCL:SCB.GET
+selectors for the BCPL Stream Control Blocks (SCBs described briefly in
+appendix H of the BCPL reference manual).
+.LE;BCL:BITS.GET	Contains 'MANIFEST' declarations for DEC type bit
+.INDEX BCL:BITS.GET
+masks. (Eg. B35 describes DEC bit 35, at the RH end of the word).
+.LE;BCL:ACS.GET	Contains 'MANIFEST' declarations for the register assignment
+.INDEX BCL:ACS.GET
+mnemonics, which should always be used when writing BCPL machine code blocks.
+(Described briefly in appendix D of the BCPL reference manual).
+.LE;BCL:JOBDAT.GET	Contains 'EXTERNAL' declarations for the JOB DATA AREA
+.INDEX BCL:JOBDAT.GET
+symbols. These are included in the MANIFEST section because they are satisfied
+by MANIFEST values by the loader.
+.ELS;
+.S 1
+The source files of the library are in BCL:BCPLIB.MAS. The library itself
+.INDEX BCL:BCPLIB.MAS.
+usually resides on SYS: as SYS:BCPLIB.REL, and is searched automatically
+by the loader for all normal BCPL programs.
+.S 1
+A note for BCPL lowcode users: these routines are all present in
+BCL:LOWLIB.REL, which is the lowcode equivalent of SYS:BCPLIB.REL.
+The loader, however, needs to be instructed to search BCL:LOWLIB.REL by
+the user; it does not do so automatically.
+.S 1
+REMEMBER: all 'EXTERNAL's used in the library should always be referenced
+through the correct GETfiles, as their loader names may change from time to
+time.
+.LM 5
+.HL 2 BCL:BCPLIB.GET
+The routines from BCL:BCPLIB.GET are described in the BCPL reference manual
+.INDEX BCL:BCPLIB.GET
+section 6. Only the following need further expansion:
+.LM 10
+.HL 3 FREESPACE(origin,size,quantum,proc,name)
+.INDEX FREESPACE (BCPLIB)
+May be called with 0 to 5 parameters, the number of parameters
+affecting the action of the function.
+It is used to set up a region of memory for use by NEWVEC and FREE
+in allocating dynamic vectors. The normal call to FREESPACE is with
+two parameters (as described in the BCPL reference manual section 6).
+.LM 15
+.HL 4 Region Descriptors
+This is the main data structure handled internally by the free space system.
+It is a 7 word vector as follows:
+.s 1
+.nf
+word 0:   origin
+word 1:   extent
+word 2:   quantum
+word 3:   proc
+word 4:   name
+word 5:   currentpage
+word 6:   freelist
+.f
+.s 1
+Words 0 to 4 come from the calls to FREESPACE as described below,
+currentpage is the last page the system has tried to acquire,
+freelist is the pointer used by NEWVEC and FREE internally to point
+to the linked list of freelists within a region.
+.HL 4 FREESPACE()
+Returns a scratch copy of the current region descriptor.
+(This copy is within a static vector in FREESPACE, and will
+be overwritten upon the next call to FREESPACE).
+.HL 4 FREESPACE(TRUE)
+Resets the current free region, and returns a scratch copy of the
+old region descriptor.
+.HL 4 FREESPACE(region)
+Sets the current region descriptor to the region descriptor passed
+as the parameter, and returns a scratch copy of the old region descriptor.
+.HL 4 FREESPACE(origin,size)
+Sets up an unexpandable region with the given origin and size, name is defaulted
+to "free region", with zero quantum and proc.
+.HL 4 FREESPACE(origin,size,quantum)
+If quantum is non zero then this
+sets up an expandable region starting at virtual memory page origin. If quantum
+is negative, then the region expands downwards quantum pages at a time,
+otherwise it expands upwards quantum pages at a time. The region is made to
+expand whenever there isn't enough space left to satisfy a NEWVEC call. size is
+ignored, name is defaulted to "free region" and proc is defaulted to zero.
+If quantum is zero, then this is similar to the two parameter call.
+.HL 4 FREESPACE(origin,size,quantum,proc)
+.BR
+Similar to the three parameter call, but if proc is non zero, then before
+expanding the region, proc is called with the current region descriptor as its
+parameter. If it returns FALSE then the region expansion doesn't take place and
+an error is reported from the package. If it returns TRUE then the expansion
+takes place.
+proc is most commonly used as a checking procedure against
+multiple regions overlapping.
+.HL 4
+.BR
+FREESPACE(origin,size,quantum,proc,name)
+.BR
+Similar to the three and four parameter calls, except that name is taken to be
+a string to be used in any error messages that the package prints out
+concerning this region.
+.LM 10
+.HL 3 WRITEF(stream,floatno,m,n)
+.INDEX WRITEF (BCPLIB)
+The floating point number is written out according to the following
+criteria: (if m and/or n are omitted, they default to 0).
+.BR
+.LM 18
+.I -8
+m=0#n=0 Writes floatno as defined in BCPL reference
+manual, section 6.
+.I -8
+m_>0#n=0 Writes out as integer to modulo m places. 1 extra place
+is used for sign. Normally the sign field is '-' or blank,
+but if m<0 then a '+' sign is forced for a positive number.
+.I -8
+m_>0#n_>0 Writes out as a fixed point number with modulo m places
+before the point and modulo n places after. 1 extra place is used
+for the decimal point, and sign as above if m or n is negative.
+.I -8
+m=0#n_>0 Writes out as floating number with 1 digit before the point
+and n places after; this is followed by the exponent. The total width
+is n+7, 1 place for sign (as above), 1 for digit before the point, 1
+for the decimal point and 4 for the exponent.
+.LM 10
+.HL 3 OUTF(floatno,m,n)
+.INDEX OUTF (BCPLIB)
+Same as WRITEF (OUTPUT,floatno,m,n)
+.LM 5
+.HL 2 BCL:IOPACK.GET
+.LM 10
+.INDEX BCL:IOPACK.GET
+.HL 3 WRITEZ(stream,azstr)
+.INDEX WRITEZ (IOPACK)
+Writes an ASCIZ string to the stream.
+.HL 3 OUTZ(azstr)
+.INDEX OUTZ (IOPACK)
+Same as WRITEZ (OUTPUT,azstr)
+.HL 3 WRITEA(stream,aword)
+.INDEX WRITEA (IOPACK)
+Writes an ASCII word to the stream as 5 characters.
+.HL 3 OUTA(aword)
+.INDEX OUTA (IOPACK)
+Same as WRITEA (OUTPUT,aword)
+.HL 3 WRITE6(stream,sword)
+.INDEX WRITE6 (IOPACK)
+Writes a left justified sixbit word to the stream.
+.HL 3 OUT6(sword)
+.INDEX OUT6 (IOPACK)
+Same as WRITE6 (OUTPUT,sword)
+.HL 3 WRITE8(stream,oword)
+.INDEX WRITE8 (IOPACK)
+Writes oword to the stream as an octal number with leading zeros suppressed.
+.HL 3 OUT8(oword)
+.INDEX OUT8 (IOPACK)
+Same as WRITE8 (OUTPUT,oword)
+.HL 3 WRITEHEX(stream,hword,width)
+.INDEX WRITEHEX (IOPACK)
+Writes hword to the stream as a hexadecimal number. If width is
+included and is non-negative, then it will be width
+characters wide, otherwise the significant part of hword
+is written out with leading zeroes suppressed.
+.HL 3 OUTHEX(hword,width)
+.INDEX OUTHEX (IOPACK)
+Same as WRITEHEX (OUTPUT,hword,width)
+.HL 3 WRITEOP(stream,opcode)
+.INDEX WRITEOP (IOPACK)
+Writes the PDP10 mnemonic corresponding to the 9 bit opcode to the stream.
+The opcode should be a valid KA10 or KI10 mnemonic in the range _#40 to _#677,
+any other codes will be written as Fnnn.
+.HL 3 OUTOP(opcode)
+.INDEX OUTHEX (IOPACK)
+Same as WRITEOP (OUTPUT,opcode)
+.HL 3 FINDTMP(tmpname,err)
+.INDEX FINDTMP (IOPACK)
+Finds a TMP file corresponding to the first 3 letters of the string tmpname.
+This will look for the tempcore file TMP:ABC (where ABC are the
+first 3 letters of tmpname), if TMP:ABC does not exist then it will
+look for DSK:nnnABC.TMP (where nnn is the job number), if it fails to open
+that then the error return is taken.
+This method is the normal PDP10 system way of creating temporary files.
+.HL 3 CREATETMP(tmpname,err)
+.INDEX CREATETMP (IOPACK)
+Creates a TMP file corresponding to the first 3 letters of the string tmpname.
+This will create the tempcore file TMP:ABC (where ABC are the first 3
+letters of tmpname), if there is not enough room for a tempcore file
+then it will create DSK:nnnABC.TMP (where nnn is the job number).
+This method is the normal PDP10 system way of creating temporary files.
+.HL 3 WRITEDATE(stream,date)
+.INDEX WRITEDATE (IOPACK)
+Writes the PDP10 formatted date word to the stream in the form dd-Mon-yy.
+.HL 3 WRITEDATE(stream)
+.INDEX WRITEDATE (IOPACK)
+Same as WRITEDATE (stream,todaysdate)
+.HL 3 OUTDATE(date)
+.INDEX OUTDATE (IOPACK)
+Same as WRITEDATE (OUTPUT,date)
+.HL 3 OUTDATE()
+.INDEX OUTDATE (IOPACK)
+Same as WRITEDATE (OUTPUT)
+.HL 3 WRITETIME(stream,time)
+.INDEX WRITETIME (IOPACK)
+Writes the PDP10 formatted millisecond clock word to the stream in the form
+hh:mm:ss.
+.HL 3 WRITETIME(stream)
+.INDEX WRITETIME (IOPACK)
+Same as WRITETIME (stream,thetimeofdaynow)
+.HL 3 OUTTIME(time)
+.INDEX OUTTIME (IOPACK)
+Same as WRITETIME (OUTPUT,time)
+.HL 3 OUTTIME()
+.INDEX OUTTIME (IOPACK)
+Same as WRITETIME (OUTPUT)
+.HL 3 GETFILE(stream)
+.INDEX GETFILE (IOPACK)
+This is a poor mans version of RFSLIB, and is retained for historical
+reasons only. It
+reads the next legal PDP10 file-spec from the stream into the EXTERNALS
+DEV, FILE, EXT and PPN (declared in BCL:IOPACK.GET).
+.INDEX DEV (IOPACK)
+.INDEX FILE (IOPACK)
+.INDEX EXT (IOPACK)
+.INDEX PPN (IOPACK)
+It returns the terminating character as its result
+if successful, and the negative of the terminating character if there was
+any syntax infringement detected.
+.BR
+If / or ( is detected then it expects
+switches of the form S or nS or +nS or -nS (where S is any alphanumeric name,
+starting with a letter, n is an octal
+number, +n is a positive decimal number, -n is a negative decimal number).
+It then calls SWITCH(S,n), SWITCH is also declared in BCL:IOPACK.GET.
+.HL 3 SWITCH(S,n)
+.INDEX SWITCH (IOPACK)
+This routine traps calls from GETFILE to SWITCH when the user has not
+defined his own SWITCH routine. It ignores n, and sets SWORD bit 0 (LH bit)
+if S='A', bit 1 if S='B' ... bit 25 if S='Z'. SWORD is also defined in
+BCL:IOPACK.GET, and is initially all zeroed at program start.
+.HL 3 HITTY
+.INDEX HITTY (IOPACK)
+This is a stream which corresponds to TTY, but can not be corrupted by a
+program running wild. It is used by the library error routines in an
+attempt to ensure error messages reach the teletype.
+.HL 3 IOWD(length,block)
+.INDEX IOWD (IOPACK)
+This returns a standard DEC I/O block transfer word, with -length
+in the left half and block address-1 in the right half. It is used for modes
+_#15-_#17 data transfers.
+.HL 3 IOMESSAGE()
+.INDEX IOMESSAGE (IOPACK)
+This routine prints the latest standard I/O error message, whose code is
+stored in ERR and which occurred on the stream defined in SCB.
+The error codes, SCB and ERR are declared in BCL:ERRORS.GET.
+IOMESSAGE can either be called by the user to get a meaningful error
+message after a transfer to his error label (passed to FINDFILE etc.),
+or it may be called by IOERROR if no user error label has been defined and
+an I/O error has occurred.
+.HL 3
+.BR
+RENAME(stream, file, ext, ppn, prot, time, date, ver)
+.INDEX RENAME (IOPACK)
+This routine changes the name of the file open on the stream to the
+new file, ext etc. The change takes place when the stream
+is closed. Any parameters not supplied are left the same,
+unless file is zero, in which case they are defaulted to zero.
+.HL 3 DELETE(stream)
+.INDEX DELETE (IOPACK)
+This routine causes the file open on the stream to be deleted when
+the stream is closed.
+.HL 3 REWIND(stream)
+.INDEX REWIND (IOPACK)
+This routine repositions the file open on the stream back to the start.
+It only works for monitor streams created by FINDFILE or CREATEFILE.
+.HL 3 PUTBACK(stream,val)
+.INDEX PUTBACK (IOPACK)
+This routine pushes the val onto the input side of the stream,
+so that the next character read from the stream will be val.
+It uses free storage space, so FREESPACE or INITIALISEIO should have been
+called prior to using PUTBACK. READNO and READF also make use of PUTBACK.
+.HL 3 SIXBIT(string)
+.INDEX SIXBIT (IOPACK)
+Returns the sixbit value of the string. The string may already be
+a sixbit string or it may be a normal BCPL string.
+.HL 3 NOECHO()
+.INDEX NOECHO (IOPACK)
+Turns echo off, on the controlling teletype.
+.HL 3 ECHO()
+.INDEX ECHO (IOPACK)
+Turns echo on, on the user controlling teletype.
+.HL 3
+.BR
+APPENDFILE(dev, file, ext, ppn, err, mode, buffs, prot, time, date, ver)
+.INDEX APPENDFILE (IOPACK)
+This routine is similar to CREATEFILE, except that if the file already
+exists then the stream is positioned at the end of the file so that
+any new data written to the file is appended to it.
+Defaults of zero are applied to any of file, ext etc. that are not
+supplied.
+.HL 3 RESCAN()
+.INDEX RESCAN (IOPACK)
+Rescans the command line that initiated the program, and repositions the
+TTY input pointer after the first separating character found.
+It returns the value of the separating character, which may be '-',
+';' or control character (codes _#00-_#37).
+_#00 is normally returned if there was no command line available for
+rescanning and there is no user type ahead in the TTY input buffer.
+.HL 3 WORDS(stream)
+.INDEX WORDS (IOPACK)
+Returns the number of words in the file, open on the stream, when it was
+opened. If the stream is not a monitor stream then the result is zero.
+.HL 3 WRITEX(stream,c,a,lvc,lva)
+.INDEX WRITEX (IOPACK)
+This routine can be supplied by the user to extend the escape codes
+recognised in format strings passed to OUT, WRITE and OV.
+'c' is the escape code character found (following the :), 'a' is the next
+argument in the parameter list, 'lvc' is the address of the pointer to the current
+character in the unpacked format string, 'lva' is the address of the pointer to the
+current argument. If the users own WRITEX uses either 'c' or/and 'a' then
+he must update 'lvc' or/and 'lva'. A default WRITEX exists in the BCPL
+library which also handles :X for WRITEHEX with minimum significant width, :Hn for WRITEHEX
+with width n, :Rm.n for WRITEF with width m and n; for any other character the
+WRITEX in the library prints :, and does not update 'lva' or 'lvc' so that
+the character following the : is also printed eventually by OV (OUT or WRITE).
+This default WRITEX is listed below as an example:
+.NF
+.S 1
+.TP 22
+GET "BCL:IOLIB"
+LET WRITEX(S,C,A,LVC,LVA) BE
+$( SWITCHON C INTO
+   $( CASE 'X': CASE 'x':
+         WRITEHEX(S,A)
+         !LVC+:=1
+         ENDCASE
+      CASE 'H': CASE 'h':
+         WRITEHEX(S,A,READLVCNO(LVC))
+         ENDCASE
+      CASE 'R': CASE 'r':
+         $( LET M=READLVCNO(LVC)
+            LET N=!!LVC='.'-_>READLVCNO(LVC),0
+            WRITEF(S,A,M,N)
+            ENDCASE
+         $)
+      DEFAULT:
+         WRITECH(S,':')
+         RETURN
+   $)
+   !LVA+:=1
+$)
+.S 1
+.TP 9
+AND READLVCNO(LVC) = VALOF
+$( LET N=0
+   !LVC+:=1
+   WHILE '0' LE !!LVC LE '9' DO
+   $( N:=N*10+!!LVC-'0'
+      !LVC+:=1
+   $)
+   RESULTIS N
+$)
+.F
+.LM 5
+.HL 2 BCL:IOUUO.GET
+.LM 10
+.INDEX BCL:IOUUO.GET
+.HL 3 IOUUO(fn,acc,addr)
+.INDEX IOUUO (IOUUO)
+Performs the I/O monitor UUO with code fn, with accumulator field
+set to acc (usually a channel number) and address field set to addr. It returns true or false
+according to whether skip return is taken or not.
+.HL 3 LOOKUP(channel,addr)
+.INDEX LOOKUP (IOUUO)
+Performs a LOOKUP UUO on channel with LOOKUP block 'addr'. Returns true
+if LOOKUP successful, false otherwise.
+.HL 3 ENTER(channel,addr)
+.INDEX ENTER (IOUUO)
+Performs an ENTER UUO on channel with ENTER block 'addr'. Returns true
+if ENTER successful, false otherwise.
+.HL 3 OPEN(channel,addr)
+.INDEX OPEN (IOUUO)
+Performs an OPEN UUO on channel with OPEN block 'addr'. Returns true
+if OPEN successful, false otherwise.
+.HL 3 RELEASE(channel)
+.INDEX RELEASE (IOUUO)
+Performs a RELEASE UUO on channel.
+.HL 3 INBUF(channel,buffcount)
+.INDEX INBUF (IOUUO)
+Performs an INBUF UUO to set up buffcount buffers on channel.
+Remember: the buffers are sited above JBFF.
+.HL 3 OUTBUF(channel,buffcount)
+.INDEX OUTBUF (IOUUO)
+Performs an OUTBUF UUO to set up buffcount buffers on channel.
+Remember: the buffers are sited above JBFF.
+.HL 3 USETO(stream,block)
+.INDEX USETO (IOUUO)
+Performs a USETO UUO to reposition the stream so that the next OUT
+or OUTPUT UUO performed on that stream will write to the specified
+block. The file starts with block 1.
+.HL 3 USETI(stream,block)
+.INDEX USETI (IOUUO)
+Performs a USETI UUO to reposition the stream so that the next IN
+or INBUF UUO performed on that stream will read from the specified
+block. The file starts with block 1.
+.HL 3 UGETF(stream)
+.INDEX UGETF (IOUUO)
+Performs an UGETF UUO on the stream to return the number of the next free block.
+Applies to DECtape streams only.
+.HL 3 WAIT(stream)
+.INDEX WAIT (IOUUO)
+Performs a WAIT CALLI UUO on the stream, to wait until the stream is inactive.
+.HL 3 MTAPE(stream,n)
+.INDEX MTAPE (IOUUO)
+Performs a MTAPE UUO function n on stream. Applies only to magtape and DECtapes.
+.HL 3 SETSTS(stream,val)
+.INDEX SETSTS (IOUUO)
+Performs a SETSTS UUO to set the file status on stream to val.
+.HL 3 GETSTS(stream)
+.INDEX GETSTS (IOUUO)
+Performs a GETSTS UUO to return the file status of the file on stream.
+.HL 3 OUTUUO(stream,addr)
+.INDEX OUTUUO (IOUUO)
+Performs an OUT UUO on stream with addr in the effective address field
+of the UUO. Returns true if successful or false for I/O error or EOT.
+.HL 3 INUUO(stream,addr)
+.INDEX INUUO (IOUUO)
+Performs an IN UUO on stream with addr in the effective address field
+of the UUO. Returns true if successful or false for I/O error or EOF.
+.HL 3 CLOSEUUO(stream,n)
+.INDEX CLOSEUUO (IOUUO)
+Performs a CLOSE UUO with value n on the stream. (The action specified
+by n does not usually take place until the channel is released).
+.LM 5
+.HL 2 BCL:USEFUL.GET
+.LM 10
+.INDEX BCL:USEFUL.GET
+.HL 3 GETOP(mnemonic)
+.INDEX GETOP (USEFUL)
+Returns the PDP10 opcode corresponding to the SIXBIT mnemonic.
+The value returned is in the range _#40-_#677 for normal opcodes, or a 36 bit
+value (always _>_#677) for TTCALL, JRST, JFCL and CALLI
+extended mnemonics. Returns 0 for any invalid mnemonic.
+.HL 3 VECTOR(procedure,size)
+.INDEX VECTOR (USEFUL)
+Applies the procedure to a dynamically created vector of given size.
+This is done by pushing a little code onto the stack to simulate a call
+to procedure with a savespace of the appropriate size. The vector disappears
+when procedure returns. Procedure can be a function, in which case its
+result will be the result of VECTOR. Procedure is called with
+parameters (vectorbase,size).
+.HL 3 APPLY(procedure,size,p1,p2#...#pn)
+.INDEX APPLY (USEFUL)
+Is similar to vector, except that slightly more code is required to handle the
+parameters p1,p2#...#pn. Procedure is called with parameters
+(vectorbase,size,p1,p2#...#pn).
+.HL 3 JOBFILE(name)
+.INDEX JOBFILE (USEFUL)
+Returns a SIXBIT string which is of the form nnnABC, where nnn is the job
+number of the running program, and ABC are the first 3 letters of name.
+This form of name is conventionally used for temporary files.
+See FINDTMP and CREATETMP.
+.HL 3 RUN(dev,file,ext,ppn,offset)
+.INDEX RUN (USEFUL)
+Performs a RUN CALLI UUO to run the saved program on dev:file[ppn].
+The ext parameter applies to the low segment file extension name, and offset
+is the starting address offset (usually 0 for normal entry, 1 for CCL entry).
+.HL 3 RADIX50(name)
+.INDEX RADIX50 (USEFUL)
+Returns the PDP10 RADIX50 (SQUOZE) format word containing the first
+six characters of name.
+.HL 3 CCL
+.INDEX CCL (USEFUL)
+This static is set to true or false when the program starts, according to
+whether the program has been kicked off at its CCL entry point, or the
+normal entry point. The DEC system 10 convention is that if
+a program is kicked off from its CCL entry point, then its command sequence
+should be read from TMP:ABC or DSK:nnnABC.TMP (see FINDTMP and CREATETMP)
+instead of from the controlling teletype.
+.HL 3 BATCH
+.INDEX BATCH (USEFUL)
+This static is set to FALSE or TRUE when the program starts, according to
+whether the program is under direct interactive teletype control or not.
+.HL 3 SIN(angle)
+.INDEX SIN (USEFUL)
+Returns the (floating point) value of the sin of (floating point) angle (radians).
+.HL 3 COS(angle)
+.INDEX COS (USEFUL)
+Returns the (floating point) value of the cos of (floating point) angle (radians).
+.HL 3 LN(arg)
+.INDEX LN (USEFUL)
+Returns the (floating point) value of the natural logarithm of
+(floating point) arg.
+.HL 3 LOG2(arg)
+.INDEX LOG2 (USEFUL)
+Returns the (floating point) value of the logarithm to the base 2 of
+(floating point) arg.
+.HL 3 LOG10(arg)
+.INDEX LOG10 (USEFUL)
+Returns the (floating point) value of the logarithm to the base 10 of
+(floating point) arg.
+.HL 3 RAN()
+.INDEX RAN (USEFUL)
+Returns a pseudo random number generated from RANSEED (also declared in
+BCL:USEFUL.GET). The number is in the range 0.0 _#LE no _#LS 1.0.
+A different sequence of random numbers can be generated by changing
+RANSEED (eg. by setting it to the value of the system millisecond clock).
+.HL 3 TRACEON
+.INDEX TRACEON (USEFUL)
+This static (initially set to false) controls the action of a trace
+routine in the normal library designed to give simple interaction with
+the TRACE command code. If TRACEON is set to true then
+the TRACE command trap asks whether you wish to trace
+a particular TRACE statement the first time it is executed, it then
+(if the answer is Y for yes) gives trace information on the teletype
+each time the TRACE command is executed.
+To use this TRACE trap, TRACE calls should be restricted to the form:
+.BR
+TRACE name(format,p1,p2#...#)
+.BR
+where the format is a valid OUT or WRITE type format using escape codes
+:C, :S, :N :8 and :: only. The parameters p1,p2 etc. are limited to a maximum of 32.
+.HL 3 OVERLAY(overlayname)
+.INDEX OVERLAY (USEFUL)
+This routine provides a simple overlay mechanism, more suited to large
+systems programs (e.g. multiple pass compiler) than to small user jobs.
+It must be used with some care and understanding, and will only work
+with the standard library, and not with low-segment BCPL programs.
+.S 1
+Example program suite:
+.S 1
+.NF
+.TP 20
+//"MAIN" PROGRAM
+GET "BCL:BCPLIB"
+GET "BCL:USEFUL"
+EXTERNAL $( FIRST;SECOND $)
+LET START() BE
+$( OVERLAY("FIRST")
+   FIRST()
+   OVERLAY("SECOND")
+   SECOND()
+$)
+.S 1
+//"FIRST" OVERLAY
+GET "BCL:BCPLIB"
+EXTERNAL $( FIRST;SECOND $)
+LET FIRST() BE WRITES(TTY,"FIRST entered*C*L")
+.S 1
+//"SECOND" OVERLAY
+GET "BCL:BCPLIB"
+EXTERNAL $( FIRST;SECOND $)
+LET SECOND() BE WRITES(TTY,"SECOND entered*C*L")
+.S 1
+Assume an overlay structure as follows:
+.S 1
+.TP 11
+High Segment:
+.S 1
+----------          ----------
+|        |          |        |
+| FIRST  |          | SECOND |
+|        |          |        |
+------------------------------
+|                            |
+|            MAIN            |
+|                            |
+------------------------------
+.S 1
+.TP 15
+Low segment:
+.S 1
+         ------------
+         |          |
+         |  SECOND  |
+         |          |
+         ------------
+         |          |
+         |  FIRST   |
+         |          |
+         ------------
+         |          |
+         |   MAIN   |
+         |          |
+         ------------
+.S 1
+.F
+Before using this you must structure your program carefully,
+bearing in mind the following:
+.LM 13
+.I -3
+.S 1
+1)#Only the high segment is overlayed, using GETSEG UUOs.
+.I -3
+2)#Statics, since they are a relatively small overhead, are left
+loaded for all overlays, all of the time. This avoids problems
+with undefined references at load time, and where to start the stack.
+.I -3
+3)#Only the statics for the segment loaded will be correct. I.e. in the
+example, MAIN+FIRST are correct for the first overlay, whilst SECOND's
+statics remain indeterminate, and vice-versa when MAIN+SECOND is loaded.
+MAIN's statics will always be correct.
+.I -3
+4)#Statics for the overlayed part of each segment are always re-initialised
+whenever the segment is reloaded. I.e. when MAIN+FIRST is loaded FIRST's
+statics will be re-initialised; similarly for SECOND in MAIN+SECOND.
+.I -3
+5)#As a result, ensure that all statics that should not be re-initialised
+and/or are used for inter-segment communication, are defined in the base
+part of the overlay structure (MAIN in the example). This is important for
+those library routines which use statics, such as NEWVEC/FREESPACE. The
+best way of achieving this is to reference those parts of the library from
+MAIN, so that they are loaded by the SYS:BCPLIB/SEARCH line.
+.I -3
+6)#Note that overlay loading is NOT automatic, therefore it is up to you,
+the user, to call OVERLAY with the correct overlayname (string or sixbit)
+prior to referncing anything defined in that overlay. OVERLAY will not
+perform a reload if the correct overlay is already loaded.
+.LM 10
+.S 1
+The following LINK command sequence should be used to create the two
+overlay programs for the above (note: it will not matter which is loaded
+first at execution time):
+.S 1
+.NF
+.TP 14
+_.R LINK
+*FIRST/SSAVE
+*MAIN
+*SYS:BCPLIB/SEARCH
+*FIRST
+*SECOND/ONLY:LOW
+*/G
+_.R LINK
+*SECOND/SSAVE
+*MAIN
+*SYS:BCPLIB/SEARCH
+*FIRST/ONLY:LOW
+*SECOND
+*/G
+.F
+.LM 5
+.HL 2 BCL:IOLIB.GET
+This GETfile starts with the lines:
+.INDEX BCL:IOLIB.GET
+.NF
+.S 1
+GET "BCL:BCPLIB"
+.INDEX BCL:BCPLIB.GET
+GET "BCL:IOPACK"
+.INDEX BCL:IOPACK.GET
+GET "BCL:IOUUO"
+.INDEX BCL:IOUUO.GET
+GET "BCL:USEFUL"
+.INDEX BCL:USEFUL.GET
+.F
+.S 1
+It then contains the following EXTERNAL declarations, which are INTERNAL
+to the library. They are used by various I/O routines and should not generally
+be used for any other purpose.
+.LM 10
+.HL 3 EOF
+.INDEX EOF (IOLIB)
+This label traps EOF signals from the binary read routines RDB and RDDMP,
+and translates the signals into a call to IOERROR with error code ERR.EOF set. IOERROR can then handle
+the condition properly.
+.HL 3 ERRSTATUS
+.INDEX ERRSTATUS (IOLIB)
+This label traps status error signals from the read/write routines
+RDA, RDB, RDDMP, WRB and WRDMP, and translates the signals into a call
+to IOERROR with error code ERR.STATUS set. IOERROR can then handle the status error properly.
+.HL
+.BR
+DOFILE(dev, file, ext, ppn, err, mode, buffs, prot, time, date, ver, select, rd, wr, cl)
+.INDEX DOFILE (IOLIB)
+This routine actually does the work for FINDFILE, CREATEFILE, and UPDATEFILE.
+Select is a routine to do LOOKUP or/and ENTER UUOs as required
+in the process of setting up the stream, and rd, wr and cl are
+the read, write and close routines for the stream.
+.HL 3 CLOSEFILE(stream)
+.INDEX CLOSEFILE (IOLIB)
+This routine is the normal close routine for monitor I/O streams
+created via DOFILE.
+.HL 3 RDA(stream,lvch)
+.INDEX RDA (IOLIB)
+This is the normal read routine for character mode files (_#0 or _#1), it
+reads the next byte from stream into !lvch. It ignores line number
+words and null characters, and returns '*E' at end of file.
+It jumps to ERRSTATUS on I/O transmission errors.
+.HL 3 RDB(stream,lvword)
+.INDEX RDB (IOLIB)
+This is the normal read routine for binary word mode files (_#2-_#14), it
+reads the next byte from stream into !lvword. This routine can
+be substituted for RDA in character mode files if the user wishes to
+get line number characters and/or null characters.
+It jumps to ERRSTATUS or EOF on either condition occurring.
+.HL 3 RDDMP(stream,iowdlist)
+.INDEX RDDMP (IOLIB)
+This is the normal read routine for binary block mode files (_#15-_#17), it
+reads from the stream into the IOWD blocks specified by iowdlist.
+It jumps to ERRSTATUS or EOF on either condition occurring.
+.HL 3 WRB(stream,val)
+.INDEX WRB (IOLIB)
+This is the normal write routine for character and binary word mode files
+(_#0-_#14), it writes val to the stream.
+It jumps to ERRSTATUS on I/O transmission error.
+.HL 3 WRDMP(stream,iowdlist)
+.INDEX WRDMP (IOLIB)
+This is the normal write routine for binary block mode files (_#15-_#17),
+it writes IOWD blocks from iowdlist to the stream.
+It jumps to ERRSTATUS on I/O transmission error.
+.HL 3 IOERROR(stream,code,errlabel)
+.INDEX IOERROR (IOLIB)
+This routine is called by all the standard I/O routines upon detecting an
+error. They pass the error code (see BCL:ERRORS.GET) and the users errlabel (if one defined).
+IOERROR sets the statics SCB and ERR (from stream and code), and then
+if errlabel is set it jumps to errlabel (usually the user defined
+error trap), or if errlabel is not set it calls IOMESSAGE to
+print an error message and then terminates the program.
+.HL 3 OV(stream,charvec,arglist)
+.INDEX OV (IOLIB)
+OV is the routine that does all the work for OUT and WRITE. It writes the
+characters in the charvec out to the stream, replacing escape
+codes by the respective arguments in the arglist.
+The charvec is a vector of characters, one to a word, terminated by
+a word containing -1. The escape codes recognised are :C, :N, :F, :S, :On, :In
+(see BCPL reference manual section 6). It also handles the following codes:
+.S 1
+.LM 15
+.TS 15
+.I -5
+:8	Use WRITE8 to write the next parameter.
+.I -5
+:6	Use WRITE6 to write the next parameter.
+.I -5
+:A	Use WRITEA to write the next parameter.
+.I -5
+:Z	Use WRITEZ to write the next parameter.
+.I -5
+:G	Ignore the next parameter.
+.I -5
+:@	Recurse, using next parameter as format string.
+.I -5
+:(	Recurse, using next parameter as pointer to new argument list.
+.I -5
+:)	Terminates action of :(.
+.LM 10
+.F
+.S 1
+Any other alphabetic character found causes OV to call
+.BR
+WRITEX(stream,c,a,lvc,lva)
+.HL 3 STREAMERROR(stream)
+.INDEX STREAMERROR (IOLIB)
+This routine is used as the default read routine on a write stream,
+and the default write routine on a read stream. If it is ever called then
+it calls IOERROR with error code ERR.DIRECTION set.
+.HL 3 STOREERROR(size,error,region)
+.INDEX STOREERROR (IOLIB)
+This routine is called from NEWVEC if there is not enough freespace
+left to satisfy the request to NEWVEC(size).
+It is also called from FREE if a bad vector is FREEd (in which case
+the bad vector is passed as size).
+In both cases region is the current region vector (see FREESPACE).
+The error codes are described under BCL:ERRORS.GET.
+The default library STOREERROR prints an error message and terminates the
+program. The user may supply his own version of STOREERROR which can attempt
+recovery by (in the case of NEWVEC errors) allocating a new FREESPACE
+and returning as its result the necessary NEWVEC, or (in the case of FREE
+errors) simply ignoring the FREE and RETURNing.
+.LM 5
+.HL 2 BCL:KERNEL.GET
+The entry points declared in this GETfile are a very sensitive part of
+.INDEX BCL:KERNEL.GET
+the BCPL library initial bootstrap. Only BOOT, SOVER, OWNTT and TTOUT are
+described here, the others require a very good understanding of the
+default code, and should only be used by programmers familiar with
+the default code (see BCL:BCPLIB.MAS the library source files).
+The routines defined in BCL:KERNEL.GET are the bare minimum routines for
+doing the jobs they are intended to do; they do not (for example)
+incorporate stack checking within themselves.
+.S 1
+Other names declared in BCL:KERNEL.GET but not described here are:
+.NF
+.S 1
+.TS 20,35,50
+DEBUG	SPB	ER	FN
+.INDEX ER (KERNEL)
+.INDEX FN (KERNEL)
+.INDEX SPB (KERNEL)
+.INDEX DEBUG (KERNEL)
+SY	TE	TX	TL
+.INDEX TX (KERNEL)
+.INDEX TL (KERNEL)
+.INDEX TE (KERNEL)
+.INDEX SY (KERNEL)
+TT	BCPL.	PDLP	UUO
+.INDEX PDLP (KERNEL)
+.INDEX UUO (KERNEL)
+.INDEX BCPL. (KERNEL)
+.INDEX TT (KERNEL)
+TBUF	TBUFP	PDLL	BCPL
+.INDEX PDLL (KERNEL)
+.INDEX BCPL (KERNEL)
+.INDEX TBUFP (KERNEL)
+.INDEX TBUF (KERNEL)
+ZERO	TTOUTS	TTOUT8	TTOUTNO
+.INDEX TTOUT8 (KERNEL)
+.INDEX TTOUTNO (KERNEL)
+.INDEX TTOUTS (KERNEL)
+.INDEX ZERO (KERNEL)
+CO	SL	SO	FL
+.INDEX CO (KERNEL)
+.INDEX SL (KERNEL)
+.INDEX SO (KERNEL)
+.INDEX FL (KERNEL)
+OVER	STACKBASE
+.INDEX OVER (KERNEL)
+.INDEX STACKBASE (KERNEL)
+.F
+.LM 10
+.HL 3 BOOT()
+.INDEX BOOT (KERNEL)
+This routine, if present, is called by the BCPL startup routines
+prior to calling START. It gives the user a chance to do any
+initialisation, but mainly to change the value of the stack pointer,
+the new value of which is expected as the result of BOOT.
+The most useful application of this is in building overlayed
+BCPL programs, BOOT can be used to set the stack pointer so that it
+clears the statics defined in all the overlays (the stack usually is set
+to just clear the statics in the primary overlay).
+.HL 3 SOVER(corereq,pval,retn)
+.INDEX SOVER (KERNEL)
+This routine, if present, is called by SO when the stack requirement
+exceeds the available core (as set in SL). A small private 100 word
+stack is provided for SOVER to use. If SOVER returns then the program
+attempts to continue.
+pval is the old value of p (the stack pointer),
+and retn contains the address in the program to JRSTF to, to resume the program.
+.HL 3 OWNTT(parameters)
+.INDEX OWNTT (KERNEL)
+This routine, if present, is called by the trace package after trapping
+TRACE commands in the BCPL program. The parameters are those in the expression
+list of the TRACE command.
+The RH of the word pointed to by the return address+2 is a pointer to the name
+of the trace call, and the RH of the word pointed to by return address+3 is
+a pointer to a static word (initially set to zero), of which the LH can be used
+for flags etc. by OWNTT, the RH contains the profile count accumulated by the
+trace package. If the LH of the word is used by OWNTT, then the top bit
+(the LH bit) of the word should be set.
+(The return address is usually contained in the RH of !(@param1-2)).
+.HL 3 TTOUT(format,p1,p2#...#p32)
+.INDEX TTOUT (KERNEL)
+Is a very protected version of OUT that only writes to the controlling
+teletype. It handles the format items :C, :N, :8, :S and ::.
+It uses no extra stack space over that containing its parameters.
+.LM 5
+.HL 2 BCL:ERRORS.GET
+This GETfile contains declarations of the MANIFEST error codes used by
+.INDEX BCL:ERRORS.GET
+the I/O routines, and the free storage routines.
+.S 1
+.HL 3 ERR
+.INDEX ERR (ERRORS)
+External which is normally set by IOERROR to the last I/O error code detected by the library.
+.HL 3 SCB
+.INDEX SCB (ERRORS)
+External which is normally set by IOERROR to the last stream causing an I/O error.
+.HL 3 IO
+.INDEX IO (ERRORS)
+Bit always set for I/O error codes.
+.HL 3 ST
+.INDEX ST (ERRORS)
+Bit always set for free storage error codes.
+.HL 3 USER
+.INDEX USER (ERRORS)
+Bit that should be always set for user error codes.
+.HL 3 ERR.BIG
+.INDEX ERR.BIG (ERRORS)
+Largest error code in use by the BCPL library.
+.HL 3 ERR.NOCHANNEL
+.INDEX ERR.NOCHANNEL (ERRORS)
+Error code passed to IOERROR by DOFILE when all I/O channels are in use.
+.HL 3 ERR.NODEV
+.INDEX ERR.NODEV (ERRORS)
+Error code passed to IOERROR by DOFILE if device is not available, ie. OPEN UUO fails.
+.HL 3 ERR.NOFILE
+.INDEX ERR.NOFILE (ERRORS)
+Error code passed to IOERROR by DOFILE if LOOKUP or ENTER UUOs fail
+on file. SC.MONERROR::SCB contains the monitror error code (as described in
+appendix E of the monitor calls manual).
+.HL 3 ERR.RENAME
+.INDEX ERR.RENAME (ERRORS)
+Error code passed to IOERROR by RENAME if RENAME UUO fails. SC.MONERROR::SCB
+contains the monitor error code (as described in appendix E of the monitor calls
+manual).
+.HL 3 ERR.STATUS
+.INDEX ERR.STATUS (ERRORS)
+Error code passed to IOERROR via ERRSTATUS by RDA, RDB, RDDMP, WRB or WRDMP
+when an I/O transmission error occurs. GETSTS(SCB) returns the staus code that
+is indicative of the error.
+.HL 3 ERR.EOF
+.INDEX ERR.EOF (ERRORS)
+Error code passed to IOERROR via EOF by RDB or RDDMP when an end-of-file
+is detected.
+.HL 3 ERR.BADMODE
+.INDEX ERR.BADMODE (ERRORS)
+Error code passed to IOERROR by DOFILE if the I/O mode required
+is not possible on the device.
+.HL 3 ERR.DIRECTION
+.INDEX ERR.DIRECTION (ERRORS)
+Error code passed to IOERROR via STREAMERROR when a read is attempted
+on an output only stream, or a write attempted on a read only stream.
+.HL 3 ERR.FINDTMP
+.INDEX ERR.FINDTMP (ERRORS)
+Error code passed to IOERROR by FINDTMP when the specified TEMPCORE file
+is not found. This error is usually trapped by FINDTMP which then goes on to try
+and find DSK:nnnABC.TMP.
+.HL 3 ERR.CREATETMP
+.INDEX ERR.CREATETMP (ERRORS)
+Error code passed to IOERROR by CREATETMP if it can not create either
+TMP:ABC or DSK:nnnABC.TMP.
+.HL 3 ERR.REWIND
+.INDEX ERR.REWIND (ERRORS)
+Error code passed to IOERROR by REWIND if the monitor stream
+being rewound is an APPENDFILE or an UPDATEFILE.
+.HL 3 ERR.REWFILE
+.INDEX ERR.REWFILE (ERRORS)
+Error code passed to IOERROR by REWIND if after closing the file to rewind
+it, REWIND cannot find the file any more.
+.HL 3 ERR.IO.BIG
+.INDEX ERR.IO.BIG (ERRORS)
+Largest I/O error code currently used by the library.
+.HL 3 ERR.FREEBAD
+.INDEX ERR.FREEBAD (ERRORS)
+Error code passed to STOREERROR by FREE when a bad vector is FREEd.
+.HL 3 ERR.NEWVEC
+.INDEX ERR.NEWVEC (ERRORS)
+Error code passed to STOREERROR by NEWVEC when space for an
+unexpandable free region is exhausted.
+.HL 3 ERR.NEWFAIL
+.INDEX ERR.NEWFAIL (ERRORS)
+Error code passed to STOREERROR by NEWVEC when the user supplied proc
+has returned FALSE when NEWVEC is about to expand the current free region.
+.HL 3 ERR.NEWPAGE
+.INDEX ERR.NEWPAGE (ERRORS)
+Error code passed to STOREERROR by NEWVEC when a new page of
+memory cannot be obtained from monitor to expand the current free region.
+.HL 3 ERR.ST.BIG
+.INDEX ERR.ST.BIG (ERRORS)
+Largest free storage error code currently used by the library.
+.LM 5
+.HL 2 BCL:SCB.GET
+Describes the fields in the SCBs, introduced briefly in the BCPL
+.INDEX BCL:SCB.GET
+reference manual appendix H.
+.S 1
+The prefix SC. describes selector values, the prefix WSC. describes
+vector word offsets, WSC. prefixed values exist for words containing
+full word SCB values.
+.LM 10
+.HL 3 VALUES DEFINED FOR ALL SCBS.
+.S 1
+.TS 28
+.LM 28
+.I -18
+SC.FLAGS	Flag word encompassing SC.MONITORSTREAM, SC.SIZE and SC.SCB.
+.INDEX SC.FLAGS (SCB)
+.I -18
+SC.MONITORSTREAM	Always set for SCBs created by DOFILE.
+.INDEX SC.MONITORSTREAM (SCB)
+.I -18
+SC.SIZE	Size of SCB.
+.INDEX SC.SIZE (SCB)
+.I -18
+SC.SCB	Always set for SCB. This bit (RH bit) is never set for BCPL or ASCII
+.INDEX SC.SCB (SCB)
+strings and can be used to differentiate between a SCB and a string.
+.I -18
+.I -18
+WSC.FLAGS	Flag word encompassing SC.MONITORSTREAM, SC.SIZE and SC.SCB.
+.INDEX WSC.FLAGS (SCB)
+SC.READER	Read routine.
+.INDEX SC.READER (SCB)
+.I -18
+WSC.READER	Read routine.
+.INDEX WSC.READER (SCB)
+.I -18
+SC.WRITER	Write routine.
+.INDEX SC.WRITER (SCB)
+.I -18
+WSC.WRITER	Write routine.
+.INDEX WSC.WRITER (SCB)
+.I -18
+SC.CLOSER	Close routine.
+.INDEX SC.CLOSER (SCB)
+.I -18
+WSC.CLOSER	Close routine.
+.INDEX WSC.CLOSER (SCB)
+.I -18
+SC.ERROR	Error label (if defined by user).
+.INDEX SC.ERROR (SCB)
+.I -18
+WSC.ERROR	Error label (if defined by user).
+.INDEX WSC.ERROR (SCB)
+.I -18
+SC.PUTSTACK	Stack of PUTBACK items.
+.INDEX SC.PUTSTACK (SCB)
+.I -18
+SC.OLDREAD	Previous READ routine if PUTBACK in progress.
+.INDEX SC.OLDREAD (SCB)
+.I -18
+WSC.PUTBACK	Word encompassing SC.PUTSTACK and SC.OLDREAD.
+.INDEX WSC.PUTSTACK (SCB)
+.I -18
+SC.USER6	Word reserved for user.
+.INDEX SC.USER6 (SCB)
+.I -18
+WSC.USER6	Word reserved for user.
+.INDEX WSC.USER6 (SCB)
+.I -18
+SC.USER7	Word reserved for user.
+.INDEX SC.USER7 (SCB)
+.I -18
+WSC.USER7	Word reserved for user.
+.INDEX WSC.USER7 (SCB)
+.I -18
+SC.USER10	Word reserved for user.
+.INDEX SC.USER10 (SCB)
+.I -18
+WSC.USER10	Word reserved for user.
+.INDEX WSC.USER10 (SCB)
+.LM 10
+.HL 3 VALUES DEFINED FOR MONITOR SCBS.
+.S 1
+.LM 28
+.I -18
+SC.STATUS	Device status word.
+.INDEX SC.STATUS (SCB)
+.I -18
+WSC.STATUS	Device status word.
+.INDEX WSC.STATUS (SCB)
+.I -18
+SC.DEV	Device name.
+.INDEX SC.DEV (SCB)
+.I -18
+WSC.DEV	Device name
+.INDEX WSC.DEV (SCB)
+.I -18
+SC.OBUFHDR	Pointer to output buffer header.
+.INDEX SC.OBUFHDR (SCB)
+.I -18
+SC.IBUFHDR	Pointer to input buffer header.
+.INDEX SC.IBUFHDR (SCB)
+.I -18
+WSC.BUFHDR	Word encompassing SC.OBUFHDR and SC.IBUFHDR.
+.INDEX WSC.BUFHDR (SCB)
+.I -18
+SC.IBUF	Pointer to input buffer.
+.INDEX SC.IBUF (SCB)
+.I -18
+WSC.IBUF	Pointer to input buffer.
+.INDEX WSC.IBUF (SCB)
+.I -18
+SC.IBYTE	Byte pointer to last input character position.
+.INDEX SC.IBYTE (SCB)
+.I -18
+WSC.IBYTE	Byte pointer to last input character position.
+.INDEX WSC.IBYTE (SCB)
+.I -18
+SC.IWD	Address part of SC.IBYTE word.
+.INDEX SC.IWD (SCB)
+.I -18
+SC.ICOUNT	Count of bytes left in input buffer.
+.INDEX SC.ICOUNT (SCB)
+.I -18
+WSC.ICOUNT	Count of bytes left in input buffer.
+.INDEX WSC.ICOUNT (SCB)
+.I -18
+SC.OBUF	Pointer to output buffer.
+.INDEX SC.OBUF (SCB)
+.I -18
+WSC.OBUF	Pointer to output buffer
+.INDEX WSC.OBUF (SCB)
+.I -18
+SC.OBYTE	Byte pointer to last output character position.
+.INDEX SC.OBYTE (SCB)
+.I -18
+WSC.OBYTE	Byte pointer to last output character position.
+.INDEX WSC.OBYTE (SCB)
+.I -18
+SC.OWD	Address part of SC.OBYTE word.
+.INDEX SC.OWD (SCB)
+.I -18
+SC.OCOUNT	Count of byte spaces left in output buffer.
+.INDEX SC.OCOUNT (SCB)
+.I -18
+WSC.OCOUNT	Count of byte spaces left in output buffer.
+.INDEX WSC.OCOUNT (SCB)
+.I -18
+SC.CHANNEL	I/O channel assigned to stream. (in ACC field of word).
+.INDEX SC.CHANNEL (SCB)
+.I -18
+WSC.CHANNEL	Word containing channel no in AC bits.
+.INDEX WSC.CHANNEL (SCB)
+.I -18
+SC.IN	Word containing IN CHANNEL,0
+.INDEX SC.IN (SCB)
+.I -18
+WSC.IN	Word containing IN CHANNEL,0
+.INDEX WSC.IN (SCB)
+.I -18
+SC.OUT	Word containing OUT CHANNEL,0
+.INDEX SC.OUT (SCB)
+.I -18
+WSC.OUT	Word containing OUT CHANNEL,0
+.INDEX WSC.OUT (SCB)
+.I -18
+SC.USETI	Word containing USETI CHANNEL,@3(P)
+.INDEX SC.USETI (SCB)
+.I -18
+WSC.USETI	Word containing USETI CHANNEL,@3(P)
+.INDEX WSC.USETI (SCB)
+.I -18
+SC.USETO	Word containing USETO CHANNEL,@3(P)
+.INDEX SC.USETO (SCB)
+.I -18
+WSC.USETO	Word containing USETO CHANNEL,@3(P)
+.INDEX WSC.USETO (SCB)
+.I -18
+SC.STATZ	Word containing STATZ#CHANNEL,#740000
+.INDEX SC.STATZ (SCB)
+.I -18
+WSC.STATZ	Word containing STATZ#CHANNEL,#740000
+.INDEX WSC.STATZ (SCB)
+.I -18
+SC.APPENDCL	Word used by APPENDFILE for a special close routine.
+.INDEX SC.APPENDCL (SCB)
+.I -18
+WSC.APPENDCL	Word used by APPENDFILE for a special close routine.
+.INDEX WSC.APPENDCL (SCB)
+.I -18
+SC.COUNT	Word containing word count of extended LOOKUP/ENTER block.
+.INDEX SC.COUNT (SCB)
+.I -18
+WSC.COUNT	Word containing word count of extended LOOKUP/ENTER block.
+.INDEX WSC.COUNT (SCB)
+.I -18
+SC.PPN	Project programmer number (DSK).
+.INDEX SC.PPN (SCB)
+.I -18
+SC.PROJ	Project number (DSK).
+.INDEX SC.PROJ (SCB)
+.I -18
+SC.PROG	Programmer number (DSK).
+.INDEX SC.PROG (SCB)
+.I -18
+WSC.PPN	Project programmer number (DSK).
+.INDEX WSC.PPN (SCB)
+.I -18
+SC.FILENAME	Word containing filename.
+.INDEX SC.FILENAME (SCB)
+.I -18
+WSC.FILENAME	Word containing filename.
+.INDEX WSC.FILENAME (SCB)
+.I -18
+SC.MONERROR	Monitor error bits.
+.INDEX SC.MONERROR (SCB)
+.I -18
+SC.EXT	File extension.
+.INDEX SC.EXT (SCB)
+.I -18
+SC.HIDATE	High order 3 bits of creation date (DSK and DECtape).
+.INDEX SC.HIDATE (SCB)
+.I -18
+SC.ACCESSDATE	Access date (DSK). First block number (DECtape).
+.INDEX SC.ACCESSDATE (SCB)
+.I -18
+WSC.EXTWORD	Word containing SC.MONERROR, SC.EXT, SC.HIDATE and SC.PROTECTION.
+.INDEX WSC.EXTWORD (SCB)
+.I -18
+SC.PROTECTION	File protection code (DSK).
+.INDEX SC.PROTECTION (SCB)
+.I -18
+SC.MODE	I/O mode, set by monitor (DSK).
+.INDEX SC.MODE (SCB)
+.I -18
+SC.TIME	Creation time (DSK).
+.INDEX SC.TIME (SCB)
+.I -18
+SC.CREATEDATE	Low order 15 bits of creation date (DSK and DECtape).
+.INDEX SC.CREATEDATE (SCB)
+.I -18
+WSC.TIMEDATE	Word containing SC.PROTECTION, SC.MODE, SC.TIME and SC.CREATEDATE.
+.INDEX WSC.TIMEDATE (SCB)
+.I -18
+SC.VMAJOR	Major version number.
+.INDEX SC.VMAJOR (SCB)
+.I -18
+SC.VMINOR	Minor version number.
+.INDEX SC.VMINOR (SCB)
+.I -18
+SC.VEDIT	Edit number.
+.INDEX SC.VEDIT (SCB)
+.I -18
+SC.VWHO	Editor number.
+.INDEX SC.VWHO (SCB)
+.I -18
+SC.VERSION	Version word.
+.INDEX SC.VERSION (SCB)
+.I -18
+WSC.VERSION	Version word.
+.INDEX WSC.VERSION (SCB)
+.I -18
+SC.DEFAULT.SIZE	Default size for SCBs created by DOFILE.
+.INDEX SC.DEFAULT.SIZE (SCB)
+.I -18
+SCBSIZE	External used for size that DOFILE should allocate to SCBs, initially set to SC.DEFAULT.SIZE.
+.INDEX SCBSIZE (SCB)
+.LM 10
+.HL 3 VALUES DEFINED FOR TEMPCORE SCBS.
+.S 1
+.LM 28
+.I -18
+SC.TMPNAME	Tempcore filename.
+.INDEX SC.TMPNAME (SCB)
+.I -18
+WSC.TMPNAME	Tempcore filename.
+.INDEX WSC.TMPNAME (SCB)
+.I -18
+SC.TMPBYTEP	Byte pointer.
+.INDEX SC.TMPBYTEP (SCB)
+.I -18
+SC.TMPWORD	Address part of SC.TMPBYTEP word.
+.INDEX SC.TMPWORD (SCB)
+.I -18
+WSC.TMPBYTEP	Byte pointer word.
+.INDEX WSC.TMPBYTEP (SCB)
+.I -18
+SC.TMPLIMIT	Pointer to end of tempcore input buffer.
+.INDEX SC.TMPLIMIT (SCB)
+.I -18
+WSC.TMPLIMIT	Byte pointer word to end of tempcore buffer.
+.INDEX WSC.TMPLIMIT (SCB)
+.I -18
+SC.TMPCOR.SIZE	Size for tempcore SCBs.
+.INDEX SC.TMPCOR.SIZE (SCB)
+.LM 5
+.HL 2 BCL:BITS.GET
+Set of manifest declarations, B0 to B35, using the DEC bit numbering
+.INDEX BCL:BITS.GET
+convention to set up masks.
+.S 1
+.LM 10
+.TS 10
+.I -5
+B0	#400000000000 (LH bit)
+.INDEX B0 (BITS)
+.I -5
+B1	#200000000000
+.INDEX B1 (BITS)
+.I -5
+etc.
+.I -5
+B34	#000000000002
+.INDEX B34 (BITS)
+.I -5
+B35	#000000000001
+.INDEX B35 (BITS)
+.LM 5
+.HL 2 BCL:ACS.GET
+Declares the manifest values for the accumulators, introduced
+.INDEX BCL:ACS.GET
+briefly in the BCPL reference manual appendix D.
+.S 1
+.LM 13
+.TS 13
+.I -8
+AC	Result register for functions and VALOF.
+.INDEX AC (ACS)
+.I -8
+B	Work register.
+.INDEX B (ACS)
+.I -8
+C	Work register (=B+1).
+.INDEX C (ACS)
+.I -8
+D	Work register (=C+1).
+.INDEX D (ACS)
+.I -8
+E	Work register (=D+1).
+.INDEX E (ACS)
+.I -8
+F	Work register (=E+1).
+.INDEX F (ACS)
+.I -8
+G	Work register (=F+1).
+.INDEX G (ACS)
+.I -8
+H	Work register (=G+1).
+.INDEX H (ACS)
+.I -8
+I	Work register (=H+1).
+.INDEX I (ACS)
+.I -8
+J	Work register (=I+1).
+.INDEX J (ACS)
+.I -8
+COVER	Maximum stack extent register.
+.INDEX COVER (ACS)
+.I -8
+K	Same as COVER.
+.INDEX K (ACS)
+.I -8
+T	Link register for subroutine calls.
+.INDEX T (ACS)
+.I -8
+ONE	Register always set to 1.
+.INDEX ONE (ACS)
+.I -8
+P	Stack pointer.
+.INDEX P (ACS)
+.I -8
+PDL	Push down pointer, used by compiler.
+.INDEX PDL (ACS)
+.I -8
+SCBREG	Register used internally by library to hold current SCB pointer.
+.INDEX SCBREG (ACS)
+.LM 5
+.HL 2 BCL:JOBDAT.GET
+Symbols defined in Vestigal Job Data Areas. These are externals which are
+.INDEX BCL:JOBDAT.GET
+set to contant values relative to the start of the segment they refer to.
+.S 1
+The symbols are:
+.S 1
+.TS 20,35,50
+.NF
+JBUUO	JB41	JBERR	JBREL
+.INDEX JBERR (JOBDAT)
+.INDEX JBREL (JOBDAT)
+.INDEX JB41 (JOBDAT)
+.INDEX JBUUO (JOBDAT)
+JBBLT	JBDDT	JBCN6	JBPFI
+.INDEX JBCN6 (JOBDAT)
+.INDEX JBPFI (JOBDAT)
+.INDEX JBDDT (JOBDAT)
+.INDEX JBBLT (JOBDAT)
+JBHRL	JBSYM	JBUSY	JBSA
+.INDEX JBUSY (JOBDAT)
+.INDEX JBSA (JOBDAT)
+.INDEX JBSYM (JOBDAT)
+.INDEX JBHRL (JOBDAT)
+JBFF	JBREN	JBAPR	JBCNI
+.INDEX JBAPR (JOBDAT)
+.INDEX JBCNI (JOBDAT)
+.INDEX JBREN (JOBDAT)
+.INDEX JBFF (JOBDAT)
+JBTPC	JBOPC	JBCHN	JBCOR
+.INDEX JBCHN (JOBDAT)
+.INDEX JBCOR (JOBDAT)
+.INDEX JBOPC (JOBDAT)
+.INDEX JBTPC (JOBDAT)
+JBINT	JBOPS	JBCST	JBVER
+.INDEX JBCST (JOBDAT)
+.INDEX JBVER (JOBDAT)
+.INDEX JBOPS (JOBDAT)
+.INDEX JBINT (JOBDAT)
+JBDA	JBHSA	JBH41	JBHCR
+.INDEX JBH41 (JOBDAT)
+.INDEX JBHCR (JOBDAT)
+.INDEX JBHSA (JOBDAT)
+.INDEX JBDA (JOBDAT)
+JBHRN	JBHVR	JBHNM	JBHSM
+.INDEX JBHNM (JOBDAT)
+.INDEX JBHSM (JOBDAT)
+.INDEX JBHVR (JOBDAT)
+.INDEX JBHRN (JOBDAT)
+JBHDA
+.INDEX JBHDA (JOBDAT)
+                                                                                                                                                                                                                                                   

@@ -1,0 +1,59 @@
+v0.8.3 - 4/5/2001 by Timothy Stark <sword7@speakeasy.org>
+----------------------------------------------------------
+* All codes had been re-organized.
+* BLTBU and BLTUB instructions had been implemented but not debugged yet.
+* All floating instructions finally had been completed and debugged.
+  They passed all KLAD tests (DSKCA through DSKCE).
+* A bug in Priority Interrupt evaluation routines had been fixed. All 
+  problems on TOPS-20 v4.1 had been resolved for CTY device.  It originally
+  allow program requests regardless of enable settings.  Now they should not
+  be interrupted unless/until enable bit had been set.
+* A bug in DMOVN instruction had been fixed.  It incorrectly set a sign
+  bit in low word if high word is negative. It was not supposed to set.
+  It finally passed all KLAD tests (DSKCC).
+* A bug in Page Fail Trap routine that forced all system flags to zero.
+  It had been fixed by correctly load normal system flags from a PC word.
+* A bug in interrupt JSR (in PI handler routine) had been fixed because
+  it only cleared a user flag instead of clear all flags.  Now it clears
+  all flags during JSR instruction in PI handling.
+* A bug in MUUO instruction that unconditionally set Previous Context
+  User flag.  It had been fixed by correctly set PCU on a MUUO from
+  user mode.
+* Opcode 7XX decoding had been rewrotten for better optimization
+  by replacing switch statements with array of function pointers.
+* CTY routines had been changed to support socket routines.
+* A bug in MULB, IMULB, DIVB, IDIVB, ADDB, and SUBB instructions
+  had been fixed.  Thank to Bob for that.  Accumulators should not
+  be updated when a page fail trap occured.
+* A bug in MOVST instruction had been fixed.
+
+v0.8.2 - 3/18/2001 by Timothy Stark <sword7@speakeasy.org>
+----------------------------------------------------------
+* Lars' patches had been applied into cpu.c for idle detection.
+* IDLE option had been added to enable idle or not during
+  compilation. It can be enabled in Makefile. It works
+  with unmodified TOPS-10 v7.03 monitor only.
+* Minor optimization had been made for speed improvement.
+  Now its peak speed is 5.21 MIPS on Pentium III 800 Mhz system.
+
+v0.8.1 - 3/15/2001 by Timothy Stark <sword7@speakeasy.org>
+----------------------------------------------------------
+* Cache entry tables had been implemented (partially).
+* A bug in all byte instructions with byte pointer increment
+  had been fixed according to KLAD tests (DSKEA).
+* A bug in KL paging system (Indirect Section Pointer) had
+  had been fixed.  All KLAD tests (DSKEC) had been passed.
+* Local commands for PDP-10 had been added like disasm, deposit,
+  crash, etc.
+* All Lo's and Ld's had been changed to llo's and lld's due
+  for other platforms like NetBSD, etc.  
+* DDIV instruction had been fixed and finally passed KLAD tests.
+* BLT instruction do not need FPD flag according to KS10
+  microcode documentation.  It had been removed.
+* ASHC and ADJSP bug had been fixed. Bob Sunpik said that that
+  was a missing test for ASHC in KLAD tests.
+
+v0.8 - 2/21/2001 by Timothy Stark <sword7@speakeasy.org>
+--------------------------------------------------------
+* Finished EXTEND instruction implementation.
+* Initial Public Release

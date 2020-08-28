@@ -1,0 +1,647 @@
+title	sting			;-*-macro-*-
+search	notdef(mus:notdef.unv)
+
+init
+
+.stacc==300
+.trans==5
+.speed==150
+.xsp==.speed
+
+score1::			;Base
+   .stacc==^D600
+;-2
+	note d4,%8
+	note e4
+	note c4
+	note a3,%4
+	note h3,%8
+	note g3,%4
+;-1
+	note d3,%8
+	note e3
+	note c3
+	note a2,%4
+	note h2,%8
+	note g2,%4
+;0
+	note d2,%8
+	note e2
+	note c2
+	note a1,%4
+	note h1,%8
+	note a1
+	note a1-1
+;1
+   .stacc==^D300
+	note g1,%2
+	note g1,%4
+	^D700,,0
+	note g2,%4
+;2
+	note c2
+	note e2
+	note g1
+	note h2-1
+;3
+	note f1
+	note a2
+	note e1
+	note g2
+;4
+	note g1
+	note c3
+	note g1
+	note f3
+;5
+	note c2
+	note e2
+	note c3
+	note g2
+;6
+	note c2
+	note e2
+	note g1
+	note h2-1
+;7
+	note f1
+	note a2
+	note e1
+	note c3
+;8
+	note d1
+	note f2+1
+	note d1
+	note d2
+;9
+	note g2
+	note g1
+	note a1
+	note h1
+;10
+	note c2
+	note e2
+	note g1
+	note h2-1
+;11
+	note f1
+	note a2
+	note e1
+	note c3
+;12
+	note g1
+	note c3
+	note g1
+	note f3
+;13
+	note c2
+	note e2
+	note g2
+	pause %4
+;14
+	note c3,%4
+	note e3
+	note h2-1
+	note g2
+;15
+	note a2
+	note f3
+	note a2-1
+	note c3
+;16
+	note g2
+	note c3
+	note g2
+	note h2
+;17
+	note c3
+	note g2
+	note c2,%4
+	note g2,%4
+;18
+	note c2
+	note e2
+	note g1
+	note h2-1
+;19
+	note f1
+	note a2
+	note e1
+	note g2
+;20
+	note g1
+	note c3
+	note g1
+	note f3
+;21
+	note c2
+	note e2
+	note c3
+	note g2
+;22
+	note c2
+	note e2
+	note g1
+	note h2-1
+;23
+	note f1
+	note a2
+	note e1
+	note c3
+;24
+	note d1
+	note f2+1
+	note d1
+	note d2
+;25
+	note g2
+	note g1
+	note a1
+	note h1
+;26
+	note c2
+	note e2
+	note g1
+	note h2-1
+;27
+	note f1
+	note a2
+	note e1
+	note c3
+;28
+	note g1
+	note c3
+	note g1
+	note f3
+;29
+	note c2
+	note e2
+	note g2
+	pause %4
+;30
+	note c3,%4
+	note e3
+	note h2-1
+	note g2
+;31
+	note a2
+	note f3
+	note a2-1
+	note c3
+;32
+	note g2
+	note c3
+	note g2
+   .speed==<.speed*^D104>/^D100
+	note h2
+;33
+   .speed==<.speed*^D104>/^D100
+	note c3
+   .speed==<.speed*^D104>/^D100
+	note g2
+   .speed==<.speed*^D104>/^D100
+	note c2,%4
+   .speed==.xsp
+	pause %4
+;34
+	note c2
+	note e3
+	note g1
+	note c3
+;35
+	note g1
+	note c3
+	note g1
+	note b2
+;36
+	note f1
+	note a2
+	note f1
+	note a2-1
+;37
+	note e1
+	note g2
+	note g1
+	note h2
+;38
+	note c2
+	note e3
+	note g1
+	note c3
+;39
+	note g1
+	note e3
+	note e2
+	note e2-1
+;40
+	note d2
+	note g2
+	note d2
+	note f2+1
+;41
+	note g2
+	note f2
+	note e2
+	note d2
+;42
+	note c2
+	note e3
+	note g1
+	note c3
+;43
+	note c2
+	note e3
+	note g1
+	note b2
+;44
+	note f1
+	note a2
+	note f1
+	note c3
+;45
+	note e1
+	note g2
+	note c1
+	note b2
+;46
+   .stacc==^D900
+	note a2
+	note a2
+	note f2+1
+	note f2+1
+;47
+	note e3
+	note c3
+	note g2
+	note c3
+   .stacc==^D300
+;48
+	note f3+1,%2
+   .speed==<.speed*^D104>/^D100
+	note a2
+;49
+   .speed==<.speed*^D104>/^D100
+	note c3,%4
+   .speed==<.speed*^D104>/^D100
+	note g1
+   .speed==<.speed*^D104>/^D100
+	note c1
+	0
+
+score2::			;Melody
+   .speed==.xsp
+   .stacc==^D600
+;-2
+	^D400,,0
+	note d5,%8
+	note e5
+	note c5
+	note a4,%4
+	note h4,%8
+	note g4,%4
+;-1
+	note d4,%8
+	note e4
+	note c4
+	note a3,%4
+	note h3,%8
+	note g3,%4
+;0
+	note d3,%8
+	note e3
+	note c3
+	note a2,%4
+	note h2,%8
+	note a2
+	note a2-1
+;1
+   .stacc==^D300
+	pause %2.
+	note d3,%8
+	note d3+1
+;2
+	note e3,%8
+	note c4,%4
+	note e3,%8
+	note c4,%4
+	note e3,%8
+	note c4,%4.
+;3
+	pause %4.
+	note c4,%8
+	note d4
+	note d4+1
+;4
+	note e4,%8
+	note c4
+	note d4
+	note e4,%4
+	note h3,%8
+	note d4,%4
+;5
+	note c4,%2
+	pause %4
+	note d3,%8
+	note d3+1
+;6
+	note e3
+	note c4,%4
+	note e3,%8
+	note c4,%4
+	note e3,%8
+	note c4,%8+%2
+;7
+	pause %4
+	note a3,%8
+	note g3
+;8
+	note f3+1
+	note a3
+	note c4
+	note e4,%4
+	note d4,%8
+	note c4
+	note a3
+;9
+	note d4,%2+%8
+	pause %8
+	note d3,%8
+	note d3+1
+;10
+	note e3
+	note c4,%4
+	note e3,%8
+	note c4,%4
+	note e3,%8
+	note c4,%4.
+;11
+	pause %4.
+	note c4,%8
+	note d4
+	note d4+1
+;12
+	note e4
+	note c4
+	note d4
+	note e4,%4
+	note h3,%8
+	note d4,%4
+;13
+	note c4,%4
+	note g2,%4		;ch1
+	note e3,%4		;ch1
+	note c4,%8
+	note d4
+;14
+	note e4
+	note c4
+	note d4
+	note e4,%4
+	note c4,%8
+	note d4
+	note c4
+;15
+	note e4
+	note c4
+	note d4
+	note e4,%4
+	note c4,%8
+	note d4
+	note c4
+;16
+	note e4
+	note c4
+	note d4
+	note e4,%4
+	note h3,%8
+	note d4,%4
+;17
+	note c4,%2+%8
+	pause %8
+	note d3,%8
+	note d3+1
+;18
+	note e3,%8
+	note c4,%4
+	note e3,%8
+	note c4,%4
+	note e3,%8
+	note c4,%4.
+;19
+	pause %4.
+	note c4,%8
+	note d4
+	note d4+1
+;20
+	note e4,%8
+	note c4
+	note d4
+	note e4,%4
+	note h3,%8
+	note d4,%4
+;21
+	note c4,%2
+	pause %4
+	note d3,%8
+	note d3+1
+;22
+	note e3
+	note c4,%4
+	note e3,%8
+	note c4,%4
+	note e3,%8
+	note c4,%8+%2
+;23
+	pause %4
+	note a3,%8
+	note g3
+;24
+	note f3+1
+	note a3
+	note c4
+	note e4,%4
+	note d4,%8
+	note c4
+	note a3
+;25
+	note d4,%2+%8
+	pause %8
+	note d3,%8
+	note d3+1
+;26
+	note e3
+	note c4,%4
+	note e3,%8
+	note c4,%4
+	note e3,%8
+	note c4,%4.
+;27
+	pause %4.
+	note c4,%8
+	note d4
+	note d4+1
+;28
+	note e4
+	note c4
+	note d4
+	note e4,%4
+	note h3,%8
+	note d4,%4
+;29
+	note c4,%4
+	note g2,%4		;ch1
+	note e3,%4		;ch1
+	note c4,%8
+	note d4
+;30
+	note e4
+	note c4
+	note d4
+	note e4,%4
+	note c4,%8
+	note d4
+	note c4
+;31
+	note e4
+	note c4
+	note d4
+	note e4,%4
+	note c4,%8
+	note d4
+	note c4
+;32
+	note e4
+	note c4
+	note d4
+	note e4,%4
+	note h3,%8
+   .speed==<.speed*^D104>/^D100
+	note d4,%4
+;33
+   .speed==<.speed*^D104>/^D100
+   .speed==<.speed*^D104>/^D100
+	note c4,%2
+   .speed==<.speed*^D104>/^D100
+	pause %8
+   .speed==.xsp
+	note e3,%8
+	note f3
+	note f3+1
+;34
+	note g3,%4
+	note a3,%8
+	note g3,%4
+	note e3,%8
+	note f3
+	note f3+1
+;35
+	note g3,%4
+	note a3,%8
+	note g3,%4
+	note e3,%8
+	note c3
+	note g2
+;36
+	note a2
+	note h2
+	note c3
+	note d3
+	note e3
+	note d3
+	note c3
+	note d3
+;37
+	note e3
+	note f3
+	note f3+1
+	note g3
+	note a3
+	note g3
+	note e3
+	note f3
+;38
+	note g3,%4
+	note a3,%8
+	note g3,%4
+	note e3,%8
+	note f3
+	note f3+1
+;39
+	note g3,%4
+	note a3,%8
+	note g3,%4
+	note g3,%8
+	note a3
+	note a3+1
+;40
+	note h3
+	note h3,%4
+	note h3
+	note a3,%8
+	note f3+1
+	note d3
+;41
+	note g3,%2
+	pause %8
+	note e3,%8
+	note f3
+	note f3+1
+;42
+	note g3,%4
+	note a3,%8
+	note g3,%4
+	note e3,%8
+	note f3
+	note f3+1
+;43
+	note g3,%4
+	note a3,%8
+	note g3,%4
+	note e3,%8
+	note c3
+	note g2
+;44
+	note a2
+	note h2
+	note c3
+	note d3
+	note e3
+	note d3
+	note c3
+	note d3
+;45
+	note c3,%2
+	pause %8
+	note g3,%8
+	note f3+1
+	note g3
+;46
+	note c4,%4
+	note a3,%8
+	note c4,%4
+	note a3,%8
+	note c4
+	note a3
+;47
+	note g3
+	note c4
+	note e4
+	note g4,%4
+	note e4,%8
+	note c4
+	note g3
+;48
+	note a3,%4
+	note c4
+   .speed==<.speed*^D104>/^D100
+	note e4,%8
+   .speed==<.speed*^D104>/^D100
+	note d4,%4.
+;49
+   .speed==<.speed*^D104>/^D100
+	note c4,%2+%8
+   .speed==<.speed*^D104>/^D100
+	pause %8
+	0
+
+	end

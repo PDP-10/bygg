@@ -1,0 +1,638 @@
+
+These notes compare MM v0.88, as originally released, with the new
+release of 0.90.  That means that descriptions of changes that were
+distributed as patches are included, so they make look familiar.
+
+General Direction of MM v0.90 Mods
+----------------------------------
+
+In the last two years, one of the biggest projects at our Computer
+Center has been a push towards campus-wide email.  We are now offering
+free electronic mail accounts to all staff members and soon hope to
+offer them to all students as well.  As our preferred mail-user-agent,
+MM is a big part of that project.  Many of the major recent
+modifications to MM have been towards making it friendlier to novices.
+We now have a staff position of "MM Electronic Mail Consultant" as
+part of our User Services group.
+
+In addition to skipping version 0.89 (you could say the running
+versions we released internally were 0.89) and going right to 0.90
+(since it is 1990, after all), we have dropped the "Beta" designation
+from MM's version strings (and no longer label it a "test version" on
+startup). 
+
+Of course, there are still many things we want to do to MM.  We have
+patches from various people that we're holding on to but haven't had a
+chance to install.  And there is our 600 line long "tofix" file.
+However, it was about time (well, past time) for us to release a new
+version of MM, so here it is.
+
+New Command Organization
+------------------------
+
+In MM v0.88, a question-mark for help at the top-level prompt would
+give a listing of all possible MM commands in alphabetical order.
+Since this list covered more than one screen, it was pretty useless to
+any but the most adventurous users.
+
+The new command organization is divided into sections like "basic"
+commands, "message-handling" commands, and "filing" commands, with
+random "other" commands at the end.  This way, the response to "?"
+starts with the most common commands, and only shows the obscure
+commands later.  Also, a command-completion pager was added to CCMD,
+so users can "quit" after one screen of "?" response.
+
+In addition, when the new variable USER-LEVEL is set to "novice", a
+"hints" line is printed before every prompt.  This suggests five or
+six of the most common commands for the user to choose from.
+
+Help Files
+----------
+
+To make upkeep of the help messages for MM easier, each help "screen"
+is now in its own file.  You may recall that in v0.88 we moved the
+help from all the different MM source files into one big "database"
+file.  This file proved too big and unwieldy, and was broken out into
+separate files.
+
+Joe Brennan, our MM consultant, has done an extensive rewrite on all
+the help files for MM.  Since his job is to make things as easy as
+possible for people at Columbia, some of the help files have become
+somewhat Columbia-specific, so you may want to modify them for your
+site.  To varying degrees, the Columbia-specific help screens are
+those for the commands (at all levels): BUG, FINGER, MM, PRINT, PUSH,
+SUSPEND, and Z; for the variables CRT-FILTER, EDITOR, FINGER-COMMAND,
+HELP-DIR, PRINT-FILTER, READ-PROMPT, SEND-PROMPT, SPELLER,
+USE-CRT-FILTER-ALWAYS, and USER-LEVEL; and for the general topic TEXT
+MODE.  You may or may not need to change these for your site.
+
+There are also help-screens for some "topics" that didn't fit into any
+individual command.  First there are some for the various command
+groupings -- BASIC, CUSTOMIZATION, FILING, HEADER-FIELD, INFORMATION,
+MESSAGE-HANDLING, MESSAGE-TAGGING, OTHER, and TOP.  Then there are
+selected MM related subjects -- ADDRESSING, BITNET, CCMD, INTERNET,
+MESSAGE-SEQUENCE, SIGNATURE-FILE, and TEXT-MODE.
+
+Joe also wrote a paper manual, which is somewhat Columbia-specific.
+We will look into making the Scribe source and/or Postscript version
+of this available at some future date.
+
+With our fancy new help screens, we found we had several over one
+screenful, so we now pipe them through a pager (the CRT-FILTER
+variable) when needed.
+
+Check out the help files for descriptions of the new commands and
+variables below.
+
+New Commands
+------------
+
+The BYE command replaces the now-invisible QQUIT command, for less
+obscurity. 
+
+The FINGER command runs finger under MM, without having to push to a
+shell or suspend MM.  It uses the FINGER-COMMAND variable.  This was a
+convenience for our novice users.
+
+The REVIEW command is just like READ, but requires an argument (that
+is, no default of "unseen").  This was intended to help users who
+thought there was no way to see messages they had already seen.
+
+CREATE-INIT has been renamed to SAVE-INIT since it is to be used when
+you already have an init file (to avoid confusion with the PROFILE
+command).
+
+The BACKTRACK command, which is intended to be the same as FOLLOW,
+only backwards instead of forwards, has been added to the list of
+commands.  However, as with FOLLOW, BACKTRACK is not yet implemented.
+
+New and Modified Variables
+--------------------------
+
+See the help screens for more information on the following variables.
+
+The "maybe"-type (yes, no, ask) variable EXPUNGE-ON-BYE determines
+whether MM will expunge the file when users use the "bye" command.
+Default is ASK.
+
+The FINGER-COMMAND variable sets the path and name for a local finger
+command.  See the new FINGER command, above.  This will probably be
+set site-wide in the (/usr/local/lib/mm) mm.conf file.  Default is a
+pathless "finger".
+
+The "maybe"-type HANDLE-CHANGED-MODTIME variable controls MM's
+behavior when it determines that the mail file has been changed on
+disk (since the last time MM touched it).  This indicates a violation
+of MM's locks.  See the description of CHECK_MTIME() below.
+Default is YES, though people reading mail files over NFS (which is
+*not* recommended) may find they prefer ASK.
+
+AUTO-CREATE-FILES (type "maybe") controls whether MM asks each time it
+wants to create a new file.  Note that the default value of ASK is
+preferred since it helps keep users from misplacing messages by
+putting them in the wrong directory or making a typo when they specify
+the file name.
+
+APPEND-NEW-MAIL (type "boolean", or yes/no) controls MM's behavior
+when it is writing out new mail.  Instead of rewriting the whole mail
+file, a new possible behavior will simply append the new messages to
+the end of the current file.  Note that this will not write out flag
+changes, like a message going from UNSEEN to SEEN (the way a complete
+rewrite would), but it saves a lot of time with big files.  MM will
+make sure to write out the smaller changes before it exits anyway.
+Default is NO for the old (perhaps safer) behavior.
+
+The DEFAULT-FCC-LIST variable has been in MM for a while, but
+apparently it was ignored in MM v0.88.  It is implemented in v0.90.
+
+The new USER-LEVEL variable can have the values "novice" or "expert".
+Currently, this is only used for the hints line described above, but
+it might be expanded.
+
+The CHECK-INTERVAL variable controls how often MM checks for new mail
+when it is idle.  We set it to 300 seconds (five minutes) since MM was
+using up too much CPU time checking for new mail.
+
+REPLY-INCLUDE-ME should now work more the way it is documented to.
+That is, it will not add the user to the list of recipients if the
+variable is "yes", but will remove the user if the variable is "no".
+However, REPLY-INCLUDE-ME no longer controls whether the user is
+included in alias expansions (via the "-om" option to sendmail).
+
+MM v0.90 no longer adds the user's signature file when
+delivering to files. When delivery to files fails, the deadletter file
+is written out in a standard mail file format rather than just as text.
+
+MODIFY-READ-ONLY is now defaulted to "yes" at compile time, due to
+numerous complaints.  It can of course be overridden in the
+system-wide or user init files.
+
+Also relating to variables, MM v0.90 now supports per-group init
+files.  Based on a user's primary group (determined by getgid()), if
+the file "groupname.ini" exists in MM's library directory, MM will
+read it in right after it reads the system-wide init file ("mm.conf").
+This could be used for setting up aliases, or for setting USER-LEVEL
+to "novice" for a group of users.  The compilation variable
+GROUP_INIT_FORMAT can be used to set the name of this group init file
+(in case you don't want it in the MM's library directory, due to
+distributed maintenance perhaps).  GROUP_INIT_FORMAT should contain
+one "%s", to be replaced by the groupname.
+
+New Recovery Features
+---------------------
+
+Like many programs, when MM v0.88 writes out a file it first moves the
+old version to filename~ (tilde), to ease recovery if something goes
+wrong.  Unfortunately, when the system would crash in the middle of MM
+writing out a file, there was no way to tell whether MM had
+successfully written out the file.  Often, a user would log in after
+the crash, enter MM with the unfinished (often empty) mailfile, get
+new mail, and MM would write over the ~ file with the empty one as it
+read in the new mail.  Thus the old mail was lost.
+
+In MM v0.90 we added an extra step so MM can tell whether it succeeded
+or failed in writing a new file.  Instead of moving the mail file to
+mailfile~, we move it to #mailfile# (like Emacs).  When the new file
+is successfully written, #mailfile# gets moved to mailfile~.  Thus,
+whenever MM tries to GET or EXAMINE mailfile and sees #mailfile#, it
+knows to worry, and prints appropriate error messages.  It
+automatically moves #mailfile# to be the real mailfile (GET only, not
+EXAMINE) in situations where the mailfile is either missing or empty,
+and otherwise advises the user to call for help.
+
+Note that sometimes, users *will* edit their mailfiles with Emacs, and
+Emacs may leave the #mailfile# file.  This confuses MM, but we judged
+that the consistency of using the same filename scheme was worth the
+ensuing confusion.
+
+In MM v0.88, there was a check included to make sure MM was the only
+program writing to the mail file, as a way of backing up the
+advisory-only Unix locks (for example, if you look at your mailfile
+with Emacs it will ignore MM's locks).  However, this check was only
+performed when checking for new mail, rather than whenever MM was
+about to write to the file, and no type of recovery was done other
+than an advisory message.
+
+In MM v0.90, we have a new CHECK_MTIME routine, called whenever MM is
+about to write to the mail file.  It checks the modify time on the
+file, and if it doesn't match when MM last wrote to the file then MM
+attempts to recover by writing the mail file out to filename.PID, and
+changing the internal copy to read-only (EXAMINE).  It also prints
+lots of verbose warnings.
+
+Unfortunately, we have found that check_mtime() and NFS don't get
+along too well -- a stat() on an NFS file that has *just* been written
+will often give the mtime from before the last write, which makes
+check_mtime think the file was changed when the mtime later gets
+updated.  However, it is not recommended to read mail files over NFS
+with MM, since we don't trust the locking either.
+
+The modifications for check_mtime() involved the new flag MF_SAVEONLY
+for the flags field of a message vector.  Unlike MF_RDONLY, which
+indicates that the current file was read in with EXAMINE and can
+therefore not be modified, MF_SAVEONLY indicates that MM changed the
+file to be read-only after encountering an error.  MF_SAVEONLY means
+the user is discouraged from changing MM's internal copy, but MM still
+wants to write the file out to disk -- perhaps the user had a quota
+problem when we originally noticed the changed mtime, and we want to
+give them a chance to clean up and write out the file.
+
+MM v0.90 does an fsync() on the mailfile after it finishes writing it
+out, to make sure the changes get flushed to disk.
+
+When sendmail is not successfully called, MM v0.90 tells the user and
+suggests they try the SAVE-DRAFT command.
+
+New Parse-Error Handling Code
+-----------------------------
+
+A new feature was added to make it easier for users to fix incorrect
+commands.  When MM (or CCMD) gets a syntax error, the correct part of
+the previous line is automatically put back in the command buffer so
+the user can fix the command without having to retype that part (as if
+they hadn't typed the wrong part and return).  See also command-line
+editing, below.
+
+Also, error messages were made a little friendlier by modifiying CCMD
+so each FDB can contain an error string (like the help string).  For
+example, "headers snorkle" will now generate the error '?Invalid
+message sequence - "snorkle"' instead of the less-helpful "does not
+match switch or keyword".
+
+New CHECK_CF() Semantics
+------------------------
+
+The CHECK_CF() routine checks for whether there is a current mail
+file, and if necessary whether it can be written to.  To handle
+command line arguments (for example, "$ mm read unseen") check_cf()
+will automagically GET or EXAMINE the main mail file (from the
+MAIL-FILE variable).
+
+In MM v0.88, the argument to check_cf() was a simple boolean
+indicating whether write access was necessary.  However, we found it
+was better to pass values of O_RDONLY, O_WRONLY or O_RDWR.  These
+indicate, respectively, wanting a read-only file (EXAMINE), needing a
+writable file (GET), or wanting a writable file but willing to settle
+for a read-only file.  O_RDWR is useful in the case of command-line
+arguments -- the "mm read unseen" example above would try to do a GET,
+in order to update the SEEN flags if possible, but if the GET failed
+because the file was already locked, check_cf() would fall back on an
+EXAMINE, since other than the unseen flag READ is really a read-only
+(so to speak) operation.
+
+The new O_RDWR option is also useful for running check_cf() in the
+middle of parsing a command like "edit".  (MM always runs check_cf()
+before parsing a message-sequence.)  Otherwise, if MODIFY-READ-ONLY
+was set to ASK, we were getting a problem where the "modify anyway?"
+question occurred in the middle of parsing a line, and the two
+simultaneous parses didn't get along very well.  (O_RDONLY wouldn't
+work in this case because the automagic GET (for command-line args)
+would be an EXAMINE and mess up the post-parse check, since EDIT
+really *does* want to modify the file.)
+
+In addition, check_cf() returns false on error instead of longjmp'ing
+with a cmerr(), to allow the calling routine to handle the error as
+desired.
+
+Better Handling of MAIL-DIRECTORY and Other Directory Type Variables
+--------------------------------------------------------------------
+
+The parser for the mail-directory variable now handles several things
+better than it used to.  In MM v0.88, setting the mail-directory to be
+the same as the current directory would cause each file to be listed
+twice on "?".  This is no longer the case in MM v0.90.
+
+Also, there is some confusion, on creating new files, of whether they
+should be placed in the MAIL-DIRECTORY or the current directory.  In
+MM v0.90 the policy is to put them in the MAIL-DIRECTORY (so they
+don't get misplaced) unless a subdirectory is specified -- which is
+taken to be under the current directory.
+
+To unset the MAIL-DIRECTORY variable, users can now just confirm
+(leave it blank).
+
+In addition, "./" is stripped off the beginning of a directory
+variable, and "/." is stripped off the end, for neatness.
+
+SAME_FILE() Routine
+-------------------
+
+MM v0.88 used string comparisons to check whether two filenames
+referred to the same file.  Thus, it could be tricked by variations on
+the name.  MM v0.90 has new code to perform this check, by comparing
+inodes and device numbers.  The first place it was used was to see if
+the file MM was opening was the main mail file.
+
+We also used same_file() to make MM more aware of when it's doing a
+GET or EXAMINE of the same file that it is currently looking at.  For
+example, if you do two GETs in a row on the same filename, MM v0.88
+would say something about not being able to lock the file, whereas MM
+v0.90 will say the file is "already current writable mail file".
+Similarly "upgrades" and "downgrades" between GETs and EXAMINEs of the
+same file are handled more intelligently (see code in file.c -- look
+for "same_file").
+
+Secret Debugging Code
+---------------------
+
+We found and fixed a malloc() bug or two (or ten), as well as some
+memory leaks.  We expect there may be more malloc() bugs, however.
+While looking for memory problems, we wrote some routines which are
+currently disabled but may be of interest to anyone out there trying
+to debug MM.
+
+The debug_validate_msgvec() routine was written when messages were
+randomly being mangled -- in particular, "From: " fields would
+disappear.  Periodically, this routine would be called to look through
+the internal copy of the mail file and see if it still looked the way
+it "should", in order to help pinpoint just when (if not where) it was
+getting mangled.
+
+The m_checkranges() routine, along with our whole memory-debugging
+suite, can be called periodically to make sure that all malloc'd
+strings are behaving correctly -- not writing past their boundaries.
+This memory-debugging code is controlled by the MDEBUG compile time
+variable, and is in debug.c.
+
+Non-Interactive MM
+------------------
+
+MM was designed as a very friendly interactive program.  However,
+occasionally, users want to use it non-interactively -- from a "take"
+file or from a pipe.
+
+The several "maybe" type variables, when set to "ask", sometimes
+interfered with TAKE files, by trying to be interactive when it was
+not appropriate.  Many such instances have been fixed by checking for
+interactiveness before asking (though probably not all).
+
+The SMAIL command is for using MM in a pipe to send mail, much the way
+"mail" is used in a pipe now.  It is for True Believers who don't want
+to use anything but MM ever.
+
+Compile-Time and Other Programmer-Level Changes
+-----------------------------------------------
+
+MM v0.88 came with the configuration files s-bsd43.h, s-hpux.h,
+s-mtxinu43.h, s-sun40.h, and s-ultrix20.h.  In addition, MM v0.90 has
+s-aixrt.h, s-dynix211.h, s-isi40.h, s-sun34.h, s-sun35.h, s-sysv3b2.h,
+s-sysv52.h, and s-umaxv.h.  We also had to add a "volatile" definition
+for non-ANSI C compilers to the bottom of all the s-*.h files.  As
+always, please send us your new config files so we can pass them
+around. 
+
+The Makefile has been cleaned up a bit.  Several people complained
+that "make clean" wasn't cleaning up everything it should, so we fixed
+(some of) that.  The install target is now more correctly implemented
+with several sub-targets and without invoking the old mm-install shell
+script.  (This includes a lot of handwaving for installing all the
+help files.)
+
+MM's version number now contains a patchlevel number, to register how
+many patches have been applied, in addition to the major, minor, and
+edit numbers in MM v0.88 version numbers.
+
+A lot of people, upon compiling MM, found that it generated "From: "
+fields containing "user@" and no hostname.  This had to do with
+gethostbyname() not returning a fully-qualified hostname and MM not
+noticing.  This has been patched, thanks to Peter Karp.  Similarly, MM
+will now use the HOSTNAME variable if all else fails, though it would
+be better not to have the hostname hardcoded.
+
+We avoid use of fprintf() (for writing mail files), since it seems to
+be limited to 64K on some machines and large messages (often binhex'd)
+were getting truncated.  We also encountered a problem with certain
+versions of fputs() which terminate output on newline (MM v0.88 patch
+#4).  In another OS bug, we found we had to do an ferror() on machines
+where fflush() did not return an error for "Quota exceeded".
+
+Various code fragments that we put in with some vague idea of
+supporting System V (without really testing them) were quite faulty,
+like "#include <sys/utsname>" instead of "utsname.h".  We hope to have
+fixed all the glaring ones that were reported.  However, we do still
+have some patches for compilation on a 3B2 (from Matt Jonson) which we
+didn't manage to install yet...
+
+On larger mailfiles, MM v0.88 would use an extraordinary amount of
+virtual memory.  For example, reading in a 3 megabyte file would
+increase MM's image size to 21 megabytes.  This occured in
+local_contig_count(), and was fixed by better estimating the number of
+messages that would be in the mail file -- instead of guessing there
+would be ten messages and realloc()ing by ten messages at a time, we
+now guess that each message is about 1000 characters and estimate
+based on the size of the file (so a 3 megabyte file would be estimated
+to have 3000 messages instead of 10).  The behavior we were seeing
+seems to be related to a rumor we've heard that on some systems free()
+doesn't free, and so perhaps realloc() doesn't either. (Rein Tollevik
+found and solved this problem for us.)
+
+Quota checking (for the STATUS command) is now correctly implemented
+for systems with quotactl().
+
+MM v0.88 would sometimes pause a very long while after the CRT-FILTER
+(or PRINT-FILTER, or LIST or WHO command) exited.  The problem was
+that MM has a SIGCHLD handler, in order to catch all the sendmail
+processes it leaves in the background, but this handler also caught
+the processes started by popen().  So when pclose() waited for its
+child process, it was already gone, but the wait() wouldn't return an
+error since there were sendmail processes that it could wait on.  So,
+MM wouldn't wake up after exiting from the CRT-FILTER (or whatever)
+until a (all?) sendmail process exited.  The new mm_popen() and
+mm_pclose() routines handle this more nicely (though the optimal
+solution would be for popen() and pclose() to be implemented with the
+rumored wait4() call that takes a PID as an argument).
+
+MM's usage statistics (when turned on) now include CPU usage.
+
+Someone pointed out that RFC822 dates have only two-digit years, like
+"90" instead of "1990", so the date headers (Date: and Resent-Date:)
+MM v0.90 prints now comply.  We'll cross this road again in 9 years.
+
+Other New Features
+------------------
+
+Display width and length are now handled better, including trapping
+SIG_WINCH and checking the length/width on SIG_CONT for windows users
+who resize their windows.
+
+MM now supports per-mailfile "rc" files, named "<mailfile>.rc".  These
+are TAKEn automatically whenever the corresponding mailfile is read
+in.  For example, if there were a mail file that several people looked
+at, say "bug-reports", the "bug-reports.rc" file might contain an
+"echo" of a policy statement concerning that file, or run "headers
+since yesterday" or some such.
+
+In the mmail.el code (for GNU emacs mmail mode) we now set the
+outgoing message to be in autofill mode.
+
+SET with no arguments gives the same behavior as SHOW with no
+arguments -- it lists the value of all variables.
+
+A new feature in CCMD (and therefore in MM) is command-line editing.
+This is based on standard kshell emacs-style command-line editing, and
+includes ^A (beginning of line), ^E (end of line), ^B (back one
+character), and ^F (forward one character), plus several more that
+should be documented elsewhere (but may not be).  Command-line editing
+can be modified with the (shell) environment variable CCMDOPT.  This
+contains colon-separated options from: "emacs", "gmacs", or "vi"
+(unimplemented) plus "bcase" or "fcase" (whether esc-U, esc-L and
+esc-C casify forwards or backwords).
+
+Assorted (Non-Sorted?) Other Bugfixes and Enhancements
+------------------------------------------------------
+
+Several problems with not checking for NULL values and not
+initializing values to NULL were fixed (including MM v0.88 patch #1).
+This includes a pesky one where replying to a message without a date
+field would make MM dump core.
+
+The transform program has been renamed to mm-trans since the old name
+was too vague.  Also, it is now better able to find message-boundaries
+when they aren't where they should be.  Most importantly, it now takes
+two arguments, an inputfile and outputfile, to discourage users from
+typing "mm-trans myfile > myfile" and losing the whole file.
+
+At startup time, MM remembers where aliases came from (.mminit,
+.mailrc, or system-wide mm.conf), so we don't copy aliases from
+.mailrc to .mminit on a save-init.  (Users complained that MM didn't
+notice changes to the .mailrc file, since it was remembering what the
+file used to look like.)
+
+We found that GNU emacs used to write slightly broken Babyl files
+(from rmail), and since we learned Babyl from Emacs so did MM v0.88.
+We've fixed MM to use the un-broken format, but if your emacs is
+really old you may want to define BROKEN_BABYL in your config.h.
+Otherwise, MM v0.90 will read either the "broken" or non-broken
+formats, and will write out the correct form.  Note that we recently
+found out that we *still* don't write complete Babyl format headers,
+so some variables that GNU emacs keeps there may disappear after the
+file is read with MM.
+
+When a message was being displayed, "folding" (breaking into nice
+lines less than 80 characters, with appropriate RFC tabbing) of long
+message headers had some problems and should be better now.  In
+particular, mail from Carnegie Mellon's Andrew system was liable to
+make MM dump core when it tried to "fold" a header with no spaces for
+more than 80 characters.
+
+We found Yet Another case where we were reversing the Daylight Savings
+Time adjustment.  There was also a spot where we didn't zero out or
+set a "seconds" variable, and it was sometimes filled with a
+significantly large bogus value.  This seems to have affected only
+babyl format.
+
+When MM pushes to a shell or otherwise runs a program underneath
+itself, it now resets the umask to the value from before MM ran,
+instead of leaving it as the NEW-FILE-MODE (which MM favors for
+creating mail files).  The NEW-FILE-MODE proved inappropriate.
+
+EXIT at Read-Level no longer does an EXPUNGE, since we're in the
+middle of a message-sequence and we don't want to change all the
+numbers.
+
+When the sigint_handler calls askem() to ask the user "Do you really
+want to exit mm?"  it first opens /dev/tty.  If there was an error on
+the open, the tty passed to askem would not be valid, and the read in
+askem() would get EBADF, which wasn't checked, and it would go into a
+read loop.  Also, if a user is no longer on a tty to respond, read
+would get EOF and loop forever waiting for a yes/no response.  Both
+are fixed in v0.90 (and MM v0.88 patch #9).
+
+When a corrupt mail file is read in, it is set to read-only (EXAMINE)
+so the problems won't be compounded.  In addition, MM v0.90 releases
+the lock on the file, since it doesn't need it.  Also, the warnings
+that are printed out in this case have been modified, hopefully to be
+clearer.
+
+MM v0.88 would lose the setuid bit on mailfiles, which sendmail
+insists on before it will write to a file (based on a user's
+forwarding).  We now do an extra chmod() to make sure the file
+protection stays the same when we rewrite the file.  (We do however
+find that the bit sometimes spontaneously vanishes without MM's
+involvement, perhaps a sendmail bug somewhere...)
+
+It is now possible to have a subject of ":-)", as well as other
+headers whose value begins with a ":".
+
+In MM v0.88, if a user had an alias like, say, "samantha", and tried
+to send mail to a local user named "sam", MM would match "sam" to the
+alias "samantha" and send the mail there instead.  MM v0.90 makes use
+of a new CCMD flag (implemented for MM) called KEY_EMO to accept an
+"exact match only".  This means that CCMD will do escape-completion on
+the alias (so "sam<ESC>" will produce "samantha") but if no completion
+is done the alias is not matched.
+
+When a message is copied or moved to another file, the new copy is no
+longer marked as deleted.
+
+The movemail program is better about not returning success when it
+didn't really succeed in writing the file out.
+
+As described in section 4.4.4 of RFC822:
+
+    o	The  "Sender"  field  mailbox  should  NEVER  be  used
+	automatically, in a recipient's reply message.
+
+Therefore MM v0.90 no longer references the "Sender:" field when doing
+a reply.  It will use the "Reply-To:" field if there is one, or else
+the "From:" field.
+
+MM v0.88 would leave users in send mode after FORWARDing a message.
+Fixed in v0.90.
+
+In MM v.0.90 the AFTER message sequence, with no time specified, no
+longer includes the day specified, though SINCE does.
+
+The code for the TO message sequence now checks the BCC field of each
+message as well, since these are printed in the saved-messages file
+(and any other file MM delivers directly to).
+
+Mailing List?
+-------------
+
+Werner Uhrig has suggested a separate mailing-list for MM maintainers
+at other sites to report and discuss problems and ideas for
+changes	and ask for help and suggest 'neat usage tricks' (reducing the
+load on BUG-MM in the process) - and we think it is a useful idea, but
+don't want the overhead of organizing and maintaining another list.
+
+Any interest or volunteers out there?
+
+Werner is handling a lot of other lists already, and is also not keen
+for more and would prefer that someone with a lighter load would take
+on this task.  But he is willing to help get things started - so
+please respond to him directly so he can decide on setting things up
+(or not).
+
+Please send mail to
+
+	Werner Uhrig <werner@rascal.ics.utexas.edu>
+
+Please note that we are not trying to discourage mail to bug-mm for
+bug reports, comments, questions, suggestions, etc.  That is still how
+you would get in touch with us.  Werner's list is more of a "MM Users
+Group" type of mailing list.
+
+Thanks
+------
+
+David M. Katinsky, from Rutgers University, sent us many patches which
+have been incorporated into MM v0.90.  We'd like to thank him for
+sending them again and again when we didn't put them right in :-).
+
+Thanks to everyone else who sent us patches, even if we didn't install
+them yet -- you know who you are.  So do our RCS files.
+
+Though we may occasionally sound grumpy when defending MM, we are
+thankful for all the bug reports and suggestions that everyone submits
+so we can keep making MM better.  We still have our list of hundreds
+of things we want to fix and improve, so even if your suggestion
+hasn't shown up in v0.90 we probably haven't forgotten it.
+
+Thanks to Joe Brennan, our Email Consultant and first line of defense
+for local bug-mm mail, who has done a lot of work on the MM help
+files, as well as on our local manual.
+
+And of course, thanks to everyone who sends us Rave Reviews to post on
+our wall and cheer us up when we feel unloved :-).
+

@@ -1,0 +1,52 @@
+;MIC file to create TOPS10 integration toolsclearinghouse tapes
+;
+;parameter is the tape drive to use.
+;
+;tools are located in [70,6067,*]
+;
+;2 savesets are written:
+;#1 has the documentation file, and the directory of the tape
+;#2 has all of the subdirectories
+;
+;Tape is written in non-interchange mode, at 1600 bpi
+;
+;Two passes are made: one to write everything out, but with a
+;dummy placeholder file for the directory file (T10TPx.DIR),
+;the the real directory file is made, and the second pass writes
+;it out with the other files.
+;
+.COPY T10TP4.DIR=NUL:
+.PATH [70,6067]
+.R BACKUP
+*TAPE 'A
+*REWIND
+*DENSITY 1600
+;
+;PASS ONE
+*SSNAME TENTAPE4
+*SORT FILE A
+*SORT DIRE A
+*SAVE T10TP4.MEM[70,6067],T10TP4.DIR[70,6067],-
+*T10TP4.RNO[70,6067],T10TP4.MIC[70,6067]
+*SSNAME LSMTOOLS4
+*SORT FILE A
+*SORT DIRE A
+*SAVE [70,6067,*]
+*REWIND
+;
+;DIRECTORY PASS
+*PRINT T10TP4.DIR[70,6067]
+*REWIND
+;
+;PASS TWO
+*SSNAME TENTAPE4
+*SORT FILE A
+*SORT DIRE A
+*SAVE T10TP4.MEM[70,6067],T10TP4.DIR[70,6067],-
+*T10TP4.RNO[70,6067],T10TP4.MIC[70,6067]
+*SSNAME LSMTOOLS4
+*SORT FILE A
+*SORT DIRE A
+*SAVE [70,6067,*]
+*REWIND
+^C

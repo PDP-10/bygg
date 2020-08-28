@@ -1,0 +1,41 @@
+CCMD Patch number: 1
+Date: Mon Feb  4 21:40:28 1991
+File: Makefile
+
+Description:
+
+To build CCMD under Ultrix 4.0 you need to define HAVE_VOIDSIG.  The 
+following patch adds an "ultrix40" target that does this and compiles 
+CCMD properly.
+
+Patch:
+
+*** /tmp/,RCSt1008339	Mon Feb  4 21:37:27 1991
+--- Makefile	Mon Feb  4 21:36:03 1991
+***************
+*** 13,18 ****
+--- 13,19 ----
+  #	make aix		for AIX systems
+  #	make bsd		for 4.2bsd
+  #	make sun		for SunOS
++ #	make ultrix40		for Ultrix 4.0	
+  #	make next		for NeXT
+  #	make SVR3		for SVR3
+  #	make SVR2		for SVR2
+***************
+*** 176,182 ****
+  bsd BSD:
+  		$(MAKE) $(MFLAGS) OS=-DBSD all
+  
+! sun sunos SUN SUNOS next NeXT NEXT:
+  		$(MAKE) $(MFLAGS) OS="-DBSD -DHAVE_VOIDSIG" all
+  
+  hpux:
+--- 177,183 ----
+  bsd BSD:
+  		$(MAKE) $(MFLAGS) OS=-DBSD all
+  
+! sun sunos SUN SUNOS next NeXT NEXT ultrix40:
+  		$(MAKE) $(MFLAGS) OS="-DBSD -DHAVE_VOIDSIG" all
+  
+  hpux:

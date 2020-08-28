@@ -1,0 +1,18 @@
+/*
+** Internal format of addresses.  When addr.c is merged with memory.c,
+** this file will be included in the sorce of the resulting file.
+*/
+
+#define maxdepth 4		/* Make this eight when the longword goes. */
+
+struct address {
+  struct address* next;
+  byte type;
+#   define aty_single 1
+#   define aty_count  2
+#   define aty_range  3
+  byte depth;
+  word count;
+  byte addr[maxdepth];
+  longword foobar;		/* Experiment... */
+};

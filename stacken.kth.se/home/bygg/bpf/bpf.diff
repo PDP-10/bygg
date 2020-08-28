@@ -1,0 +1,113 @@
+--- bpf.org/bpf.c	Thu Oct 25 19:02:56 2001
++++ bpf.c	Sun Oct 28 11:07:19 2001
+@@ -1,3 +1,5 @@
++#define BYGG			/* beware... */
++
+ /*	$OpenBSD: bpf.c,v 1.25 2001/04/04 02:39:17 jason Exp $	*/
+ /*	$NetBSD: bpf.c,v 1.33 1997/02/21 23:59:35 thorpej Exp $	*/
+ 
+@@ -186,6 +188,7 @@
+ 	/*
+ 	 * Make room for link header.
+ 	 */
++#ifndef BYGG
+ 	if (hlen != 0) {
+ 		m->m_len -= hlen;
+ 		m->m_data += hlen; /* XXX */
+@@ -196,6 +199,18 @@
+ 	error = uiomove(mtod(m, caddr_t), len - hlen, uio);
+ 	if (!error)
+ 		return (0);
++#else /* if BYGG */
++	error = uiomove(mtod(m, caddr_t), len, uio);
++	if (error)
++		goto bad;
++	if (hlen > 0) {
++		bcopy(mtod(m, caddr_t), (caddr_t) sockp->sa_data, hlen);
++		m->m_len -= hlen;
++		m->m_data += hlen;
++	}
++	return (0);
++#endif /* bygg hacking */
++
+  bad:
+ 	m_freem(m);
+ 	return (error);
+@@ -491,6 +506,24 @@
+ 	d->bd_sel.si_selpid = 0;
+ }
+ 
++void ether_write_input(struct ifnet * ifp, struct mbuf * m);
++void ether_write_input(struct ifnet * ifp, struct mbuf * m)
++{
++      struct mbuf * im;
++      unsigned char * foo;
++      struct ether_header *eh;
++
++      foo = mtod(m, char *);
++      foo -= sizeof(struct ether_header);
++
++      im = m_devget(foo, m->m_len + sizeof(struct ether_header), 0, ifp, NULL);
++      if (im) {
++	eh = mtod(im, struct ether_header *);
++	m_adj(im, sizeof(struct ether_header));
++	ether_input(ifp, eh, im);
++      }
++}
++
+ int
+ bpfwrite(dev, uio, ioflag)
+ 	dev_t dev;
+@@ -520,6 +553,13 @@
+ 		return (EMSGSIZE);
+ 	}
+ 
++	if (d->bd_flags & BPF_D_WRSELF) {
++	  switch ((int) d->bd_bif->bif_dlt) {
++	  case DLT_EN10MB:
++		ether_write_input(ifp, m);
++		break;
++	  }
++	}
+ 	s = splsoftnet();
+ 	error = (*ifp->if_output)(ifp, m, &dst, (struct rtentry *)0);
+ 	splx(s);
+@@ -784,6 +824,15 @@
+ 	case BIOCGRSIG:
+ 		*(u_int *)addr = d->bd_sig;
+ 		break;
++	case BIOCSWRSELF:
++		if (*(u_int *)addr)
++			d->bd_flags |= BPF_D_WRSELF;
++		else
++			d->bd_flags &= ~BPF_D_WRSELF;
++		break;
++	case BIOCGWRSELF:
++		*(u_int *)addr = d->bd_flags & BPF_D_WRSELF;
++                break;
+ 	}
+ 	return (error);
+ }
+--- bpf.org/bpf.h	Thu Oct 25 19:02:56 2001
++++ bpf.h	Thu Oct 25 19:04:37 2001
+@@ -114,6 +114,9 @@
+ #define BIOCSRSIG	_IOW('B',114, u_int)
+ #define BIOCGRSIG	_IOR('B',115, u_int)
+ 
++#define BIOCGWRSELF    _IOR('B',118, u_int)
++#define BIOCSWRSELF    _IOW('B',119, u_int)
++
+ /*
+  * Structure prepended to each packet.
+  */
+--- bpf.org/bpfdesc.h	Thu Oct 25 19:02:56 2001
++++ bpfdesc.h	Thu Oct 25 19:03:53 2001
+@@ -82,6 +82,8 @@
+ 	uid_t		bd_sigeuid;	/* euid for process that set pgid */
+ 	u_char		bd_pad;		/* explicit alignment */
+ 	struct selinfo	bd_sel;		/* bsd select info */
++	int             bd_flags;       /* misc flags */
++#define BPF_D_WRSELF   0x1
+ };
+ 
+ /*

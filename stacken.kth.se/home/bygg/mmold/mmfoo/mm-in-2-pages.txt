@@ -1,0 +1,208 @@
+MM in 2 Pages.  A selection of commonly used commands.  For more information,
+please use the help command.  Note that commands may work differently at the
+MM>, Read> and Send> prompts.
+
+MM Commands
+
+The term messages refers to message sequences, described on the other side of
+this sheet.
+
+help  ?				shows what help is available.
+
+help command			explains use of a particular command (or a
+				topic as listed in help ?).
+
+command ?			shows possible completions for a particular
+				command.
+
+!command			does a shell command.
+
+exit				exits from MM and expunges deleted messages;
+				does not kill the process.
+
+quit				exits from MM without expunging; does not kill
+				the process.
+
+bye				exits from MM and asks whether to expunge;
+				kills the process.
+
+send				starts the SEND routine.
+
+read				starts the READ routine, and reads any unseen
+				messages.
+
+read messages			starts the READ routine, and reads specified
+				messages.
+
+headers messages		shows the headers (index summary) of specified
+				messages.
+
+reply messsages			sends a reply; similar to SEND routine.
+
+delete messages			marks the message for deletion; it will be
+				erased at exit or expunge.
+
+forward messages		forwards the message to someone else; you can
+				add a comment first.
+
+remail messages			remails the message to someone else without
+				comment.
+
+print messages			prints the message; see the other side of this
+				sheet for pcprint.
+
+flag messages			puts a marker on the message; the message is
+				shown whenever you start MM.
+
+keyword kw messages		assigns a keyword, kw, to the message; for use
+				in message sequences.
+
+copy file messages		copies the message to another mail file, file.
+
+move file messages		copies the message to another mail file, file.
+
+get file			changes to another mail file, file.
+
+get				changes to the main mail file, mbox.
+
+save-draft file			(at Send>only) saves a message being typed in
+				a file, file, without sending it.
+
+restore-draft file		gets a message that was saved by save-draft to
+				resume the SEND routine.
+
+finger userID			shows the name and other information for the
+				person with the userID.
+
+finger -Q username		lists userIDs of people with the name (or
+				partial name).
+
+define alias userID		defines a mail-alias (nickname) for the
+				userID.
+
+define alias userIDlist		defines a mail-alias (mailing list name) for a
+				list of userIDs.
+
+define alias @@file		defines a mail-alias (mailing list name) by
+				referring to a file listing userIDs.
+
+who?				shows what aliases exist.
+
+who alias			shows the userID for a particular alias.
+
+show				shows current settings of variables and
+				mail-aliases.
+
+show variable			shows the current setting of a particular
+				variable.
+
+help set variable		explains what a variable does.
+
+set variable value		customizes MM by setting a variable to a
+				certain value.
+
+save-init			saves anything defined or set during the
+				current session.
+
+expunge				permanently erases deleted messages (the exit
+				command also does this).
+
+Message Sequences
+
+Messages are commonly specified by number.  Type headers all to see a list of
+all the messages you have on file, with their numbers.  Examples of message
+sequences using numbers:
+
+5				message 5.
+
+5:8 or 5-8 or 5,6,7,8		messages 5 through 8.
+
+5,6,7,10 or 5:7,10		messages 5 through 7, and 10.
+
+
+Some other message sequences are shown here.  Type help message-sequence for a
+full list of sequences.  If you type headers all, you are using the message
+sequence all.
+
+*				the last message in the file.
+
+all, inverse			all messages; all=oldest first, inverse=newest
+				first.
+
+after, before, on, since date	messages after, etc., a certain date (June 6,
+				1990) or day (Monday).
+
+subject, text word		messages containing a word (or part of a
+				word) in the subject or text.
+
+to, from userID			messages to or from a certain userID or user
+				name.
+
+last n				the last n messages.
+
+flagged				all messages marked by the flag command.
+
+keyword kw			all messages assigned to the keyword, kw, by
+				the keyword command.
+
+Examples of message sequences:
+
+read since Monday		reads all messages received on and after
+				Monday.
+
+delete subject meeting from fuat  deletes messages from fuat with meeting
+				  in the subject.
+
+headers before 12/31/90		shows headers for messages received before
+				December 31, 1990.
+
+flag text bug from mel		puts a flag on all messages from melissa with
+				bug in the text.
+
+Reply Keywords
+
+sender, all			send reply to sender, or to everyone on the to
+				and cc lists of the original.
+
+including, not-including	include the original message above the reply
+				text, or not.
+
+At the Read> prompt, common commands are reply, reply all, reply including,
+reply all including.
+
+At the MM> prompt, type reply and message sequence; then at the prompt send
+reply...to, press return for the default, sender not-including, or specify
+including, all, or all including.
+
+Send Commands
+
+Use help at the Send> prompt for information.  Some of the commands available
+only at the Send> prompt include:
+
+display, display headers	shows the message about to be sent, or just
+				its header lines.
+
+to address,  cc address, 
+subject text			adds addresses to the to or cc fields;
+				replaces the subject field.
+
+erase field			erases a field (like to, cc, etc.)
+
+text				goes back to typing text, after reaching the
+				Send> prompt.
+
+fcc file			puts a copy of the message in a file, file, in
+				your current directory.
+
+send				sends the message.
+
+quit				discards the message, and goes back to the MM>
+				prompt.
+
+At the To: and cc: prompts: type any valid address or mail-alias; or @file to
+read in addresses from a file (mailing list);
+
+or . (period) to send to yourself.  Put commas between addresses when there is
+more than one.  See the help topics addressing, bitnet and internet for
+information about addresses.  See help for text-mode for help with MM's text
+editor.

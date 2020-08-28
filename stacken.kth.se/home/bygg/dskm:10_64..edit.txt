@@ -1,0 +1,1611 @@
+EDIT.TXT - a "MCO" list for QZ modifications
+====================================================================
+Monitor: 701 release. Load 64, highest MCO number in load = 9337.
+
+	701-code is in DSKM:<10,64> (QZ-specific, error fixes)
+	while DEC-modules are in DSKM:<10,701>.
+	Common KL-modules are in <10,64,KL>, below are
+	<10,64,KL,ODEN> and <10,64,KL,FREJ> where the actual
+	generation is done. Corresponding for <10,64,KS>,
+	<10,64,KS,AURORA>, <10,64,KS,VENUS> etc.
+
+	DN87-code is in DSKE:<10,27,ANF10>. Using .PATH @MON:701
+	you get convenient logical names on the areas.  There are
+	also <hostname>.CCL<10,64> to change path between different
+	SFDs.
+
+	To recompile modules remember the following:
+	1. To compile COMMON & friends, go to lowest SFD and DO COM.
+
+	  To recompile FTKx dependent modules (residing in <10,64,Kx>)
+	  you can also be pathed to that area provided you set /SEARCH
+	  on an appropriate sub-area containing .UNV files.
+
+	2. To recompile common modules go to <10,64,KL(s)> and set
+	   /SEARCH to one of the sub-SFDs (in order to get
+	   F and S). E.g.
+		.PATH <10,64,KS>
+		.PATH NADJA:/SEARCH
+		.COMPILE SCNSER.MAC,QZADDS.MAC
+		.PATH NADJA:/NOSEARCH
+
+	To generate a monitor do the following:
+	1. Get pathed into appropriate SFD. (E.g. <10,64,KL,LOKE>)
+	2. If necessary edit MONGEN.MIC for configuration changes.
+	   In this case also recompile the COM???-modules with
+	   COM.MIC.
+	3. Load a monitor using LINK.MIC, arg = name of EXE file.
+	   LINK and following MICros will start a COJOB if necessary.
+	4. Patch the EXE file using EDDT.MIC, arg as above.
+	5. Note also that EDDT.MIC will set CNFCVN to QZ generation
+	   number (last three decimal digits of monitor namn).
+	6. [KS only] Send the monitor to user. DO XFER filename.
+
+	The following MCO's are installed:
+
+9345, 9346, 9350, 9362, 9365, 9368, 9392, 9393, 9390, 9397,
+9409, 9423, 9436, 9441, 9442, 9445, 9448, 9458, 9460, 9461,
+9471, 9473, 9474, 9477, 9488, 9490,
+9507, 9508, 9513, 9516*,9534, 9547, 9558, 9564, 9577, 9584, 9586, 9587,
+9588,
+9602, 9605, 9607, 9608, 9609, 9618, 9619, 9620, 9623, 9637, 9638, 9644,
+9645, 9657, 9658, 9659, 9676, 9683, 9684, 9685, 9687, 9688, 9689,
+9702, 9705, 9706, 9712, 9730, 9732, 9733, 9734, 9740, 9741, 9743, 9745,
+9747, 9751, 9759, 9765, 9766, 9767, 9770, 9784, 9796, 9798*,
+9808, 9810, 9817, 9818, 9819, 9821, 9823, 9826, 9827, 9835, 9836, 9843,
+9851, 9852, 9853, 9857, 9860, 9873, 9877, 9878, 9879, 9885, 9886, 9887,
+9893, 9895
+9916, 9924, 9941
+10038
+
+----------------------------------------------------------------------
+1984-11-03	332	Add new ersatz devices APP: (Apple software)
+			and CPS: (Compis software).
+			Module:	MONGEN.MIC<10,64,KL,ODEN>
+			System:	Oden
+			Hacker:	SOQ
+----------------------------------------------------------------------
+1984-11-03	331	Change F-factors for taxa 3 (1.6 -> 1.7) and
+			taxa 4 (2.2 -> 2.0).
+			Module:	S.MAC<10,64>
+			System:	Oden
+			Hacker:	SOQ
+----------------------------------------------------------------------
+1984-10-15	330	Implement ersatz device PC: for IBM PC files.
+			Patched X45: and created ODN330.EXE<10,64>.
+			Module: MONGEN.MIC<10,64,KL,ODEN>
+			System: Oden
+			Hacker: SOQ
+----------------------------------------------------------------------
+1984-10-02	327	Change ersatz devices SOQ:, TEQ:, JEQ:, BDQ:,
+			BCQ:, POQ:, RPQ:, PLQ: and KPJ: to use ALL
+			structures instead of JOB.
+			Module: MONGEN.MIC<10,64,KL,ODEN>
+			System: Oden
+			Hacker: SOQ
+----------------------------------------------------------------------
+1984-07-03	326	Step two of new factors.  Change the non-july
+			discounted factors.
+			Module:	S.MAC
+			System:	All
+			Hacker:	JEQ
+----------------------------------------------------------------------
+1984-06-28	325	New F-factors after 1-july-1984.  This is step
+			one:  Change the july-discounted two factors.
+			Module: S.MAC  (QZADDS recompiled)
+			System: All
+			Hacker: JEQ
+----------------------------------------------------------------------
+1984-06-16	324	Edit 316 (date fix) didn't work when the monitor
+			was automatically reloaded. The code inserted
+			inside FQZDAT until it is fixed. FQZDAT defined
+			and set to 0.
+			Modules: COMCON.MAC, FKL.MAC, F.MAC
+			System: All
+			Hacker: SOQ
+----------------------------------------------------------------------
+1984-06-06	323	Allow INITIA to run a program even if not
+			logged in. Used by the new COMWEL parameter
+			in SYS:TTY.INI which starts SYS:COMWEL.EXE.
+			File: INITIA.DDT
+			System: Oden
+			hacker: SOQ+TEQ
+----------------------------------------------------------------------
+1984-05-03	322	Add program product cost in control-T typeout
+			File: COMCON.MAC
+			System: All
+			Hacker: SOQ
+----------------------------------------------------------------------
+1984-04-17	321	Install fix from Doug Schram, ref. output done
+			interrupt not always given when doing asyncronus
+			I/O to a terminal.
+			File:	SCNSER.MAC
+			System:	All
+			Hacker:	JEQ
+----------------------------------------------------------------------
+1984-04-13	320	Added York FTP support. FTYORK-switch used.
+			File: 	IPCSER, COMMON,	F
+			System:	All
+			Hacker:	SOQ&BCQ
+----------------------------------------------------------------------
+1984-03-26	317	Added BCL: and HAK: for Oden. Run MONGEN.MIC and
+			COM.MIC. Patched running monitor & SYS:SYSTEM.EXE.
+			File:	MONGEN.MIC<10,64,KL,ODEN>
+			System: Oden
+			Hacker:	SOQ
+----------------------------------------------------------------------
+1984-03-13	316	Change the date reading routine, to forbid typing
+			of the month numerically.
+			Install SPR 10-34357.  (TTY FORM from the network.)
+			Zero JBTIDL table entry at job startup.
+
+			File:	COMCON.MAC, NETDEV.MAC, CLOCK1.MAC
+			System:	All
+			Hacker:	JEQ
+----------------------------------------------------------------------
+1984-03-06	315	Add TTY FILL 6 with 2 sec sleeptime for FF and
+			1 sec for VT.
+
+			File:	SCNSER.MAC, COMCON.MAC, NETDEV.MAC
+			System:	All
+			Hacker:	SOQ
+----------------------------------------------------------------------
+1984-01-30	314	Implement new terminal type: DASHER, from
+			Data General.
+
+			File:	COMCON.MAC, SCNSER.MAC
+			System:	All.
+			Hacker:	JEQ
+----------------------------------------------------------------------
+1984-01-24	313	(Quack!)  Implement three new commands, namely
+			FCOPY, FDELETE and FRENAME, all of them running
+			FUR.  At the same time prevent the PJOB command
+			for not-logged-in users.
+
+			File:	COMMON.MAC, COMCON.MAC
+			System:	Oden so far.  (To be all).
+			Hacker:	JEQ
+----------------------------------------------------------------------
+1984-01-19	312	Unify all logical names for all systems.
+			(Actually done with patching all running systems
+			 and monitors, at the same time as moving files)
+
+			File:	MONGEN.MIC<,,**>
+			System:	All.
+			Hacker:	JEQ
+----------------------------------------------------------------------
+1984-01-09	311	Increase total core size from 1024K to 2048K.
+
+			File:	MONGEN.MIC<,,KL,*>
+			System:	Oden & Loke.
+			Hacker:	JEQ
+----------------------------------------------------------------------
+1983-12-12	310	Change AURORA::TTY25: to be non-dsl line.
+
+			File:	MONGEN.MIC<,,KS,AURORA>
+			System:	Aurora only.
+			Hacker:	JEQ
+----------------------------------------------------------------------
+1983-12-07	309	Well, seems like the two word block to store the
+			phone number in (Edit # 308) was allocated with
+			"BLOCK  1",  no good at all...
+
+			File:	SCNSER.MAC
+			Module:	Same.
+			System:	All.
+			Hacker:	JEQ
+----------------------------------------------------------------------
+1983-12-07	308	Implement two words in the LDB, to store phone
+			number in, for modem lines.  Also add two new
+			TRMOP.'s, (priviliged) to set these words with.
+			At the same time, apply some cosmetics to the
+			routine that prints the error message when we
+			do a GETSEG on something we won't find.
+			(Brutally change the extension .HGH to .EXE)
+
+			File:	COMCON,MAC, SCNSER.MAC
+			Module:	Same.
+			System:	All.
+			Hacker:	JEQ
+----------------------------------------------------------------------
+1983-11-29	307	Implement a new job table, JBTIDL, to aid the
+			forthcoming new Idle Job Killer.  Also there is
+			a new command, SET IDLETIME nnn, a GETTAB (-12),
+			and a SETUUO (-2) to manipulate the table.
+			(And remove a range check bug from edit # 221)
+
+			File:	COMMON.MAC, UUOCON.MAC, COMCON.MAC
+			Module:	Same.
+			System:	All.
+			Hacker:	JEQ
+----------------------------------------------------------------------
+1983-11-26	306	Implement support code for TERMINAL QUIET mode,
+			seems to work when inserted as a patch, so...
+
+			File:	SCNSER.MAC
+			Module:	Same.
+			System:	All.
+			Hacker:	JEQ
+----------------------------------------------------------------------
+1983-11-22	305	Implement TERMINAL QUIET command and TRMOP. (1766),
+			let all systems have the AMIS command, make ersatz
+			device X61: have the name KER:, install ersatz
+			devices X51: .. X55:
+
+			File:	MONGEN.MIC, COMMON.MAC, SCNSER.MAC, COMCON.MAC
+			Module:	Same.
+			System:	All.
+			Hacker:	JEQ
+----------------------------------------------------------------------
+1983-11-22	304	Various.  First, implement TERMINAL SUBTYPE <word>
+			command and TRMOP. (1767).  Second, implement CD
+			command (run nice CD program from scotland).
+			Also physically remove TEQ stopcode from edit
+			number 263.
+
+			File:	COMMON.MAC, SCNSER.MAC & COMCON.MAC
+			Module:	Same.
+			System:	All.
+			Hacker:	JEQ
+----------------------------------------------------------------------
+1983-11-16	303	Implement TERMINAL META command and TRMOP. (1770)
+
+			File:	COMCON.MAC, SCNSER.MAC
+			Module:	Same.
+			System:	All.
+			Hacker:	JEQ
+----------------------------------------------------------------------
+1983-10-26	302	Insert kludge for problem with backspace on Janus.
+
+			File:	BACKSP.DDT
+			Module:	SCNSER.MAC
+			System:	Oden
+			Hacker:	SOQ
+----------------------------------------------------------------------
+1983-09-26	301	Remove TEQ stopcode, see edit 263.
+
+			File:	COMCON.MAC, SCNSER.MAC
+			Module:	same
+			System:	All
+			Hacker:	BjCQ+SOQ+TEQ
+-----------------------------------------------------------------------
+1983-09-26	300	Change the bug in QZADDS.MAC which had the effect
+			that rate 2 and 3 were swapped. See edit 273.
+			File:	QZADDS.MAC
+			Module:	same
+			System:	All
+			Hacker:	SOQ+BjCQ
+-----------------------------------------------------------------------
+1983-08-26	277	Added terminal type TEXTTElefon.
+			File:	SCNSER.MAC, COMCON.MAC
+			Module:	same
+			System:	all
+			Hacker:	SOQ
+-----------------------------------------------------------------------
+1983-08-19	276	Set up rate 1A in JBTQZS when a job is created.
+			File:	CLOCK1.MAC
+			Module:	same
+			System:	all
+			Hacker:	SOQ
+-----------------------------------------------------------------------
+1983-08-07	275	Allow peeking users to get others cost.
+			File:	CHARGE.DDT
+			Module:	UUOCON.MAC
+			System:	Oden only
+-----------------------------------------------------------------------
+1983-07-06	274	Don't allow not logged-in use PJOB to find out
+			about existing users. (Under FQZMOD)
+			File:	COMCON.MAC
+			Module:	same
+			System:	Oden (at least)
+-----------------------------------------------------------------------
+1983-06-27	273	Implement the new charge classes for July 1.
+			File:	S.MAC, QZADDS.MAC
+			Module:	same
+			System:	All
+-----------------------------------------------------------------------
+1983-06-22	272	Install PCO 091, 10702, #:10-31698. /TE
+			File:	COMCON.MAC
+			Module:	same
+			System:	All
+-----------------------------------------------------------------------
+1983-05-13	271	Install PCO 701A-65, edit 10, CMCO 617.3, re
+			IME at USECM3+7.
+			File:	COMCON.MAC
+			Module:	same
+			System:	All
+-----------------------------------------------------------------------
+1983-05-13	270	Insert the RP06 dual port switching fix. /TEQ
+			File:	KL:RPXDUL.DDT
+			Module:	RPXKON
+			System:	KL only (Oden, Loke)
+-----------------------------------------------------------------------
+1983-04-05	269	Add ABC: and CPM: on Oden. /TEQ
+			File:	ODEN:MONGEN.MIC etc
+			System:	Oden
+-----------------------------------------------------------------------
+1983-04-05	268	Allow PSISER traps of ALL UUOs (including the
+			PSIUUOs) /JEQ
+			Module:	PSISER
+			File:	701AQZ.DDT
+			System:	All
+-----------------------------------------------------------------------
+30-Mar-83	267	Fix some parameters for TOR:MONGEN and rebuild
+			a monitor.
+			File:	TOR:MONGEN.MIC, etc
+			System:	TOR
+-----------------------------------------------------------------------
+20-Mar-83	266	Insert slight modification to Ians previous fix
+			to MCROKE.
+			Module:	NETMCR
+			File:	NETDEV.MAC
+			System:	All
+-----------------------------------------------------------------------
+15-Mar-83	265	TTYTAB is not zero when detached on a local line.
+			Check DDBLDB too in CHARGE routine.
+			Module:	QZADDS
+			File:	QZADDS.MAC
+			System:	All
+-----------------------------------------------------------------------
+14-Mar-83	264	Instal Ians PTYSER fix for JOBSTS on travelling
+			lines.
+			Also seems to fix the problem with slow COJOBs.
+			Module:	S.MAC, PTYSER.MAC, SCNSER.MAC (MICWAK::)
+			Files:	same
+			System:	All
+-----------------------------------------------------------------------
+7-Feb-83	263	Add BDQ:
+			Module:	MONGEN etc
+			Add a debug stopcode to catch the evil who
+			sets LDLCOM in 23/.
+			Module:	SCNSER, COMCON.
+-----------------------------------------------------------------------
+7-Jan-83	262	Add POST and NETMAN to PRVTAB. Note that this
+			requires that you compile COMCON with an F.UNV
+			with FTYORK==-1, and afterwards put back one
+			with FTYORK==0 to make SCNSER/NETSER work.
+			System:	All (but only Oden should be affected)
+				N.B! Remember to put dummu copies of
+				all JACCTed programs on other SYS areas
+				to stop FOOs to place own copies of PIP
+				there...
+			Module:	COMCON
+			Files:	DSKA:COMCON.MAC<10,64,701A>,
+				F.YRK<10,64,701A,KL,ODEN>, F.NOY<same>
+-----------------------------------------------------------------------
+16-Dec-82	261	Install 7.01A. Files are on
+			DSKK:<10,6,701A>	;DEC code
+			DSKA:<10,64,701A>	;QZ mods
+			DSKA:<10,64,KL,ODEN>	;etc
+-----------------------------------------------------------------------
+17-Nov-82	260	1) Fix a problem with density, remove one
+				DPB	T1,TDYDN1## in REASSIGN code
+			2) York fixes don't work well, remove for now.
+			3) Implement support for KOM-LOGIN; URUN will
+			   allow RUN UUO when not logged in. Other
+			   things are in LOGIN, KOM/COM and one bit in
+			   ACCT.SYS entry RP2WRD which will eventually
+			   be transferred into LH(JBTQZS).
+			System:	Oden
+			Module:	COMCON.MAC<10,64,A>, FKL.MAC<10,64,A,KL,ODEN>
+-----------------------------------------------------------------------
+10-Nov-82	259	Install a patch from Ian in NETMCR, MCROK5:.
+			System:	Oden
+			Module:	NETDEV.MAC<10,64,A>
+-----------------------------------------------------------------------
+29-Oct-82	258	Let Char(175) = } and Char(176) = ~ work as old
+			altmodes for poor fellows with old terminals.
+			This functionality was removed (by mistake) long
+			ago, but I won't say 'Welcome back'...
+			System:	Oden
+			Module:	SCNSER.MAC<10,64,A>
+-----------------------------------------------------------------------
+29-Oct-82	257	MCO 10084, 10-SCNSER-057, #:10-31843
+			Module:	SCNSER.MAC<10,64,A>
+			Some fixes from York under FTYORK switch. Mostly
+			concerning TSK usage for X.25.
+			Module:	FKL.MAC<10,64,A,KL,ODEN>,
+				<10,64,A> TSKSER.MAC, NETSER.MAC
+-----------------------------------------------------------------------
+28-Oct-82	256	Change definition of JQ.NIT to accept new correct
+			format which is now added to RECUS & friends.
+			System:	ODEN
+			Module:	S.MAC<10,64>, S.MAC<10,64,A>,
+				QZADDS.MAC<10,64>
+-----------------------------------------------------------------------
+19-Oct-82	255*	Install the pre-7.01A tape from Valbonne with
+			no other edits added.
+			System:	Oden
+			Files:	(in search order) <10,64,A>, <10,64>,
+				<10,701,A>, <10,701>(not all modules came
+				on the tape). <10,64,KL> contains some
+				common .DDT files too.
+				<10,64,A,KL>, <10,64,A,KL,ODEN>
+-----------------------------------------------------------------------
+6-Oct-82	255	Remove edit 249 (FILOP. & M.XFFA). Gave some
+			nasty side effects that have to be investigated.
+			System:	All
+			Module:	UUOCON.MAC
+-----------------------------------------------------------------------
+5-Oct-82	254	Add more disk devices, the RP07's have finally
+			arrived!
+			System:	Oden
+			Module:	ODEN:MONGEN.MIC & Offsprings
+-----------------------------------------------------------------------
+1-Oct-82	253	On the anniversary of the Great SIS Conversion
+			I will totally (well, just in F.MAC) remove
+			the possibility to get QZ conversion from the
+			monitor, i.e. .TOQZC & friends will be disabled.
+			System:	
+			Module:	COMCON.MAC (remove TERMINAL QZ command)
+			Module:	SCNSER.MAC (remove all conversions, but
+					    keep accounting!)
+			Module:	NADJA:SIS.MIC (fix ambiguities)
+-----------------------------------------------------------------------
+24-Sep-82	252	Some minor edits:
+			1) Fix some Ersatz device names (TOR had no PAS)
+			2) Give Aurora/Venus a SKRIV command
+			System:	Aurora, Venus, Tor
+			Module:	various:MONGEN.MIC, COMMON.MAC
+-----------------------------------------------------------------------
+12-Sep-82	251	Fix bug introduced by myself in edit 246 /TE.
+			System:	All
+			Module:	QZADDS.MAC
+-----------------------------------------------------------------------
+5-Sep-82	250	Insert 10-SCNSER-061, MCO 10153, #:10-31298.
+			System:	All
+			Module:	SCNSER.MAC
+-----------------------------------------------------------------------
+3-Sep-82	249	Teach FILOP. about M.XFFA.
+			System:	All
+			Module:	UUOCON.MAC
+-----------------------------------------------------------------------
+3-Sep-82	248	10-SCNSER-059. Don't send XOFF after 120 just
+			120 chars, increase to ^D172. This corrects
+			the problem with monitor sending unwanted ^S/^Q
+			to VT100 et al. (This was caused by installing
+			MCO 9883, #:10-31120, see edit 174.)
+			System:	All
+			Module:	SCNSER.MAC
+-----------------------------------------------------------------------
+3-Sep-82	247	10-Netser-083, no edit #, spr #:10-32256
+			Local terminals ".SET HOSTED" lose characteristics.
+			System:	All
+			Module:	NETDEV.MAC
+-----------------------------------------------------------------------
+1-Sep-82	246	1) Allow SET HOST on PTYs
+			2) Implement extra cheap night rates
+			System:	Oden (so far)
+			Module:	NETDEV.MAC,QZADDS.MAC
+-----------------------------------------------------------------------
+13-Aug-82	245	Lots of edits:
+			1) Add JEQ:
+			2) MCO 9623 published with wrong FILCOM.
+			3) Added MCO 10038 and 9893 (10-701-230 & 232).
+			   10038 addressed the same area as the mixed
+			   up 9623 which actually was 9652 - it seems.
+			4) Reinstall two other MCOs: 9843 and 9561.
+		>>>>	The quality of distribution is ever decreasing!
+			System:	ALL
+			Module:	FILIO.MAC, FILUUO.MAC
+-----------------------------------------------------------------------
+30-Jul-82	244	Replace EDDT with fresh stuff: v41A & JEQ hacks.
+			System:	ALL
+			Module:	TOPx10.REL
+-----------------------------------------------------------------------
+16-Jul-82	243	Make QZADDS intelligent enough to decide it-self
+			if it is july (i.e. LOCMON=7). No more need to
+			reload and/or patch a monitor at midnight.
+			System:	All (Yes, as a courtesy)
+			Module:	QZADDS.MAC
+-----------------------------------------------------------------------
+14-Jul-82	242	New VT100 compatible terminal, Visual 110, here
+			called VI110. Also remove CRLF from VT100, VC414
+			and VC404.
+			System:	All
+			Module:	COMCON.MAC,SCNSER.MAC,HLP:TERMIN.HLP
+-----------------------------------------------------------------------
+02-Jul-82	241	Of course they wanted a special summer discount
+			of only CPU related stuff, change charge routine.
+			System:	Oden
+			Module:	QZADDS.MAC
+-----------------------------------------------------------------------
+29-Jun-82	240	Night discount should start at 20.00 (was 21.00)
+			System:	All
+			Module:	S.MAC
+-----------------------------------------------------------------------
+14-May-82	239	Prepare for changing some accounting parameters
+			among others removing the progressive mem charge.
+			System:	ALL
+			Module:	CLOCK1.MAC, QZADDS.MAC
+-----------------------------------------------------------------------
+21-Apr-82	238	Let ATTACH UUO behave similar to monitor
+			command, i.e. allow attach of a detached job
+			with same PPN.
+			System:	Oden (so far)
+			Module:	UUOCON.MAC
+-----------------------------------------------------------------------
+18-Apr-82	237	Add new terminal type CO3380 (COMEX 3380).
+			System:	All
+			Module:	SCNSER:MAC, COMCON.MAC, HLP:TERMIN.HLP
+-----------------------------------------------------------------------
+18-Apr-82	-	Change terminal IN200 to have FORM set.
+			System:	All
+			Module:	SCNSER.MAC, HLP:TERMIN.HLP
+-----------------------------------------------------------------------
+15-Apr-82	236	MCO 9810, 10-SCNSER-045, #10-31312. Don't use
+			DSCTAB when network terminal.
+			System:	All
+			Module:	SCNSER.MAC
+-----------------------------------------------------------------------
+15-Apr-82	235	Really install MCO 9684, CMCO 562.2, 10-701-056
+			which was lost long ago. Cures IME from bad use
+			of UTRP., doc still utterly bad.
+			System:	All
+			Module:	UUOCON.MAC, KxSER.MAC
+			File:	UUOCON.MAC and MC9684.DDT
+-----------------------------------------------------------------------
+16-Mar-82	234	Add a spooled device IBM: in SPLTAB to faciliate
+			queue entries. Note that Galaxy must know about
+			the queue type IBM too, thus only on ODEN.
+			System:	Oden ONLY.
+			Module: S.MAC, COMMON.MAC+.NEW
+-----------------------------------------------------------------------
+17-Feb-82	233	Implement the long-ago announced feature to
+			inform about not unique commands!
+			System:	All
+			Module:	COMMON.MAC, COMCON.MAC
+-----------------------------------------------------------------------
+12-Feb-82	232	Add command TERMINAL (NO) SWEDISh and matching
+			TRMOP. (code 1771).
+			System:	All
+			Module:	COMCON.MAC, SCNSER.MAC
+-----------------------------------------------------------------------
+10-Feb-82	231	Add an IBM command doing RUNQUE after TPUNCH.
+			Also permanent the DN60 additions on ODEN:.
+			System:	Oden
+			Files:	COMMON.MAC/.NEW etc.
+-----------------------------------------------------------------------
+5-Feb-82	230	Remove edit 196, MCO 9623, to see if it caused
+			the problems with config. Also remove 9843 and
+(10-Feb-82)		9561, and now it is almost acceptable...
+			System:	Oden only
+			Module:	FILIO.MAC
+-----------------------------------------------------------------------
+4-Feb-82	229	Start to build monitor with DN60-support in
+			<10,64,KL,ODEN,DN60>. Built ODN229 to test.
+-----------------------------------------------------------------------
+31-Jan-82	228	New terminal type TA2230 (Tandberg TDV 2230).
+			System:	All
+			Module:	COMCON.MAC, SCNSER.MAC, HLP:TERMIN.HLP
+-----------------------------------------------------------------------
+21-Jan-82	227	Change some line parameters for TOR.
+			Module:	TOR:MONGEN.MIC
+-----------------------------------------------------------------------
+15-Jan-82	226	Add monitor command READ for MOhlins TECO macro.
+			System:	All
+			Module:	COMMON.MAC
+-----------------------------------------------------------------------
+15-Jan-82	225	Allow longer SEND ALL-messages too. Related to
+			edit 174, MCO 9883.
+			System:	All
+			Module:	COMCON.MAC(fqzmod)
+-----------------------------------------------------------------------
+15-Jan-82	224	For some reason the progressive charging was
+			still there for 2020s. Now it is not there. On
+			the same time I adjusted the normalized hour
+			rate for 2020s to be 1/5 of the rate on KL as
+			was intended.
+			System:	KS's
+			Module:	S.MAC,CLOCK1.MAC,QZADDS.MAC
+-----------------------------------------------------------------------
+11-Jan-82	223	Hunting KAF: reinstall edit 174 (removed by
+			184), remove edit 162 (fill in image mode).
+			System:	Oden
+			Module:	SCNSER.MAC
+-----------------------------------------------------------------------
+11-Jan-82	222	Add defensive check of J in IOTIME.
+			System:	All
+			Module:	QZADDS.MAC
+			Temporary: Add JBTIOL to count I/O KCS linearly,
+			and JBTKCL to count CPU KCT linearly to get data
+			for different charging model.
+			System:	Oden only
+			Module:	COMMON.NEW,UUOCON.NEW,QZADDS.NEW,CLOCK1.NEW
+-----------------------------------------------------------------------
+7-Jan-82	221	Implement SETUUO function -1 to set our 'helg'
+			(= holiday) attribute).
+			System:	All
+			File:	COMCON.MAC (FQZAC1)
+-----------------------------------------------------------------------
+7-Jan-82	220	Change MAI: to be 5,60
+			System:	All
+			Module:	MONGEN.MIC<10,64,all-over> etc.
+-----------------------------------------------------------------------
+4-Jan-82	219	New terminal type TV912.
+			System:	All
+			Module:	COMCON.MAC, SCNSER.MAC
+-----------------------------------------------------------------------
+2-Jan-82	218	Implement safer "HELG" feature and make it
+			accessible via GETTAB UUO, table -11. Item 0
+			gives DAYIND, item 1 gives ISHELG.
+			System:	All
+			Module:	UUOCON.MAC, QZADDS.MAC, UNV:UUOSYM.MAC
+-----------------------------------------------------------------------
+2-Jan-82	217	Sort all items in all EDDT.MIC except the two
+			first (MONDAT&701QZ) to make compare easier.
+			File:	EDDT.MIC<10,64,all-over>
+
+-----------------------------------------------------------------------
+22-Dec-81	216	Found a bug in definition of LQLMOD.
+			System:	All
+			Module:	SCNSER.MAC
+-----------------------------------------------------------------------
+21-Dec-81	215	Change progressive charging to cease after 80K.
+			Also correct minor bug i QZADDS.MAC.
+			System:	All
+			Module:	CLOCK1.MAC, QZADDS.MAC
+-----------------------------------------------------------------------
+18-Dec-81	214	MCO 9887, 10-701-166, #10-31655, superceede
+			MCO 9878, 10-701-155, #10-31213.
+			Don't allow user to ATTACH to disconnected TTY.
+			System:	All
+			Module:	UUOCON.MAC
+-----------------------------------------------------------------------
+17-Dec-81	ODN213 running as hell (i.e. no stops for a day)
+-----------------------------------------------------------------------
+17-Dec-81	213	MCO 9941, 10-701-183, #10-31719. SFD count.
+			System:	Oden
+			Module:	FILUUO.MAC
+-----------------------------------------------------------------------
+17-Dec-81	212	MCO 9924, 10-701-181, #10-31728. PIE after user
+			diags on DX20/TD2KON.
+			System:	Oden, Frej
+			Module:	TD2KON
+			File:	MC9924.DDT
+-----------------------------------------------------------------------
+17-Dec-81	211	MCO 9916, 10-701-180, #10-31727. EUE on user diag.
+			System:	KL only (Oden, Frej)
+			Module:	TAPUUO
+			File:	MC9916.DDT
+-----------------------------------------------------------------------
+17-Dec-81	210	CMCO 581.2, MCO 9895, 10-701-168, #10-31388.
+			IME by writing last word of hiseg.
+			System:	All
+			Module:	UUOCON.MAC
+-----------------------------------------------------------------------
+17-Dec-81	209	MCO 9886, 10-701-165, #10-31415.
+			Infinite series of parity traps.
+			System:	Oden, Frej
+			Module:	KLSER
+			File:	MC9886.DDT
+-----------------------------------------------------------------------
+17-Dec-81	208	MCO 9885, 10-701-164, #10-31415. Cannot recover
+			from parity error in funny space.
+			System:	Oden (so far)
+			Module:	KLSER (, KSSER)
+			File:	MC9885.DDT<10,64,K(L,S)>
+-----------------------------------------------------------------------
+17-Dec-81	207	MCO 9857, 10-701-156, #10-30744. PIP or EUE by
+			not having EXECAC.
+			System:	All
+			Module:	CLOCK1.MAC
+-----------------------------------------------------------------------
+16-Dec-81	206	MCO 9860, 10-701-146, #10-31119. KAF in COMCON.
+			System:	All
+			Module:	COMCON.MAC
+-----------------------------------------------------------------------
+16-Dec-81	205	MCO 9853, 10-701-145, #10-30817. FILSER IME.
+			System:	All
+			Module:	FILUUO.MAC
+-----------------------------------------------------------------------
+16-Dec-81	204	MCO 9516, 9508, 10-701-143, #10-31144. Hiseg
+			gotten from physical SYS even if logical SYS.
+			BEWARE! This edit consists of both a source
+			modification (FILUUO) and a .DDT file (SEGCON)!
+			System:	All
+			Module:	FILUUO, SEGCON
+			File:	FILUUO.MAC, MC9508.DDT
+-----------------------------------------------------------------------
+16-Dec-81	203	MCO 9843, 10-701-134, #10-31363. PIP after DEBUG.
+			System:	All
+			Module:	FILIO.MAC
+-----------------------------------------------------------------------
+16-Dec-81	203a	MCO 9561, 10-701-133, #10-30911. Hung system
+			when trying to write on  removed str.
+			System:	All
+			Module:	FILIO
+			File:	FILIO.MAC
+-----------------------------------------------------------------------
+16-Dec-81	202	MCO 9823, 10-701-121, #10-30600.
+			PSISER can clobber AC2.
+			System:	All
+			Module:	CLOCK1.MAC
+-----------------------------------------------------------------------
+16-Dec-81	201	MCO 9817, 10-701-117, #10-31296. Error in PATH.
+			System:	All
+			Module:	FILUUO.MAC
+-----------------------------------------------------------------------
+16-Dec-81	200	MCO 9784, 10-701-115, #10-30944. IME.
+			System:	All
+			Module:	FILUUO.MAC, FILFND.MAC
+-----------------------------------------------------------------------
+16-Dec-81	199	CMCO 573.1, MCO 9808, 10-701-113, #10-30908.
+			System:	Oden
+			Module:	VMSER
+			File:	MC9808.DDT
+-----------------------------------------------------------------------
+16-Dec-81	198	MCO 9796, 10-701-108, #10-31316. Error 16.
+			System:	All
+			Module:	FILUUO.MAC
+-----------------------------------------------------------------------
+16-Dec-81	197	MCO 9390, 10-701-107, #10-29890. Dump mode IO
+			on a loaded system can get AAO.
+			System:	All
+			Module:	FILIO.MAC
+-----------------------------------------------------------------------
+16-Dec-81	196	MCO 9623, 10-701-104, 10-30591. DI on dual CPU.
+			System:	All
+			Module:	FILIO.MAC
+-----------------------------------------------------------------------
+16-Dec-81	195	MCO 9770, 10-701-102, #10-31091. Error 16.
+			System:	All
+			Module:	FILUUO.MAC
+-----------------------------------------------------------------------
+16-Dec-81	194	PCO 10-701-091, no edit number. PIM byte count.
+			System:	All
+			Module:	UUOCON.MAC
+-----------------------------------------------------------------------
+16-Dec-81	193	MCO 9345, 10-701-090, #10-30789. Error 26.
+			System:	All
+			Module:	FILUUO.MAC
+-----------------------------------------------------------------------
+16-Dec-81	192	MCO 9712, 10-701-078, #10-29786. IME on RENAME.
+			System:	All
+			Module:	FILUUO.MAC
+-----------------------------------------------------------------------
+16-Dec-81	191	MCO 9706, 10-701-077, #10-30568. Startoption UNITID.
+			System:	Oden
+			Module:	ONCMOD
+			File:	MC9706.DDT
+-----------------------------------------------------------------------
+16-Dec-81	190	MCO 9759, 10-701-097, #10-30333. Re error 26.
+			System:	All
+			Module:	FILUUO.MAC
+-----------------------------------------------------------------------
+16-Dec-81	189	MCO 9683, 10-701-067, #10-30916. TSKSER error.
+			System:	All
+			Module:	TSKSER
+			File:	MC9683.DDT
+-----------------------------------------------------------------------
+16-Dec-81	188	PCO 10-701-061, no edit number. Return good
+			path on a channel opened on device ALL:.
+			System:	All
+			Module:	FILUUO.MAC
+-----------------------------------------------------------------------
+16-Dec-81	---	Documentation missing:
+			MCO 9547 (10-701-036),
+			MCO 9587 (10-701-047),
+			MCO 9602 (10-701-048),
+			MCO 9607 (10-701-052),
+			MCO 9620 (10-701-054),
+			MCO 9818 (10-701-122),
+			MCO 9819 (10-701-124),
+			MCO 9835 (10-701-132),
+			MCO 9873 (10-701-161)
+			were installed some time ago.
+			System:	All
+			Module:	FILUUO.MAC, FILFND.MAC
+-----------------------------------------------------------------------
+81-DEC-10(!)	187	Implement good behavior for PIM mode output,
+			i.e. don't output extra nulls from last word.
+			System:	All
+			Module:	UUOCON, SCNSER under FQZMOD
+-----------------------------------------------------------------------
+5-Dec-81	186	Increase default number of P for users to 260
+			as CORMAX is raised to 130.
+			System:	ODEN
+			Module:	ODEN:MONGEN.MIC
+-----------------------------------------------------------------------
+23-Oct-81	185	Added new terminal type, Ann Arbor 400 E, AA400E.
+			Changed width for type GLAS to be 85.
+			System:	All
+			Module:	SCNSER.MAC,COMCON.MAC
+-----------------------------------------------------------------------
+20-Oct-81	184	Remove edit 174 MCO 9883. Was suspected for KAF.
+-----------------------------------------------------------------------
+11-Oct-81	ODN183 in production.
+-----------------------------------------------------------------------
+11-Oct-81	183	SPR #:10-31053, 10-701-101, MCO 9767. Against
+			error 26 for SFDs.
+			System:	All
+			Module:	FILUUO.MAC(FQZSPR)
+		 -	On the same time I moved MC9564, MC9741 and
+			MC9743 to source: reduces chanses of double-
+			fixing et al.
+-----------------------------------------------------------------------
+9-Oct-81	182	Increased M.CONN via MONGEN.MIC for 2020's.
+			Aurora seemed to have hit the ceiling due to
+			Venus coming in, and often that line hanged.
+-----------------------------------------------------------------------
+5-Oct-81	181	Reinstall MCO 9471 (MCO 9732 on all systems).
+			System:	All
+			Module:	NETMCR
+			File:	MC9471.DDT
+-----------------------------------------------------------------------
+5-Oct-81	180	New terminal type GLAS, same as VT100.
+			System:	All
+			Module:	QZ:COMCON.MAC,SCNSER.MAC
+-----------------------------------------------------------------------
+4-Oct-81	177	New terminal type ID100, VT100 with colours.
+			Module:	QZ:COMCON.MAC,SCNSER.MAC
+-----------------------------------------------------------------------
+2-Oct-81	---	Change average job size PAVJSP definition.
+			Module:	ODEN:MONGEN.MIC -> HDWKL.MAC etc.
+-----------------------------------------------------------------------
+2-Oct-81	***	This caused CONFIG to go astray, removed 11-Nov
+			Code still looks questionable !!
+			Bug (typo) in COMMOD forcing CCWMAX==1.
+			Module:	QZ:COMMOD.MAC
+-----------------------------------------------------------------------
+28-Oct-81	176	SPR #:10-31184, 10-701-096, edit 9766. Perform
+			an ENTER in FILOP. when spooled output.
+			System:	All
+			Module:	UUOCON.MAC(FQZSPR)
+-----------------------------------------------------------------------
+28-Oct-81	175	Remove edit 66, MCO 9346. RH20 has no CI.PWF.
+			This had the effect that disk errors were
+			treated wrong and reported with no error bits
+			up (did a CO.MBI which clears external regs).
+-----------------------------------------------------------------------
+28-Oct-81	ODN174 in production
+-----------------------------------------------------------------------
+26-Oct-81	174	MCO 9883, #:10-31120, 10-SCNSER-051, allow
+			longer comment lines without forcing break-chr.
+			System:	All
+			File:	SCNSER.MAC
+-----------------------------------------------------------------------
+26-Oct-81	173	The so wanted MCO 9851 (#:10-31118, 10-SCNSER-049)
+			relieving us from KAFs and IMEs (had two last
+			week).
+			System:	All
+			File:	SCNSER.MAC
+-----------------------------------------------------------------------
+26-Oct-81	172	MCO 9397, #:10-31455, 10-701-034.
+			Typo causing crash by /NOPRIMARY.
+			System:	KL only
+			Module:	ONCE
+			File:	MC9397.DDT<10,64,KL>
+-----------------------------------------------------------------------
+26-Oct-81	171	MCO 9458, #:10-30921, 10-701-163, 15-Oct-81.
+			Avoid junk in TMPCOR buffer
+			System:	All
+			Module:	TMPUUO
+			File:	MC9458.DDT
+-----------------------------------------------------------------------
+26-Oct-81	170	Change some terminal parameters for VIEWDAta.
+			Module:	SCNSER.MAC
+-----------------------------------------------------------------------
+22-Oct-81	167	MCO 9577, 10-30455, 10-701-044. re ill mem ref
+			System:	All
+			File:	COMCON.MAC<10,64>
+-----------------------------------------------------------------------
+15-Oct-81	166	MCO 9765, 10-NETSER-078, 10-31126.
+			System:	All
+			Module:	NETSER
+			File:	MC9765.DDT<10,64>
+-----------------------------------------------------------------------
+15-Oct-81	165	MCO 9877, 10-TSKSER-010, #:10-31469.
+			Typo in TSKSER at TSKOU1-4.
+			System:	All
+			Module:	TSKSER
+			File:	MC9877.DDT<10,64>
+-----------------------------------------------------------------------
+13-Oct-81	164	MCO 9368, 10-701-009, 10-29845. Re IPCFQ.
+			System:	All
+			Module:	IPCSER
+			File:	MC9368.DDT
+-----------------------------------------------------------------------
+12-Oct-81	163	Remove unnecessary calls to ZQxCNV and these
+			two routines.
+			System:	All
+			File:	SCNSER.MAC
+-----------------------------------------------------------------------
+12-Oct-81	162	MCO 9879, 10-SCNSER-050, 10-31201. Fill doesn't
+			work in image mode.
+			System:	All
+			File:	SCNSER.MAC
+-----------------------------------------------------------------------
+12-Oct-81	161	MCO 9827, 10-701-158, 10-31493. Problems on
+			AR/ARX recovery.
+			System:	KL only
+			Module:	KLSER
+			File:	MC9827.DDT
+-----------------------------------------------------------------------
+1-Oct-81	160	Give NADJA a 'AMIS'-command.
+			System:	Nadja
+			File:	COMMON.MAC<10,64>
+-----------------------------------------------------------------------
+1-Oct-81	157	Remove QZ setting from terminal type def's.
+			The commands and TRMOP's remain till Apr-82.
+			System:	All
+			File:	SCNSER.MAC<10,64>
+-----------------------------------------------------------------------
+28-Sep-81	ODN156 on test during PM
+-----------------------------------------------------------------------
+28-Sep-81	156	MCO 9798 (double defined), 10-701-131,
+			10-30520. Wrong AC used in FILOP. dispatch.
+			System:	All
+			Module:	UUOCON
+			File:	MC9798.DDT<10,64>
+-----------------------------------------------------------------------
+28-Sep-81	155	MCO 9826, 10-701-126, 10-31090. Fix problem
+			with DETACH on disk under CONFIG.
+			System:	ODEN, FREJ
+			Module:	FILIO
+			File:	MC9826.DDT
+-----------------------------------------------------------------------
+28-Sep-81	154	MCO 9821, 10-701-128, 10-30917. Fix problem
+			with ATTACH on disks.
+			System:	ODEN, FREJ
+			Module:	COMCON
+			File:	MC9821.DDT<10,64>
+-----------------------------------------------------------------------
+21-Sep-81	-	Make TYPE/LIST permanent. Cf. edit 75.
+-----------------------------------------------------------------------
+11-Sep-81	153	CMCO 576.1, edit 9852, PCO 10-701-140, 10-30839,
+			fix a hole in ^C intercepting. CMCO contained
+			a typo error, JS.ERR -> JS.RUU.
+			System:	All
+			File:	<10,64> COMCON.MAC, CLOCK1.MAC,
+				LOGIN.MAC<10,14,LOGALL>
+-----------------------------------------------------------------------
+11-Sep-81	152	Reinstall MCO 9732. Was removed due to some
+			misunderstanding, see edits 110 and 105.
+			System:	All
+			Module:	NETVTM
+			File:	MC9732.DDT
+-----------------------------------------------------------------------
+11-Sep-81	ODN151 in production.
+-----------------------------------------------------------------------
+8-Sep-81	151	Make UUOCON node-independent (saving space etc).
+			Special handling of CHARGE UUO for other than
+			own job.
+			System:	All
+			File:	QZ:UUOCON.MAC, CHARGE.DDT, KL:EDDT.MIC
+-----------------------------------------------------------------------
+8-Sep-81	150	Install SPR:10-31328, PCO 10-701-130, MCO 9836.
+			IME on DEVLNM of unass'ed spooled device.
+			System:	All
+			File:	QZ:UUOCON.MAC
+-----------------------------------------------------------------------
+29-Aug-81	ODN147 running
+-----------------------------------------------------------------------
+28-Aug-81	147	Fix a bug in edit 140 concerning accounting.
+			System:	All
+			File:	QZADDS.MAC
+-----------------------------------------------------------------------
+26-Aug-81	146	MCO 9798, SPR 10-30583, PCO 10-701-109
+			Prevent MERGE of XONLY-program.
+			System:	All
+			File:	COMCON.MAC<10,64> (was MC9798.DDT)
+-----------------------------------------------------------------------
+26-Aug-81	145	PATCH-area too small! Increased from octal
+			500 to 1000 words.
+			System:	All
+			File:	PATCH.MAC => TOPx10.REL(PATCH)
+-----------------------------------------------------------------------
+25-Aug-81	144	MCO 9740, 10-701-089, 15-Jul-81, 10-30838.
+			CD0 and others got page fault and became IME.
+			System:	Oden, Frej
+			File:	COMMON.MAC<10,64>
+-----------------------------------------------------------------------
+25-Aug-81	143	Remove edit 141, PTYMCO.DDT, hangs batch jobs.
+			System:	All
+-----------------------------------------------------------------------
+31-Jul-81	ODN142 running
+-----------------------------------------------------------------------
+31-Jul-81	142	Remove juli discount
+			System:	ODEN
+			File:	JULI.DDT,EDDT.MIC
+-----------------------------------------------------------------------
+31-Jul-81	ODN141 started
+-----------------------------------------------------------------------
+31-Jul-81	141	MCO xxxx. PTY's hung due to not using TOPSOP.
+			System:	Alla
+			Module:	PTYSER
+			Fil:	PTYMCO.DDT
+-----------------------------------------------------------------------
+28-Jul-81	140	Correct bug in the progressive accounting:
+			before jobs between 1 and 15K were discounted
+			during daytime because K*(K+10)/25 < K in that
+			interval.
+			System:	All
+			File:	<10,64> CLOCK1.MAC, QZADDS.MAC
+-----------------------------------------------------------------------
+28-Jul-81	137	Put DSL on all DN87-lines leading to Codex INP
+			or Case 670. New DTELxx.BIN and DNxx.EXE.
+			System:	HUGIN, MUNIN, BALDER
+			File:	<10,20,701> PA(02,03,04).P11
+-----------------------------------------------------------------------
+26-Jul-81	136	MCO 9702, PCO 10-701-092 re BATNUM.
+			System:	All
+			Module:	CLOCK1
+			File:	MC9702.DDT
+-----------------------------------------------------------------------
+26-Jul-81	135	MCO 9741, PCO 10-701-093, wrong J at DSK x.
+			System:	All
+			Module:	FILUUO
+			File:	FILUUO.MAC (was MC9741.DDT)
+-----------------------------------------------------------------------
+26-Jul-81	134	MCO 9734, PCO 10-NETSER-077, re CRLF & PIM.
+			System:	All
+			Module:	NETMCR
+			File:	MC9734.DDT
+-----------------------------------------------------------------------
+25-Jul-81	133	MCO 9733, PCO 10-NETSER-076, PIM break set for
+			network terminals.
+			System:	All
+			Module:	NETMCR
+			File:	MC9733.DDT
+-----------------------------------------------------------------------
+25-Jul-81	132	MCO 9730, PCO 10-701-086 re .STTLM.
+			System:	All
+			Module:	COMCON
+			File:	MC9730.DDT
+-----------------------------------------------------------------------
+25-Jul-81	131	MCO 9657, SD 1-Jul-81 page 1-1 to let new
+			BACKUP do UNLOAD not beeing confused by MDA.
+			System:	All
+			Module:	COMDEV
+			File:	MC9657.DDT<10,64,K(L,S)>
+-----------------------------------------------------------------------
+24-Jul-81	ODN130 running after The Great Movement.
+-----------------------------------------------------------------------
+24-Jul-81	130	Reconfigure ODEN after movement:
+			1) swap CPU serial numbers (MONGEN.MIC)
+			2) BALDER on CPU0, HUGIN & MUNIN on CPU1
+			   => 1 DTE on CPU0, 2 on CPU1
+			3) Patch SYS:QUASAR.EXE so that DSKC inst. of
+			   DSKD is queue structure, move SYS:QSRMS1.QSR.
+			4) Only two drives on RP0 0, both CPU's.
+-----------------------------------------------------------------------
+7-Jul-81	127	MCO 9743 against FBM
+			System:	All
+			Module:	FILUUO
+			File:	FILUUO.MAC (was MC9743.DDT)
+-----------------------------------------------------------------------
+7-Jul-81	126	MCO 9751 against WEM, KAF & others.
+			System:	All
+			Module:	TSKSER
+			File:	MC9751.DDT
+-----------------------------------------------------------------------
+6-Jul-81	AUR125 generated and sent over.
+-----------------------------------------------------------------------
+6-Jul-81	125	Another new terminal type, ADM42. Cf. ADM31.
+			System:	All
+			File:	COMCON.MAC, SCNSER.MAC, HLP:TERMIN.HLP
+-----------------------------------------------------------------------
+6-Jul-81	124	Put FILE- and LABEL-commands under feature-test
+			switch M.TD10.
+			System:	KS10's
+			File:	COMMON.MAC
+-----------------------------------------------------------------------
+30-Jun-81	New monitors for all systems generated.
+-----------------------------------------------------------------------
+30-Jun-81	123	1) Fix new charging rates.
+			System:	All
+			File:	S.MAC, QZADDS.MAC
+
+			2) Remove the ZQ-bit from the Elite terminals.
+			System:	All
+			File:	SCNSER.MAC
+-----------------------------------------------------------------------
+30-Jun-81	122	Prohibit SAVE with other extensions than .EXE
+			and .SAV. This was the last FQZNOD-dependent
+			part of COMCON, now there are only KL- and KS-
+			variants.
+			(earlier only on NADJA and FREJ)
+			System:	All
+			File:	COMCON.MAC
+-----------------------------------------------------------------------
+30-Jun-81	121	Add Gunnar Lindell's correction to the problem
+			with wrong HISEG-ORIGIN.
+			System:	All
+			Module:	SEGCON
+			File:	GLD001.DDT<10,64>
+-----------------------------------------------------------------------
+29-Jun-81	120	Add MCO 9747, 10-SCNSER-043 correction to
+			S30283.DDT.
+			System:	All
+			Module:	SCNSER
+			File:	MC9747.DDT
+-----------------------------------------------------------------------
+29-Jun-81	117	MCO 9705 added only concerning FTMP.
+			System:	ODEN, FREJ
+			Module:	COMCON
+			File:	MC9705.DDT, EDDT.MIC<10,64,KL>
+-----------------------------------------------------------------------
+29-Jun-81	116	Add SPR 9637 (1-May-81), generate new eleven
+			codes (DTELxx.BIN och DNzz.EXE installed).
+			System:	HUGIN, MUNIN, BALDER
+			File:	DNTTY.P11<10,20,701>
+-----------------------------------------------------------------------
+29-Jun-81	115	Add terminal type MICBE2, Microbee 2.
+			System:	All
+			File:	COMCON.MAC, SCNSER.MAC, HLP:TERMIN.HLP
+-----------------------------------------------------------------------
+18-Jun-81	114	NETDEV.REL contains modules that are not used
+			=> NETDEV/SEARCH (otherwise you get undef glob
+			symbol when loading KSmonitor), saves 4 blocks.
+			System:	All
+			File:	LINK.MIC<10,64,K(L,S)>
+-----------------------------------------------------------------------
+17-Jun-81	113	Add terminal type PE550 (Perkin-Elmer Fox 550)
+			System:	All
+			File:	COMCON.MAC, SCNSER.MAC
+-----------------------------------------------------------------------
+17-Jun-81	112	Add CMCO 562.3 containing edits to IPCSER.
+			Number 9659, 9676 (only FTMP), 9687, 9689.
+			System:	All
+			Module:	IPCSER
+			File:	MCxxxx.DDT
+-----------------------------------------------------------------------
+17-Jun-81	111	Add CMCO 562.5 edit 9423, PCO 10-701-075, SPR
+			#:10-30892, SETIOS calls UUOLDB with junk in U.
+			System:	All
+			Module:	COMCON
+			File:	MC9423.DDT
+-----------------------------------------------------------------------
+15-Jun-81	110	Remove edit 105, works not! ODN106 buried.
+-----------------------------------------------------------------------
+15-Jun-81	107	Echo of charecter with QZ-conversion in col 80
+			was wrong. 
+			System:	KS
+			File:	SCNSER.MAC<10,64> (after XMTEC4)
+-----------------------------------------------------------------------
+15-Jun-81	ODN106 on test.
+-----------------------------------------------------------------------
+15-Jun-81	106	Teach MONBTS that <> are path delimiters.
+			System:	All
+			File:	MONBTS.MAC<10,64>, .REL<,,Kx>
+-----------------------------------------------------------------------
+11-Jun-81	105	Add SPR answer S10-204 (#10-31008) edit 9732
+			re Auto disconnect for local lines.
+			Reinstall MCO 9471.
+			System:	All
+			Module:	NETVTM, NETMCR
+			File:	MC9732.DDT, MC9471.DDT
+-----------------------------------------------------------------------
+11-Jun-81	ODN104 on testrun.
+-----------------------------------------------------------------------
+11-Jun-81	104	Clean up COMCON and SCNSER with respect to
+			QZ-switches so that the appropriate switch will
+			rule wanted facility.
+-----------------------------------------------------------------------
+11-Jun-81	103	Add SPR 10-SCNSER-039 (no EDIT number), make
+			assigned .TOISC-ed lines reusable.
+			System:	All
+			Module:	SCNSER
+			File:	S30471.DDT<10,64>
+-----------------------------------------------------------------------
+26-Maj-81	102	10-701  -045 (no edit number) 1-May-81.
+			Incorrect test for remote echo.
+			System:	All
+			Module:	NETMCR
+			File:	S30655.DDT<10,64>
+-----------------------------------------------------------------------
+26-Maj-81	101	Add MCO 9638 SPR 10-701  -055 (Disp 1-May)
+			"CFE drive hangs swapper"
+			System:	ODEN, FREJ
+			Module:	RPXKON
+			File:	<10,64>MC9638.DDT, EDDT.MIC<10,64,KL>
+-----------------------------------------------------------------------
+25-Maj-81	100	Add MCO 9645 (Disp 1-Maj) 10-701  -057
+			System:	KL's, TWICE.EXE (** NOT re-generated **)
+			Module:	REFSTR
+			File:	MC9645.DDT<10,64>, EDDT.MIC<10,64,KL>
+-----------------------------------------------------------------------
+20-Maj-81	77	Add SPR 9637 and 9644 (1 May 81 Dispatch) in
+			DNTTY.P11 under the switch FQZSPR.
+			System:	HUGIN(2), MUNIN(3), BALDER(4)
+			File:	DSKE:DNTTY.P11<10,20,701> and all
+				DTELxx.BIN och DN0?.EXE
+-----------------------------------------------------------------------
+15-Maj-81	76	Add CMCO 562.4, answer to SPR 10-30755 re
+			SFD error in FILUUO (BNT-stopcode).
+			MCO number: 9608, 9658, 9685, 9688.
+			System:	All (after test on FREJ)
+			File:	FILUUO.MAC<10,64>
+-----------------------------------------------------------------------
+15-Maj-81	75	Move part of PJOB mods from COMCON to COMMON
+			to make COMCON independent of FQZNOD.
+			Files:	<10,64>COMMON.MAC,COMCON.MAC
+			System:	All
+
+			Add new commands for use of EDIT and TYPE
+			instead of COMPIL plus x.
+			File:	<10,64>COMMON.MAC
+			System:	All
+
+			Remove TU40 units and MTAMTB.DDT.
+			Files:	<10,64,KL,(ODEN,FREJ)>???GEN.MIC, -
+				<10,64,KL>EDDT.MIC
+			System:	ODEN, FREJ
+-----------------------------------------------------------------------
+xx-Maj-81	--	Re-strukture the modules on <10,64> and clean
+			up removing unneeded code.
+-----------------------------------------------------------------------
+12-Apr-81	74	Generate ODEN-monitor for 1024K.
+			System:	Oden
+			Files:	<10,64,ODEN>ODEGEN.MIC & off-springs.
+-----------------------------------------------------------------------
+7-Apr-81	73	TE4025 & TE4027 -> 'NO FORM'
+			System:	All
+			File:	<10,64>SCNSER.MAC
+-----------------------------------------------------------------------
+7-Apr-81	72	MCO 9474 - correktion to earlier MCO.
+			System:	ODEN
+			Fil:	<10,20,701>DNTTY.P11, and all three
+				DTEL??.BIN and DDT-elevens.
+-----------------------------------------------------------------------
+27-Mar-81	ADB71 in production.
+-----------------------------------------------------------------------
+27-Mar-81	NADA71 in production.
+-----------------------------------------------------------------------
+26-Mar-81	71	** Not valid any after 1-Oct-81 **
+			Let ADB have 'NO QZ' on their VC414's
+			System:	AURORA
+			Module:	SCNSER
+			File:	<10,64,ADB>VC404.DDT
+-----------------------------------------------------------------------
+26-Mar-81	ODEN70 in production.
+-----------------------------------------------------------------------
+25-Mar-81	70	Miscellaneous terminal declarations changed.
+			System:	All
+			File:	<10,64>SCNSER.MAC,COMCON.MAC,-
+				HLP:TERMIN.HLP
+-----------------------------------------------------------------------
+17-Mar-81	67	New EDDT added to TOPx10. New command: $$1X
+			System:	All
+			File:	<10,64>TOPx10.REL
+-----------------------------------------------------------------------
+17-Mar-81	ODEN66 in production.
+-----------------------------------------------------------------------
+16-Mar-81	66	** Removed when found faulty ***
+			MCO 9346 fixing error causing the system to
+			hang if the power fail bit erroneously was
+			switched on by RH20/RP06-drive.
+			System:	ODEN,FREJ
+			Module:	RPXKON
+			File:	<10,64>MC9346.DDT
+-----------------------------------------------------------------------
+16-Mar-81	ODEN62 in production.
+-----------------------------------------------------------------------
+15-Mar-81	65	MCO 9362 fixing two bugs concerning USETI
+			argument > 2^18 and USETI+IO over unit border.
+			(RIBFND relies on this MCO)
+			System:	All (Only intresting on KL!)
+			Module:	FILIO
+			File:	<10,64>MC9362.DDT
+-----------------------------------------------------------------------
+15-Mar-81	64	MCO 9558 against wrong horizontal position saved
+			by SCNSER if CTRL-something is typed.
+			System:	All
+			Module:	SCNSER
+			File:	<10,64>MC9558.DDT
+-----------------------------------------------------------------------
+14-Mar-81	63	CMCO 547.1, edit 9513 against AAO stopcodes.
+			System:	All
+			Module:	SEGCON
+			File:	<10,64>MC9513.DDT
+-----------------------------------------------------------------------
+13-Mar-81	62	Remove MCO 9471 since it doesn't work for modem
+			lines on another hostes.
+			System:	All
+			Module:	NETMCR
+			File:	<10,64>MC9471.DDT
+-----------------------------------------------------------------------
+13-Mar-81	61	Correct the SPR in edit 53 and re-install.
+			System:	All
+			Module:	SCNSER
+			File:	<10,64>S30283.DDT
+-----------------------------------------------------------------------
+13-Mar-81	ODEN60 in production.
+-----------------------------------------------------------------------
+12-Mar-81	60	Edit 53 gave problems with SOS. Remove edit 53
+			for now.
+			System:	All
+			File:	<10,64>SCNSER.MAC
+-----------------------------------------------------------------------
+12-Mar-81	ODEN57 in production.
+-----------------------------------------------------------------------
+11-Mar-81	57	Implement terminal type "ANSI" (=VT100)
+			System:	All
+			File:	<10,64>SCNSER.MAC,COMCON.MAC,
+				HLP:TERMIN.HLP
+-----------------------------------------------------------------------
+11-Mar-81	BALDER (51) in production. DN04 generated.
+-----------------------------------------------------------------------
+10-Mar-81	56	MCO 9564 against RWD stopcodes when allocating
+			disk space on double structure.
+			System:	ODEN
+			Module:	FILUUO
+			Fil:	MC9564.DDT ** Now in source code
+-----------------------------------------------------------------------
+10-Mar-81	55	CMCO 550.1, edit 9534 security problems
+			concerning File Daemon. (Access ok after e.g.
+			DIRECT on EXE-file etc...)
+			System:	All
+			File:	<10,64>COMCON.MAC
+-----------------------------------------------------------------------
+10-Mar-81	54	MCO 9516 against problem with MIC CANCEL for
+			jobs on PTY.
+			System:	All
+			File:	<10,64>SCNSER.MAC
+-----------------------------------------------------------------------
+10-Mar-81	53	This SPR 10-30283, 15-Feb-81 dispatch should
+			have a MCO number, but this is not the case.
+			Fixes bug in conjunction with jobs hanging in
+			TI on PTY's.
+			System:	All
+			File:	<10,64>SCNSER.MAC
+-----------------------------------------------------------------------
+10-Mar-81	52	** Removed when better fix came **
+			Hopefully THE fix for the SFD error, gotten 
+			from C.D.O'Toole. No MCO number yet.
+			System:	All
+			File:	<10,64>SFDERR.DDT
+-----------------------------------------------------------------------
+10-Mar-81	MUNIN (51) in production.
+-----------------------------------------------------------------------
+10-Mar-81	HUGIN (51) in production.
+-----------------------------------------------------------------------
+10-Mar-81	51	Add MCO 9471 which will make hung-up DSL lines
+			to be disconnected immediately.
+			System:	All
+			Module:	NETMCR
+			File:	<10,64>MC9471.DDT
+-----------------------------------------------------------------------
+10-Mar-81	50	Allow connect of our terminal lines from all
+			hostesesses. (FT.RNN=0)
+			System:	HUGIN(2),MUNIN(3),BALDER(4)
+			File:	<10,20,701>QZSWT.P11,PA0?.P11
+-----------------------------------------------------------------------
+10-Mar-81	47	Add MCO 9473 prevents old messages to come out
+			at dial-in.
+			System:	(HUGIN),MUNIN,BALDER
+			Fil:	<10,20,701>QZSWT.P11,DND(M,Z)11.P11
+-----------------------------------------------------------------------
+10-Mar-81	46	Add MCO 9474, gives shorter autobaud-connect.
+			System:	(HUGIN), MUNIN, BALDER
+			File:	<10,20,701>QZSWT.P11,DNTTY.P11
+-----------------------------------------------------------------------
+10-Mar-81	45	Fix up the "Host X is coming up!" message.
+			System:	HUGIN,MUNIN,BALDER
+			File:	<10,20,701>QZSWT.P11,DNNCL.P11
+-----------------------------------------------------------------------
+10-Mar-81	44	MCO 9461 against crash in DN87 due to erroneous
+			disconnect message.
+			System:	HUGIN,MUNIN,BALDER
+			File:	<10,20,701>QZSWT.P11,DNNCL.P11
+-----------------------------------------------------------------------
+20-Feb-81	NADA43 in production.
+-----------------------------------------------------------------------
+20-Feb-81	43	Let ".TYPE" start SYS:TYPE instead of COMPIL.
+			System:	NADJA (for the moment)
+			File:	<10,64>COMMON.MAC
+-----------------------------------------------------------------------
+20-Feb-81	ODEN42 in production.
+-----------------------------------------------------------------------
+19-Feb-81	42	Add terminal type MICBEE.
+			System:	All
+			File:	<10,64>COMCON.MAC,SCNSER.MAC,
+				HLP:TERMIN.HLP
+-----------------------------------------------------------------------
+19-Feb-81	41	** Removed **
+			Fix (?) problems with BNT stopcodes and SFD
+			problems.
+			System:	All
+			File:	SFDERR.DDT<10,64>
+-----------------------------------------------------------------------
+16-Feb-81	ODEN40 in production.
+-----------------------------------------------------------------------
+12-Feb-81	40	MCO 9507 against IME stopcodes.
+			System:	All
+			Module:	VMSER
+			File:	MC9507.DDT<10,64>
+-----------------------------------------------------------------------
+12-Feb-81	37	Don't reset MTA density at REASSIgn. Needed
+			to make the OMOUNT switch /DENSITY:arg work.
+			System:	ODEN and all others /TEQ 81-09-22
+			Module:	COMCON
+			File:	REASSI.DDT<10,64>/SOQ
+-----------------------------------------------------------------------
+6-Feb-81	ODEN36 in production.
+-----------------------------------------------------------------------
+5-Feb-81	36	Add terminal type "ann arbor AMBASSador".
+			System:	All
+			File:	<10,64>SCNSER.MAC,COMCON.MAC,
+				HLP:TERMIN.HLP
+-----------------------------------------------------------------------
+4-Feb-81	NADA35 in production.
+-----------------------------------------------------------------------
+2-Feb-81	ODEN35 in production.
+-----------------------------------------------------------------------
+31-Jan-81	35	MCO 9490 against BAC stopcodes caused by code
+			in QUESER.
+			System:	ODEN,FREJ
+			Module:	QUESER
+			Fil:	MC9490.DDT<10,64>
+-----------------------------------------------------------------------
+31-Jan-81	34	MCO 9488 superseding MCO 9454.
+			 ** Remove MC9454 **
+			System:	All
+			Module:	NETSER
+			File:	MC9488.DDT<10,64>
+-----------------------------------------------------------------------
+31-Jan-81	33	MCO 9477 against KSW stopcodes.
+			System:	ODEN,FREJ
+			Module:	TAPSER
+			File:	MC9477.DDT<10,64>
+-----------------------------------------------------------------------
+28-Jan-81	(32)	** Not valid any longer **
+			Add DDT file SFDCNT.DDT to produce stopcode
+			"QZ1" if SFD use count is set < 0. (Debug
+			stop of course)
+			Will be removed when dumps have been collected.
+
+			System:	ODEN
+			File:	SFDCNT.DDT<10,64>
+-----------------------------------------------------------------------
+26-Jan-81	31	Fix the problem with output to KLINIK on KS10
+			which went to the CTY instead.
+			System:	2020's
+			Module:	SCNSER
+			File:	KLINIK.DDT,EDDT.MIC<10,64,KS10's>/TEQ
+-----------------------------------------------------------------------
+23-Jan-81	ADB30 in production.
+-----------------------------------------------------------------------
+22-Jan-81	ODEN30 in production.
+-----------------------------------------------------------------------
+22-Jan-81	30	MCO 9436 in TAPUUO.
+			System:	All
+			Module:	TAPUUO
+			File:	MC9436.DDT,EDDT.MIC<10,64,*>/TEQ
+-----------------------------------------------------------------------
+20-Jan-81	29	Edit 26 prohibited too much. Remove for now.
+-----------------------------------------------------------------------
+19-Jan-81	28	"Interim patch" to make the BASF stations have
+			the names MTA & MTB. Will be removed when the
+			TM10B/TU40 leave the scene. The TU72/BASF are
+			now accessed with name MTA/CPU0 and MTB/CPU1.
+			TU40 are called MTC/CPU0 and MTD/CPU1.
+			System:	ODEN,FREJ
+			File:	MTAMTB.DDT<10,64>/GLQ
+-----------------------------------------------------------------------
+19-Jan-81	27	Generate a new monitor for ODEN with support
+			for the new TU72/BASF stations. The new units
+			will be MTA010,	011 och 012 resp MTBxxx.
+			MTA012/MTB012 will be 800/1600, other 1600/6250.
+			For a while the TM10B/TU40 stations hang around.
+			These will be given the names MTC/MTD instead of
+			MTB/MTD via patch (see edit 30).
+			Also correct BASF.DDT according to new config.
+			System:	ODEN,FREJ
+			File:	ODEGEN.MIC/FREGEN.MIC/BASF.DDT
+-----------------------------------------------------------------------
+19-Jan-81	26	Fix bug which allowed MERGE of XO segment.
+			System:	All
+			Module:	COMCON.MAC
+			File:	MERGE.DDT<10,64>/GLQ
+-----------------------------------------------------------------------
+16-Jan-81	ODEN25 in production.
+-----------------------------------------------------------------------
+15-Jan-81	25	Give the message
+				#Start any additional CPUs NOW!$
+			at start-up (at SYSCHK question).
+			System:	ODEN,FREJ (SMP only)
+			Module:	ONCE(HIGHIN)
+			File:	CPUTEL.DDT<10,64>/glq
+-----------------------------------------------------------------------
+15-Jan-81	24	MCO 9441 against IME caused by logged-out job
+			that performs a LOGOUT UUO.
+			System:	All
+			Module:	COMCON(JOBKL1)
+			File:	MC9441.DDT<10,64>/GLQ
+-----------------------------------------------------------------------
+15-Jan-81	23	MCO 9460 heals misfunctioning REMAP UUO.
+			System:	All
+			Modul:	VMSER(NREMA1,NREMA4)
+			File:	MC9460.DDT<10,64>/GLQ
+-----------------------------------------------------------------------
+15-Jan-81	22	Add MCO 9448 which corrects SYSCHK's control of
+			"inaccessible controllers".
+			System:	KL (ODEN,FREJ)
+			Module:	SYSCHK(X3)
+			File:	MC9448.DDT/GLQ
+-----------------------------------------------------------------------
+15-Jan-81	21	Add MCO 9445 against "SNF" stopcodes if you do
+			"SET MEMORY OFFLINE" twice in a row.
+			System:	All
+			Module:	LOKCON(SETMF2,SETMF4)
+			File:	MC9445.DDT/glq
+-----------------------------------------------------------------------
+14-Jan-81	20	Allow modem to be answered even if sched=2 to
+			make it possible to "SET HOSTES".
+			System:	All (but relevant only on 2020)
+			Module:	SCNSER(DSRRNG)
+			File:	701QZ.DDT<10,64>/glq
+-----------------------------------------------------------------------
+16-Dec-80	NADA19 in production.
+-----------------------------------------------------------------------
+16-Dec-80	ODEN19 in production.
+-----------------------------------------------------------------------
+15-Dec-80	19	Fix bug in QZ-code in COMCON prohibiting "SET
+			TERMINAL <other terminal>: TYPE x".
+			System:	All
+			Module:	TTCTYP
+			File:	COMCON.MAC<10,64>	/Glq
+-----------------------------------------------------------------------
+11-Dec-80	18	MCO 9454 against an error in NETSER concerning
+			disconnect of terminals.
+			System:	All
+			Module:	NETSER
+			File:	MC9454.DDT<10,64>  /Glq
+-----------------------------------------------------------------------
+11-Dec-80	17	Stop cross-project access for programmer number
+			100 on NADJA only. Generate monitor for NADJA
+			with INDPPN=0.
+			System:	NADJA
+			Module:	FILFND
+			File:	PRO100.DDT<10,64,NADJA> /Glq
+-----------------------------------------------------------------------
+9-Dec-80	16	Prohibit assign of SET-HOST-ed local lines.
+			Only KS.
+			System:	NADJA, ADB & TOR
+			Module:	UUOCON
+			File:	ASSIGN.DDT<10,64>  /Glq
+-----------------------------------------------------------------------
+4-Dec-80	15	Generate monitor with support for TU45/TM02 as
+			MTD for use of TOR's tape-drive.
+			New MONGEN-files on <10,64,QZ,TU45> /Teq+Glq
+			System:	ODEN
+-----------------------------------------------------------------------
+2-Dec-80	14	Change to NOQZ and NOZQ for HP2648/Glq
+			System:	All
+			Module:	SCNSER.MAC<10,64>
+-----------------------------------------------------------------------
+2-Dec-80	ADB13 in production. /Glq
+-----------------------------------------------------------------------
+30-Nov-80	13	Add MAI area for MAIL /Glq
+			System:	All
+			File:	*GEN.MIC
+-----------------------------------------------------------------------
+30-Nov-80	12	Protect projekt number 10 when INDPPN=0.
+			System:	All
+			Module:	FILFND
+			File:	701QZ.DDT<10,64> /Glq
+-----------------------------------------------------------------------
+27-Nov-80	NADA10 in production. /Glq
+-----------------------------------------------------------------------
+27-Nov-80	ODEN11 in productin. /Glq
+-----------------------------------------------------------------------
+25-Nov-80	11	MCO 9442 against spurious DEC-Tape errors during
+			heavy load. Only FTKL.
+			System:	ODEN, FREJ
+			Module:	DTASER
+			File:	MC9442.DDT<10,64> /Teq
+-----------------------------------------------------------------------
+25-Nov-80	ODEN10 in production. /Glq
+-----------------------------------------------------------------------
+24-Nov-80	Start at edit 10. Create monitors ODEN10, NADA10,
+		ADB10, FREJ10 och TOR10. 
+		The following MCO's are installed:
+			9350,9365,9392,9393 & 9409. /Glq
+			9350	MC9350.DDT (only FTKL)
+			9365	SCNSER<10,64>
+			9392	  "      "
+			9393	MC9393.DDT
+			9409	MC9409.DDT
+-----------------------------------------------------------------------

@@ -1,0 +1,745 @@
+TITLE	CMDHISTORY -- Command history/editor module for Tops-10.
+;****************************************************************************
+;*									    *
+;*  Copyright (C) 1986, 1987, 1988 by			 		    *
+;*  Stacken, Royal Institute Of Technology, Stockholm, Sweden		    *
+;*  All rights reserved.						    *
+;* 									    *
+;*  This software is furnished under a license and may be used and copied   *
+;*  only in  accordance with  the  terms  of  such  license  and with the   *
+;*  inclusion of the above copyright notice. This software or  any  other   *
+;*  copies thereof may not be provided or otherwise made available to any   *
+;*  other person.  No title to and ownership of  the  software is  hereby   *
+;*  transferred.							    *
+;* 									    *
+;*  The information in this software is  subject to change without notice   *
+;*  and should not be construed as a commitment by Stacken.		    *
+;*									    *
+;*  Stacken assumes no responsibility for the use or reliability of its     *
+;*  software on equipment which is not supported by Stacken.                *
+;* 									    *
+;****************************************************************************
+
+search	F,S
+
+; Layout of a saved command:
+
+phase	0
+b$link:!block	1		;xwd prev,next
+b$size:!block	1		;xwd #words,#chars.
+b$text:!block	0		;the text itself.
+dephase
+
+; Layout of edit data area:
+
+maxlen==^D80			;Size of edit buffer.
+
+phase	0
+c$lnum:!block	1		;line number, should be negative.
+c$lmar:!block	1		;horizontal position of start of line.
+c$curr:!block	1		;pointer to command being edited, or zero.
+c$bptr:!block	1		;byte pointer to current char.
+c$pos:! block	1		;buffer position.
+c$len:! block	1		;total number of chars in buffer.
+c$lwp:! block	1		;last written position.
+c$text:!block	<<maxlen+4>/5>	;text buffer.
+c$size:!block	0		;Total size of edit data.
+dephase
+
+; The routine TYI should be used for all reading inside this module.
+; It will read a character if there is one, or go into event wait.
+
+tyi:	scnoff			;Turn off scanner interrupts.
+	hrrz	t1,ttytab##(J)	;Get TTY DDB for this job.
+	jumpe	t1,sonppj##	;None, give error return.
+	hrrz	U,ddbldb##(t1)	;Set up U.
+	jumpe	U,sonppj##	;Give up if detached.
+	sosge	ldbtic##(U)	;Any more characters to read?
+	 jrst	tyi.2		; No, go handle the situation.
+	ldchkr	t3,ldbtit##(U),tyierr
+	andi	t3,377		;Keep only eight bits of char.
+	pjrst	sonpj1##	;Turn interrupts back on, and skip return.
+
+; Here when LDCHKR complains.  (Should not happen)
+
+tyierr:	aos	%tyier		;Count the event.
+	pjrst	sonppj##	;Turn int's back on, and return.
+
+; Here when input stream is empty.  Go into event wait, since we have
+; nothing better to do for the moment...
+
+tyi.2:	setzm	ldbtic##(U)	;Fix up count.
+	scnon			;Allow interrupts again.
+	movei	t1,ev.cmd	;Put us in command editor wait.
+	pushj	p,esleep##
+	jrst	tyi		;Try read again.
+
+; Routine to print one character on users terminal.  All control characters
+; converted to ^-form.
+
+tyo:	cain	t3,177		;Rubout?
+	 jrst	tyo.2		; Yes, send as "^?"
+	cail	t3," "		;Or control char?
+	 aoja	p3,comtyo##	; No, ordinary char, count and send.
+tyo.2:	push	p,t3		;Save char.
+	movei	t3,"^"
+	pushj	p,comtyo##
+	pop	p,t3
+	trc	t3,100
+	addi	p3,2
+	pjrst	comtyo##
+
+tyostr:	push	p,p1		;Save P1 and P2.
+	push	p,p2
+	jumple	t2,tyos.4	;be quiet on empty strings.
+	move	p1,t1		;Pointer to string.
+	hrli	p1,(point 7)	;Make it a byte pointer.
+	move	p2,t2		;Copy counter.
+tyos.2:	ildb	t3,p1		;Get next char.
+	pushj	p,tyo		;Print it.
+	sojg	p2,tyos.2	;Count and loop.
+tyos.4:	pop	p,p2		;Restore P2 and P1.
+	pop	p,p1
+	popj	p,		;Return.
+
+; Routine to put a command into the current terminals' input buffer,
+; terminated with a carriage return.  Call with pointer to string in
+; T1, and character count in T2.  Note that LDBCMJ ought to be zero
+; for this to be real useful...
+
+sti:	push	p,p1		;save p1 and p2.
+	push	p,p2
+	move	p1,t1		;Pointer to string.
+	hrli	p1,(point 7)	;Make it a byte pointer.
+	move	p2,t2		;Copy counter.
+	pushj	p,crlf##	;All this on a new line.
+	jumple	p2,sti.4	;handle empty strings.
+sti.2:	ildb	t3,p1		;Get next char.
+	pushj	p,toptyp##	;Use SCNSER routine to store chars.
+	sojg	p2,sti.2	;Count and loop.
+sti.4:	movei	t3,^D13
+	pushj	p,toptyp##	;Terminate with carriage return.
+	pop	p,p2		;Restore P2 and P1.
+	pop	p,p1
+	popj	p,		;Return.
+
+; Type a line number as "-nn: ", or "**: " if number is zero.
+
+typlnr:	jumpe	t1,type.0	;special handling of 0.
+	pushj	p,save2##	;Non-zero, save P1 and P2.
+	movm	p1,t1		;Get magnitude into P1.
+	jumpge	t1,typn.1	;Non-negative number?
+	movei	t3,"-"		;No, print hyphen.
+	pushj	p,tyo
+typn.1:	pushj	p,typn.r	;print the number itself.
+	pushj	p,inlmes##	;Print colon and space.
+	asciz	": "
+	addi	p3,2		;Count them, and return.
+	popj	p,
+
+typn.r:	idivi	p1,^D10		;standard recursive number printer.
+	push	p,p2
+	jumpe	p1,typn.2
+	pushj	p,typn.r
+typn.2:	pop	p,t3
+	addi	t3,"0"
+	pjrst	tyo
+
+type.0:	pushj	p,inlmes##
+	asciz	"**: "
+	addi	p3,4
+	popj	p,
+
+newlin:	setz	p3,
+	pjrst	crlf##
+
+updfre:	push	p,p1		;Save P1.
+	hlrz	p1,.pdchf##(W)
+	subi	p1,(t1)		;decrement count.
+	hrlm	p1,.pdchf##(W)
+	hrrz	p1,.pdchf##(W)
+	addi	p1,(t1)		;increment pointer.
+	hrrm	p1,.pdchf##(W)
+	pop	p,p1		;Restore P1.
+	popj	p,		;Done.
+
+delast:	hrrz	t1,.pdchp##(W)
+	jumpe	t1,cpopj##
+	hlrz	t2,b$link(t1)	;Get link to previous.
+	jumpn	t2,dlst.2	;deleting the last command?
+	setzm	.pdchp##(W)	;Yes, simple handling.
+	move	t1,.pdcha##(W)
+	movem	t1,.pdchf##(W)
+	popj	p,
+
+dlst.2:	hrrm	t2,.pdchp##(W)	;set up new "last" command.
+	hllzs	b$link(t2)	;remove forward link from previous.
+	hlrz	t2,b$size(t1)	;get size of block we are taking.
+	movn	t1,t2		;negate, into t1.
+	pjrst	updfre		;update .pdchf, and return.
+
+; Here when logging a job in, to allocate the command save block.
+
+histsz::exp	^D100		;Number of word of history to allocate.
+
+cmhlgi::skipe	.pdcha##(W)	;Already set up?
+	 popj	p,		; Yes, just return.
+	hrrz	t2,histsz	;No, get size of history block.
+	pushj	p,getwds##	;Allocate free core.
+	 popj	p,		; Can't -- well, so what?
+	hrl	t1,histsz	;Make size,,address.
+	movem	t1,.pdcha##(W)	;Set up pointer in PDB.
+	movem	t1,.pdchf##(W)	;All in free area, initially.
+	setzm	.pdchp##(W)	;No saved commands yet.
+	popj	p,		;Return to whatever.
+
+; Here when killing a job, to deallocate the command save block.
+
+cmhlgo::jumpe	w,cpopj##	;Insure W is set up.
+	hlrz	t1,.pdcha##(W)	;Load size.
+	jumpe	t1,cpopj##	;Don't try to return nothing.
+	hrrz	t2,.pdcha##(W)	;Load address.
+	pjrst	givwds##	;Return and return.
+
+; Here when detaching a line, to clean up if it was in the editor.
+
+cmhdet::skipn	t1,ldbcmj(U)	;This terminal using the editor now?
+	 popj	p,		; No, just return.
+	setzm	ldbcmj(U)	;Not in editor any longer.
+	pjrst	ewake##		;Wake job, force it to clean up.
+
+; AGAIN command -- re-execute the most recently issued command again.
+
+nosave:	jsp	t1,errmes##
+	asciz	"No saved command"
+
+cagain::jsp	t2,savctx##	;Run this as a job.
+	pushj	p,delast	;Delete last command.  "AGAIN".
+	hrrz	p1,.pdchp##(W)	;Get most recent command.
+	jumpe	p1,nosave	;None?
+	movei	t1,b$text(p1)	;Load string adress.
+	hrrz	t2,b$size(p1)	;Load character count.
+	pjrst	sti		;Go store in input buffer, then done.
+
+; HISTORY command -- print the list of saved commands.
+
+chisto::jsp	t2,savctx##	;Have to run this as a job.
+	pushj	p,delast	;Delete most recent command, "HISTORY".
+	hrrz	p1,.pdchp##(W)	;Get pointer to most recently used command.
+	jumpe	p1,nosave	;"No saved commands".
+	movei	p2,0		;Start with number 0, and go down.
+chis.1:	hlrz	p1,b$link(p1)	;Follow link to previous.
+	jumpe	p1,chis.2	;Break when no more.
+	soja	p2,chis.1	;Count and loop.
+
+chis.2:	hlrz	p1,.pdchp##(W)	;Get pointer to oldest command.
+chis.3:	pushj	p,crlf##	;New line.
+	move	t1,p2		;Get line number.
+	pushj	p,typlnr	;Print line number.
+	movei	t1,b$text(p1)	;Get adress of string.
+	hrrz	t2,b$size(p1)	;Number of chars to print.
+	pushj	p,tyostr	;Out with it.
+	hrrz	p1,b$link(p1)	;Get pointer to previous command.
+	jumpe	p1,crlf##	;quit if no more.
+	aoja	p2,chis.3	;else count up and loop.
+
+; Here from SCNSER to save the current line.
+
+cmhsav::jumpe	u,cpopj##	;If no LDB (how?), ignore.
+	hrrz	f,ldbddb##(U)	;Pick up DDB pointer.
+	jumpe	f,cpopj##	;If no DDB (how?), ignore.
+	ldb	t1,pjobn##	;Get owner job number.
+	jumpe	t1,cpopj##	;If no job (how?), ignore.
+	push	p,w		;Save W in this code.
+	hrrz	w,jbtpdb##(t1)	;Finally, get PDB pointer.
+	jumpe	w,cmdret	;If no PDB (how?), ignore.
+	move	t1,jbtsts##(t1)	;Get job status.
+	tlnn	t1,jlog		;Logged in?
+	 jrst	cmdret		; No, why are we here?
+	skipe	.pdcha##(W)	;Any history buffer set up?
+	 pushj	p,csav.1	; Yes, call the workhorse.
+cmdret:	pop	p,w		;Restore W.
+	popj	p,		;Return.
+
+csav.1:	pushj	p,save4##	;From now on, preserve P1-P4.
+	move	p1,ldbtic##(U)
+	subi	p1,1		;Don't count the break char.
+	caige	p1,2		;Is there something worth saving?
+	 jrst	cpopj##		; Nope, just return.
+;
+; Here whe should scan the command line for interesting chars instead of
+; using the above heuristic.  Sometime...
+;
+	movei	p2,4(p1)	;Compute number of words needed.
+	idivi	p2,5
+	addi	p2,b$text	; .. including overhead.
+	pushj	p,mkroom	;Make room for this command, link it in.
+	 popj	p,		; Could not -- return.
+	movei	p2,b$text(p4)	;Set up a byte pointer to the text.
+	hrli	p2,(point 7)
+	move	p3,ldbtit##(U)	;Get a copy of the input taker.
+csav.2:	ldchk	t3,p3,csav.4	;Get next input char, preserve buffer.
+	andi	t3,177		;Only seven bits here, thank you!
+	cain	t3,^D13		;It this <CR>?
+	 jrst	csav.4		; Yes, break without storing it.
+	idpb	t3,p2		;Deposit character.
+	aos	b$size(p4)	;Count character.
+	sojg	p1,csav.2	;Decrement and loop.
+csav.4:	popj	p,		;All done, have fun.
+
+; Here to delete old commands from history, to make room.
+; Call with P2/ number or words to allocate.
+;  Non-skip return: failed.  No room for block.
+; Skip return: P4 holding pointer to new block.
+
+mkroom:	hlrz	t1,.pdcha##(W)	;Get total size of save block.
+	caig	t1,(p2)		;Possible to save at all?
+	 popj	p,		; No, give up now.
+	hlrz	t1,.pdchf##(W)	;Get size of free area.
+	caile	t1,(p2)		;Enough room left?
+	 jrst	mkr.1		; Yes, go fix up pointers.
+	pushj	p,save1##	;Preserve P1 during big blt.
+	hrrz	p1,.pdcha##(W)	;Get first block in history.  (oldest)
+	setz	t4,		;Get initial size we are removing.
+mkr.x:	hlrz	t2,b$size(p1)	;Get size of this block.
+	addi	t1,(t2)		;Add it in.
+	addi	t4,(t2)		;Remember total size skipped too.
+	caile	t1,(p2)		;Room now?
+	 jrst	mkr.b		; Yes, go do the big blt.
+	hrrz	p1,b$link(p1)	;Move pointer on
+	jumpn	p1,mkr.x	;Loop if more to take.
+	popj	p,		;*** this should not happen...
+
+; Now T4 holds # words to blt away.
+
+mkr.b:	hrrz	t1,.pdchf##(W)	;Get start of free area.
+	subi	t1,(t4)		;- # words we are taking.
+	hrrz	t2,.pdcha##(W)	;Load destination.
+	move	t3,t2		;Make a copy.
+	addi	t3,(t4)		;Compute source.
+	hrrzs	(t3)		;Clear back link.
+	hrli	t2,(t3)		;Set up source.
+	blt	t2,-1(t1)	;move the blocks.
+	movn	t1,t4		;Get # words we are returning.
+	pushj	p,updfre	;Update .pdchf##
+	hrrz	t1,.pdchp##(W)	;Relocate ptr to most recently used command.
+	subi	t1,(t4)
+	hrrm	t1,.pdchp##(W)	;Put it back.
+	hlrz	p1,.pdchp##(W)	;Get pointer to oldest command.
+mkr.rl:	hlrz	t1,b$link(p1)	;Get left link.
+	skipe	t1		;Zero?
+	 subi	t1,(t4)		; No, relocate.
+	hrlm	t1,b$link(p1)	;Put it back.
+	hrrz	t1,b$link(p1)	;Get right link.
+	skipe	t1		;Zero?
+	 subi	t1,(t4)		; No, relocate.
+	hrrm	t1,b$link(p1)	;Put it back.
+	hrrz	p1,b$link(p1)	;Step on.
+	jumpn	p1,mkr.rl	;Loop over all links.
+
+; Fall into common code.
+
+mkr.1:	hrrz	p4,.pdchf##(W)	;There is room, new block will be here.
+	movei	t1,(p2)		;Get # words we are taking.
+	pushj	p,updfre	;Update .pdchf##
+	setzm	b$link(P4)	;Clear pointers.
+	hrlzm	p2,b$size(P4)	;Set up size,,0 in block.
+	skipe	t1,.pdchp##(W)	;Any previous commands saved?
+	 jrst	mkr.2		; Yes, different linking then.
+	hrrm	p4,.pdchp##(W)	;No, this is the one and only -
+	hrlm	p4,.pdchp##(W)	; saved command in the history.
+	jrst	cpopj1##	;Give good return.
+
+mkr.2:	hrrm	p4,b$link(T1)	;Make forward link from previous.
+	hrlm	t1,b$link(P4)	;Make backward link from us.
+	hrrm	p4,.pdchp##(W)	;Make link from PDB to command block.
+	jrst	cpopj1##	; Give good return.
+
+; "^" command -- enter command line editor.
+
+carrow::jsp	t2,savctx##
+	movem	j,ldbcmj##(U)	;Tell SCNSER what we are doing.
+	pushj	p,delast	;Delete command that invoked us.
+	movei	t2,c$size
+	pushj	p,gtfwdc##	;Allocate buffer space.
+	 pjrst	need1p##	; Huh?
+	move	p4,t1		;keep pointer.
+	push	p,ldbbyt##(U)	;***** Save this.  Restore at exit.
+	movei	t1,l1rdem##	;Set terminal in defered echo.
+	iorm	t1,ldbbyt##(U)
+	pushj	p,setchp##
+
+; Scan the command line:
+
+	move	p1,ldbtic##(U)	;Get max # chars to skip.
+foo:!	pushj	p,tyi		;get next character.
+	 jrst	bufret		; detached, give up.
+	trz	t3,200		;strip parity.
+	caie	t3,12		;linefeed?
+	 sojg	p1,foo		; No, count down and loop.
+	setzm	ldbbkc##(U)	;Dot prophylactic.
+
+	setzm	c$lnum(p4)	;editing line 0, initially.
+	hrrz	t1,.pdchp##(W)	;Get pointer to most recently used command.
+	pushj	p,loadln	;Load the line into edit buffer.
+
+loop:	pushj	p,tyi		;Get next character.
+	 jrst	bufret		; Detached, give up.
+	move	t1,ldbqzb##(u)	;Check TERMINAL META setting.
+	tlnn	t1,lqlmeta##
+	 trz	t3,200
+	trze	t3,200		;Meta key used?
+	 jrst	meta.2		; Yes, handle directly.
+	cain	t3,177
+	 jrst	rubout
+	cail	t3," "
+	 jrst	insert
+	jrst	@.+1(t3)
+	exp	loop		;^@ -- ignore.
+	exp	cebeg		;^A -- beginning of line.
+	exp	celeft		;^B -- cursor left.
+	exp	cequit		;^C -- abort editing.
+	exp	cedel		;^D -- delete character.
+	exp	ceend		;^E -- end of line.
+	exp	ceright		;^F -- cursor right.
+	exp	cequit		;^G -- abort editing.
+	exp	celeft		;^H -- cursor left.
+	exp	insert		;Tab -- self inserting.
+	exp	beep		;^J -- unused.
+	exp	cekill		;^K -- kill rest of line.
+	exp	cedisp		;^L -- redisplay line.
+	exp	ceexit		;Return -- execute edited command.
+	exp	cedown		;^N -- next line.
+	exp	beep		;^O -- unused.
+	exp	ceup		;^P -- previous line.
+	exp	cequote		;^Q -- quoted insert.
+	exp	cedisp		;^R -- redisplay line.
+	exp	beep		;^S -- unused.
+	exp	cetran		;^T -- transpose chars.
+	exp	beep		;^U -- unused.
+	exp	cequote		;^V -- quoted insert.
+	exp	metarb		;^W -- same as M-Rubout.
+	exp	beep		;^X -- unused.
+	exp	beep		;^Y -- unused.
+	exp	beep		;^Z -- unused.
+	exp	meta		;Escape -- prefix meta.
+	exp	beep		;^\ -- illegal.
+	exp	beep		;^] -- illegal.
+	exp	beep		;^^ -- illegal.
+	exp	cehelp		;^_ -- give help.
+
+meta:	pushj	p,tyi		;Get next character.
+	 jrst	bufret		; Detached, give up.
+	trz	t3,200		;Strip parity.
+meta.2:	caie	t3,"B"		;M-B?
+	 cain	t3,"b"
+	  jrst	meta.b
+	caie	t3,"D"		;M-D?
+	 cain	t3,"d"
+	  jrst	meta.d
+	caie	t3,"F"		;M-F?
+	 cain	t3,"f"
+	  jrst	meta.f
+	caie	t3,"O"		;VT100 arrow key?
+	 cain	t3,"["		; In either format?   Matching "]".
+	  jrst	vt1arw
+	cain	t3,177		;Rubout?
+	 jrst	metarb
+
+; unassigned meta command, beep user.
+
+beep:	movei	t3,^D7		;Print ^G on users' terminal.
+	pushj	p,comtyo##
+	jrst	loop
+
+; Here after two chars of VT100 arrow key sequence.
+
+vt1arw:	pushj	p,tyi		;Get final character.
+	 jrst	bufret		; Detached, give up.
+	trz	t3,200		;Strip parity bit.
+	cain	t3,"A"		;Up?
+	 jrst	ceup		; Yes, dispatch.
+	cain	t3,"B"		;Down?
+	 jrst	cedown		; Yes, dispatch.
+	cain	t3,"C"		;Right?
+	 jrst	ceright		; Yes, dispatch.
+	cain	t3,"D"		;Left?
+	 jrst	celeft		; Yes, dispatch.
+	jrst	beep		;Unknown key, complain.
+
+; Here to insert a character into the buffer, at current pos.
+
+insert:	move	t1,c$len(p4)	;get length.
+	cail	t1,maxlen	;room for more?
+	 jrst	beep		; no, complain.
+	ildb	p1,c$bptr(p4)	;get char at this position, if any.
+	dpb	t3,c$bptr(p4)	;store new char.
+	pushj	p,tyo		;echo it.
+	aos	c$len(p4)	;increment length.
+	aos	t1,c$pos(p4)	;increment position.
+	movem	p3,c$lwp(p4)	;assume this is last in line.
+	caml	t1,c$len(p4)	;last in line?
+	 jrst	loop		; yes, all done.
+	push	p,p3		;no, save this horizontal position.
+	push	p,c$pos(p4)	;save buffer position and pointer.
+	push	p,c$bptr(p4)
+inslup:	move	t3,p1		;copy current char.
+	ildb	p1,c$bptr(p4)	;get "next".
+	dpb	t3,c$bptr(p4)	;store "this".
+	pushj	p,tyo		;echo it.
+	aos	t1,c$pos(p4)	;increment position.
+	camge	t1,c$len(p4)	;more to copy?
+	 jrst	inslup		; yes, continue.
+	movem	p3,c$lwp(p4)	;this *is* last written position now.
+	pop	p,c$bptr(p4)	;restore pointer and counter.
+	pop	p,c$pos(p4)
+	pop	p,t1		;get position we ought to be at.
+	pushj	p,setpos	;move the cursor there.
+	jrst	loop		;done.
+
+; common subroutines:
+
+setpos:	cail	t1,(p3)		;done?
+	 popj	p,		; yes.
+	push	p,t1		;no.  save.
+	movei	t3,^D8		;Assume backspace.
+	ldb	t1,ldpttt##	;Get terminal type index.
+	jumpe	t1,setp.2	;None, use the backspace.
+	trze	t1,100		;Customer index?
+	 movni	t1,(t1)		; Yes, negate.
+	lsh	t1,1		;... times 2.
+	hrrz	t1,tcrtab##+1(t1) ;Get pointer to byte pointer.
+	move	t1,(t1)		;Get byte pointer.
+	ildb	t3,t1		;Get byte.
+	andi	t3,177		;Down to seven bytes.
+setp.2:	pushj	p,comtyo##	;backspace one.
+	pop	p,t1		;restore.
+	soja	p3,setpos	;decrement and loop.
+
+lmarg:	movei	t3,^D13		;Print a carriage return.
+	pushj	p,comtyo##
+	setz	p3,		;Now at left margin.
+	move	t1,c$lnum(p4)	;Get and print line number.
+	pushj	p,typlnr
+	movem	p3,c$lmar(p4)	;Remember where text starts.
+	popj	p,
+
+ereol:	caml	p3,c$lwp(p4)	;more on line?
+	 popj	p,		; no, nothing to do.
+	push	p,p3		;yes, save current hpos.
+eeol.2:	movei	t3," "		;Overwrite next char on screen.
+	pushj	p,tyo
+	came	p3,c$lwp(p4)	;done yet?
+	 jrst	eeol.2		; no, go for some more.
+	pop	p,t1		;where we want to go now.
+	movem	t1,c$lwp(p4)	; ... also happens to be last written pos.
+	pjrst	setpos		;do the job, and return.
+
+backbp:	sos	c$pos(p4)	;decrement position.
+	sos	c$bptr(p4)	;decrement byte pointer.  (hard way)
+	ibp	c$bptr(p4)
+	ibp	c$bptr(p4)
+	ibp	c$bptr(p4)
+	ibp	c$bptr(p4)
+	popj	p,
+
+META.B:	JRST	BEEP		;For the time beeing.
+META.D:	JRST	BEEP		;For the time beeing.
+META.F:	JRST	BEEP		;For the time beeing.
+METARB:	JRST	BEEP		;For the time beeing.
+
+cebeg:	skipn	c$pos(p4)	;Already at beginning?
+	 jrst	loop		; Yes, nothing to do then.
+	setzm	c$pos(p4)	;No, get there!
+	movei	t1,c$text(p4)	;Build a clean byte pointer.
+	hrli	t1,(point 7)
+	movem	t1,c$bptr(p4)
+	pushj	p,lmarg		;go to the left margin.
+	jrst	loop		;done.
+
+ceend:	move	t1,c$pos(p4)	;Get current pos.
+	camn	t1,c$len(p4)	;At end already?
+	 jrst	loop		; Yes, all done.
+	aos	c$pos(p4)	;No, increment pos.
+	ildb	t3,c$bptr(p4)	;Get next char.
+	pushj	p,tyo		;Print it.
+	jrst	ceend		;Loop until done.
+
+celeft:	skipg	c$pos(p4)	;anything to do?
+	 jrst	loop		; no, ignore.
+	pushj	p,lstep		;call common code.
+	jrst	loop		;done.
+
+lstep:	ldb	t3,c$bptr(p4)	;get character.
+	pushj	p,backbp	;back up the position.
+	cail	t3," "
+	 cain	t3,177
+	  skipa	t1,p3
+	   movei t1,1(p3)
+	subi	t1,2
+	pjrst	setpos		;fix up on screen, and return.
+
+ceright:move	t1,c$pos(p4)	;get position in buffer.
+	caml	t1,c$len(p4)	;more chars to the right?
+	 jrst	loop		; no, ignore.
+	aos	c$pos(p4)	;increment position.
+	ildb	t3,c$bptr(p4)	;get character.
+	pushj	p,tyo		;simplest way to do cursor right...
+	jrst	loop		;back for more commands.
+
+rubout:	skipg	c$pos(p4)	;anything to delete?
+	 jrst	loop		; nope, just exit.
+	pushj	p,lstep		;yes, go left one step, then delete right.
+cedel:	move	p2,c$len(p4)	;get length.
+	sub	p2,c$pos(p4)	;subtract position.
+	jumple	p2,loop		;anything to delete?
+	push	p,p3		;yes, save hpos.
+	soje	p2,cedl.4	;skip loop if deleting last char.
+	push	p,c$bptr(p4)	;save buffer pointer.
+	ibp	c$bptr(p4)	;increment.
+cedl.2:	move	p1,c$bptr(p4)	;"put" pointer.
+	ildb	t3,c$bptr(p4)	;get next char.
+	dpb	t3,p1		;store at previous byte.
+	pushj	p,tyo		;echo it.
+	sojg	p2,cedl.2	;loop over rest of buffer.
+	pop	p,c$bptr(p4)	;restore used byte pointer.
+cedl.4:	sos	c$len(p4)	;remember we took one char.
+	pushj	p,ereol		;clear to end of line.
+	pop	p,t1		;where we want to go.
+	pushj	p,setpos	;go there.
+	jrst	loop
+
+cekill:	move	t1,c$pos(p4)	;copy from position to length.
+	movem	t1,c$len(p4)
+	pushj	p,ereol		;erase to end of line.
+	jrst	loop		;done!
+
+ceexit:	setzm	ldbcmj##(U)	;restore terminal.
+	movei	t1,c$text(p4)	;Load adress of string.
+	move	t2,c$len(p4)	;Load character count.
+	pushj	p,sti		;stick in terminal's input buffer.
+	jrst	bufret		;all done, return buffer and exit.
+
+; Subroutine to load a line into the edit buffer.
+; Call with T1 holding pointer to saved command, or zero.
+
+loadln:	movem	t1,c$curr(p4)	;This is from now on the current line.
+	setz	t2,		;Assume zero.
+	jumpe	t1,llin.2	;If it is zero, no text to move.
+	hrrz	t2,b$size(t1)	;Get # of saved characters.
+	caile	t2,maxlen	;In buffer range?
+	 movei	t2,maxlen	; No, have to cut off.
+	movei	t3,4(t2)	;Compute # words to move.
+	idivi	t3,5
+	hrli	t1,b$text(t1)	;Make source,,0
+	hrri	t1,c$text(P4)	;Make source,,dest
+	addi	t3,-1(t1)	;Compute final word.
+	blt	t1,(t3)		;Do the transfer.
+llin.2:	movem	t2,c$len(p4)	;Set up length of text.
+	movei	t1,c$text(p4)	;load adress of text area.
+	hrli	t1,(point 7)	;make byte pointer.
+	movem	t1,c$bptr(p4)	;store.
+	setzm	c$pos(p4)	;Start at position 0.
+	pushj	p,redisplay	;print out the current buffer.
+	move	t1,c$lmar(P4)	;get hpos after line number.
+	pjrst	setpos		;set cursor, return.
+
+; ^P -- step back in the history.
+
+ceup:	skipn	t1,c$curr(p4)	;Get line we are editing.
+	 jrst	beep		; None, complain.
+	hlrz	t1,b$link(t1)	;step back.
+	jumpe	t1,beep		;If nothing there, complain.
+	movem	t1,c$curr(p4)	;change current line.
+	sos	c$lnum(p4)	;change line number.
+	pushj	p,loadln	;Load the line, display it.
+	jrst	loop		;Loop back.
+
+; ^N -- step forward in the history.
+
+cedown:	skipn	t1,c$curr(p4)	;Get line we are editing.
+	 jrst	beep		; None, complain.
+	hrrz	t1,b$link(t1)	;step forward.
+	jumpe	t1,beep		;complain if no more.
+	movem	t1,c$curr(p4)	;new current line.
+	aos	c$lnum(p4)	;new line number.
+	pushj	p,loadln	;load the new text into the buffer.
+	jrst	loop		;Start editing.
+
+cequote:pushj	p,tyi		;Get next character.
+	 jrst	bufret		; Detached, give up.
+	jrst	insert		;Insert it here.
+
+cedisp:	push	p,p3		;save hpos for later.
+	pushj	p,redisp	;(re)display the buffer.
+	pop	p,t1		;recover horizontal position.
+	pushj	p,setpos	;restore on screen.
+	jrst	loop		;done!
+
+; Subroutine to display the current edit buffer on a new line.
+; Note that it does not set the cursor at the right pos afterwards.
+
+redisp:	pushj	p,newlin	;Get onto a new line.
+	move	t1,c$lnum(p4)
+	pushj	p,typlnr	;Print line number.
+	movem	p3,c$lmar(p4)	;Remember where text starts.
+	movei	t1,c$text(p4)	;load adress of text.
+	move	t2,c$len(p4)	;load # chars to print.
+	pushj	p,tyostr	;display buffer.
+	movem	p3,c$lwp(p4)	;make sure we set up this word.
+	popj	p,		;return.
+
+cetran:	skiple	t1,c$pos(p4)	;Must not be at beginning of buffer.
+	 caml	t1,c$len(p4)	; Must not be at end of buffer.
+	  jrst	loop		;  bad position, ignore this.
+	push	p,c$bptr(p4)	;Preserve the byte pointer.
+	ldb	p2,c$bptr(p4)	;Get the left character.
+	ildb	p1,c$bptr(p4)	;Get the rigth character.
+	pop	p,c$bptr(p4)	;Restore byte pointer.
+	pushj	p,lstep		;Go to the left.
+	move	t3,p1		;Get char to be the left one.
+	idpb	t3,c$bptr(p4)	;Deposit in buffer.
+	aos	c$pos(p4)	;Increment counter.
+	pushj	p,tyo		;echo it.
+	move	t3,p2		;Get char to be the right one.
+	idpb	t3,c$bptr(p4)	;Deposit in buffer.
+	aos	c$pos(p4)	;Increment counter.
+	pushj	p,tyo		;echo it.
+	pushj	p,lstep		;go back over last char.
+	jrst	loop		;done.
+
+cehelp:	pushj	p,inlmes##	;This is simple...
+	asciz	/
+
+This is the AMIS mode command line editor.  Type ^G to quit.
+
+<CR> Execute edited command      <Rubout> Delete char before cursor
+
+^P   Edit previous command line    ^N   Edit next command line
+^B   Move back one character       ^F   Move forward one character
+^A   Move to the beginning of line ^E   Move to the end of the line
+^D   Delete character at cursor    ^K   Kill to the end of the line
+^V   Quote next char for insert    ^T   Transpose two characters
+
+/
+	jrst	cedisp		;Re-display line, and continue.
+
+cequit:	setzm	ldbcmj##(U)	;No longer in command "editor".
+	pushj	p,inlmes##	;Tell user.
+	asciz /
+[Aborting]
+/
+bufret:	movei	t1,c$size	;length of buffer.
+	move	t2,p4		;address of buffer.
+	pushj	p,gvfwds##	;return funny words.
+	 jfcl			; in case it skips, I don't know.
+	pop	p,t1		;Pop saved terminal status.
+	jumpe	U,cpopj##	;Just return if detached.
+	movem	t1,ldbbyt##(U)	;Restore terminal status.
+	pjrst	setchp##	;Tell network, and return to COMCON.
+
+; Local statistics:
+
+%tyier:	0
+
+end

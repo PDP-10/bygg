@@ -1,0 +1,89 @@
+/*
+** System dependent code for comnd, BSD version.
+*/
+
+#include <termios.h>
+#include <stdio.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+/*
+** our variables:
+*/
+
+static struct termios savedstate;
+
+/*
+** save terminal settings and set up things the way we want them.
+*/
+
+#ifndef _POSIX_VDISABLE
+#  define _POSIX_VDISABLE 0
+#endif
+
+static void setuptty(void)
+{
+  struct termios state;
+  long vdisable;
+
+  (void) tcgetattr(STDIN_FILENO, &state); /* XXX should check for errs. */
+  savedstate = state;		/* Save for later. */
+
+  if ((vdisable = fpathconf(STDIN_FILENO, _PC_VDISABLE)) < 0) {
+    vdisable = _POSIX_VDISABLE;
+  }
+
+  state.c_cc[VDSUSP] = vdisable;
+  state.c_cc[VQUIT] = vdisable;
+  
+  state.c_cc[VMIN] = 1;
+  state.c_cc[VTIME] = 0;
+
+  state.c_iflag |= (IGNBRK);
+  state.c_lflag &= ~(ECHO | ICANON);
+
+  (void) tcsetattr(STDIN_FILENO, TCSANOW, &state);
+}
+
+/*
+** restore terminal settings since we are either suspening ourselves
+** or exiting.
+*/
+
+static void restoretty(void)
+{
+  (void) tcsetattr(STDIN_FILENO, TCSANOW, &savedstate);
+}
+
+/*
+** Signal trickery to handle suspend & restore terminal state.
+*/
+
+static void sig_tstp(int signo)
+{
+  sigset_t mask;
+
+  sigemptyset(&mask);
+  sigaddset(&mask, SIGTSTP);
+  sigprocmask(SIG_UNBLOCK, &mask, NULL);
+
+  signal(SIGTSTP, SIG_DFL);
+  restoretty();
+
+  raise(SIGTSTP);
+
+  signal(SIGTSTP, sig_tstp);
+  setuptty();
+}
+
+/*
+** This routine is called to init the terminal:
+*/
+
+void sys_init(void)
+{
+  setuptty();
+  (void) atexit(restoretty);
+  (void) signal(SIGTSTP, sig_tstp);
+}

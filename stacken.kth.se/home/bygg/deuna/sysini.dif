@@ -1,0 +1,18 @@
+File 1)	DSKB:SYSINI.MAC[10,10,SYSTEM,KS,TOPSY,IPTEST]	created: 2004 23-May-101
+File 2)	DSKB:SYSINI.MAC[10,7,MON]                    	created: 1017 14-Sep-88
+
+1)25	ifn ftduna,<
+1)		movei	t1,unafst##	;Get first UNA page.
+1)		movei	t2,unalst##	;Get last UNA page.
+1)		caie	t1,(t2)		;If we have any pages, -
+1)		 pushj	p,ccbrng	; make sure that they are uncached.
+1)	>; END ifn ftduna
+1)26	REPEAT 0,<
+****
+2)26	REPEAT 0,<
+**************
+1)83	ifn ftduna,<PUSHJ  P,UNAONC##>  ;Initialize the DEUNA(s).
+1)84		SUBTTL	FINAL CPU AND DEVICE INITIALIZATION
+****
+2)84		SUBTTL	FINAL CPU AND DEVICE INITIALIZATION
+**************

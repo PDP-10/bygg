@@ -1,0 +1,475 @@
+;; edit history
+
+       (The first edits are missing)
+
+   17/  Change opcode field from 9 to 8 bits.
+   18/  Expand rows.
+   19/  Shuffle opcode map.
+   20/	Fix arithmetic instructions.
+   21/	Lots of multiply/divide versions.
+   22/  Rip out TDxx instructions, since we can use TRxx with @-addressing
+        instead.  We lose TDxx with @, but gain 16 opcodes.
+   23/  Include movni, and change opcode for exch.
+   24/  Shuffle around opcodes some more, put all (?) of them in map.
+   25/	Start on individual opcode descriptions.
+   26/  Add more descriptions.
+   27/	revamp multiply/divide some.
+   28/  Floating point needs immed. instructions as well.
+   29/  Switch aos and soj rows in opcode map.  Put all no-ops in ().
+   30/  Put all skip-and-nothing-else in [].
+
+
+;; general description
+
+   The hexa processor is byte-addressable, has a 64-bit address space
+   and 16 64-bit registers.  Instructions are 32 or 64 bits, and are
+   aligned on 32-bit boundaries.
+
+   The native data type is the 64-bit word.
+
+   The processor is strictly big-endian.
+
+
+;; instruction layout and details
+
+   Instructions contains (conceptually) four parts:
+
+     * opcode
+     * number field
+     * register
+     * effective argument
+
+   The last one is computed from various physical fields of the
+   instruction word(s), in the same way for each instruction.
+   
+   A full (64-bit) instruction looks like this:
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   !     opcode    !   A   !L!       number        !I! XSF !   X   !
+   +-+-+-+-#-+-+-+-#-+-+-+-#-+-+-+-#-+-+-+-#-+-+-+-#-+-+-+-#-+-+-+-+
+
+    3               4                   5                   6
+    2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   !                               Y                               !
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+   In this case the L bit is a one.  A short (32-bit) instruction
+   contains the first 32-bit word only, with the L bit zero.
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   !     opcode    !   A   !0!         Y           !I! XSF !   X   !
+   +-+-+-+-#-+-+-+-#-+-+-+-#-+-+-+-#-+-+-+-#-+-+-+-#-+-+-+-#-+-+-+-+
+
+   Here we will default the number field to zero, and are using only
+   a handful of bits for the Y field.
+
+
+;; EA (effective argument) calculation
+
+   This will compute a 64-bit value and a type flag.  The type will be
+   global if we specify a full 64-bit word, else type wil be local.
+   Instructions which use the EA as an address will take the upper 32
+   bits from PC if the type is local, i.e. will reference the local
+   memory section.
+
+   type := local;
+   if (not L)
+       Y := number;
+       number := 0;
+   EA := Y;
+   if (X != 0)
+       EA += [X] << XSF;
+       if ([X]<0..31> != 0)
+           type := global;
+   if (I)
+       EA := mem[EA]; type := global;
+
+   done.
+
+
+;; EA examples
+
+   move     a, 4711       -  a := mem[4711]
+   movei    a, 4711       -  a := 4711
+   movei    a, (x)        -  a := x
+   movei    a, 4(x)       -  a := x + 4
+   movei    a, 3(*8 x)    -  a := x * 8 + 3
+   addi     a, (x)        -  a := a + x
+   subi     a, 4(x)       -  a := a - x - 4
+   imuli    a, 4          -  a := a * 4
+   idivi    a, 3          -  a := a / 3;  a+1 := a % 3
+
+
+;; opcode map
+
+	0/8	1/9	2/a	3/b	4/c	5/d	6/e	7/f
+
+0x	illegal	luuo	luuo	luuo	luuo	luuo	luuo	luuo
+	arithi	*	floati	*	*	*	*	*
+1x	jsp	jsr	jsys	jrst	*	*	*	*
+	hrri	hrr	hrli	hrl	hlri	hlr	hlli	hll
+2x	movei	movea	movni	dmove	move	mov32	mov16	mov8
+	setzm	setom	exch	dmovem	movem	mov32m	mov16m	mov8m
+3x	pushi	pusha	pushm	pushj	push	push32	push16	push8
+	*	*	popm	popj	pop	pop32	pop16	pop8
+
+4x	(cai)	cail	caie	caile	[caia]	caige	cain	caig
+	(cam)	caml	came	camle	[cama]	camge	camn	camg
+5x	(jump)	jumpl	jumpe	jumple	jumpa	jumpge	jumpn	jumpg
+	(skip)	skipl	skipe	skiple	skipa	skipge	skipn	skipg
+6x	(aoj)	aojl	aoje	aojle	aoja	aojge	aojn	aojg
+	(soj)	sojl	soje	sojle	soja	sojge	sojn	sojg
+7x	aos	aosl	aose	aosle	aosa	aosge	aosn	aosg
+	sos	sosl	sose	sosle	sosa	sosge	sosn	sosg
+
+8x	addi	add	subi	sub	addci	addc	subci	subc
+	xori	xor	andi	and	iori	ior	eqvi	eqv
+9x	imuli	imul	muli	mul	uimuli	uimul	umuli	umul
+	idivi	idiv	divi	div	uidivi	uidiv	udivi	udiv
+ax	maddi	madd	msubi	msub	umaddi	umadd	umsubi	umsub
+	lsh	lshc	ash	ashc	rot	rotc	*	*
+bx	faddi	fadd	fsubi	fsub	fmuli	fmul	fdivi	fdiv
+	fmaddi	fmadd	fmsubi	fmsub	*	*	*	*
+
+cx	(trn)	trne	[trna]	trnn	trz	trze	trza	trzn
+	trc	trce	trca	trcn	tro	troe	troa	tron
+dx	(tln)	tlne	[tlna]	tlnn	tlz	tlze	tlza	tlzn
+	tlc	tlce	tlca	tlcn	tlo	tloe	tloa	tlon
+ex	*	*	*	*	*	*	*	*
+	*	*	*	*	*	*	*	*
+fx	*	*	*	*	*	*	*	*
+	*	*	*	*	*	*	*	*
+
+	(opcodes inside () are no-ops, but are there for symmetry.)
+	[opcodes inside [] have only a side effect that can be had
+         by some other means.]
+
+	arithi functions:
+	
+		byte swap / short swap / hw swap
+		sign extend byte / short / hw
+		negate      (can be done with movni reg,(reg) ...)
+		complement  (can be done with movni reg,1(reg) ...)
+		magnitude
+		pop count
+		find first one
+		find last one
+
+		read cpu flags
+
+		DES initial/final permutation
+
+	floati functions:
+
+		convert to/from fixed-point.
+		negate
+		square root
+
+
+;; assembly of instructions.
+
+   read fields, and inclusive or them together.
+
+   special chars
+
+      @                return bit 24 set, i.e. the I bit.
+
+      (expression)     swap 32-bit halves of expression.
+
+      *                (unary *, no left argument)  take the right-hand
+                       argument, check for a power of two, and return that
+                       value shifted four bits to the left.  this implements
+                       indexing like (*4 x) by putting 2 in the XSF field
+                       and x in the X field.
+
+      ,                shift (left) argument 52 bits to the left, into A.
+
+      {expression}     shift expression 40 bits, into the number field, and
+                       then turn on bit 12, the L bit.
+
+   when all fields are done, check if bits 12..23 and 32..52 are all zero,
+   if so switch bits 13..23 with 53..63, else turn on bit 12, the L bit.
+
+   return 32 or 64 bits according to the L bit.
+
+
+;; assembly examples
+
+   movei  == ^x20000000,,0      ; instruction.
+   move   == ^x24000000,,0      ; instruction.
+
+   a == 1                       ; register.
+   b == 2                       ; register.
+
+   move   a, 4711               ; 24180000
+                                ; 00001267
+   move   a, @4711(b)           ; 24180082
+                                ; 00001267
+   movei  a, "?"                ; 20103f00
+
+   movei  b, 128(a)             ; 20108001
+
+   movei  a, (*8 b)             ; 20100032
+
+   aos {8} 4711                 ; 70080800
+                                ; 00001267
+
+
+;; opcode descriptions
+
+        -- various --
+
+luuo	Local User Unimplemented Operation. Trap to user handler.
+
+arithi	Do various arithmetic functions on register, EA is function code.
+
+floati	As arithi, does floating point functions.
+
+jsp	Jump and Save PC, jump to EA and save return address in the
+	given register.
+
+jsr	Jump to SubRoutine.  Think about this.
+
+jrst    Jump and Restore.  Register field is sub-code.
+
+	jrst 0,     jrst     Jump to EA.
+	jrst 1,     portal   (elaborate description)
+	... and so on.
+
+jsys	Jump to SYStem.  This is the syscall mechanism.
+
+	-- move etc. --
+
+hrri	Half word loads to register.  Second letter is source half,
+hrr	third letter is destination half.  "i" == immed. arg.
+hrli
+hrl
+hlri
+hlr
+hlli
+hll
+
+movei	Move Immediate.  Load register with EA (constant).
+movea	Move Address.  Load register with EA (address).
+movni	Move Negative Immediate.
+dmove	Load register pair from EA,EA+1.
+move	Load register from EA.
+mov32	Load register with right 32 bits from EA.
+mov16	Load register with right 16 bits from EA.
+mov8	Load register with right 8 bits from EA.
+
+setzm	Set memory word to all zero.
+setom	Set memory word to all ones.
+exch	Swap register with contents of EA.
+dmovem	Store register pair to EA,EA+1.
+movem	Store register to EA.
+mov32m	Store right 32 bits of register to 32-bit value at EA.
+mov16m	Store right 16 bits of register to 16-bit value at EA.
+mov8m	Store right 8 bits of register to 8-bit value at EA.
+
+	-- stack instructions --
+
+pushi	Push Immediate.  Push 64-bit immediate value onto stack.
+pusha	Push Address.  Push EA onto stack.
+pushm	Push Multiple registers.  EA is bit mask of regs to push.
+pushj	Push and Jump.  Push return address onto stack, goto EA.
+push	Push 64-bit value at EA onto stack.
+push32	Push right 32 bits at EA onto stack (as 64 bits).
+push16	Push right 16 bits at EA onto stack (as 64 bits).
+push8	Push right 8 bits at EA onto stack (as 64 bits).
+
+popm	Pop Multiple registers.  Inverse of pushm.
+popj	Pop and Jump.  If EA is non-zero, do a popm, then pop return
+	address from stack and return there.
+pop	Restore 64-bit value from stack to EA.
+pop32	Pop 64 bit value from stack, store right 32 at EA.
+pop16	Pop 64 bit value from stack, store right 16 at EA.
+pop8	Pop 64 bit value from stack, store right 8 at EA.
+
+	-- compare/arithmetic test --
+
+cai	Compare Accumulator (register) Immediate, skip next instr if
+cail	condition is true.  EA is immed. constant.
+caie
+caile	"cai" is a no-op, "caia" is an unconditional skip.
+caia
+caige
+cain
+caig
+
+cam	Compare Accumulator (register) to Memory.  EA is address of
+caml	data.
+came
+camle	"cam" is a no-op, "cama" is an unconditional skip.
+cama
+camge
+camn
+camg
+
+jump	Jump to EA depending on register comparision to zero.
+jumpl
+jumpe	"jump" is a no-op.
+jumple
+jumpa
+jumpge
+jumpn
+jumpg
+
+skip	Compare contents of EA to zero, skip next instruction if true.
+skipl	if register field is non-zero, load contents of EA there.
+skipe
+skiple
+skipa
+skipge
+skipn
+skipg
+
+aoj	Add One and Jump on condition (compare to zero).  Increment
+aojl	register with contents of number field (default 1), and if
+aoje	comparsion to zero is true, jump to EA.
+aojle
+aoja
+aojge
+aojn
+aojg
+
+soj	As aoj, but subtract.
+sojl
+soje
+sojle
+soja
+sojge
+sojn
+sojg
+
+aos	Add one and skip if condition is true.  Increment EA with
+aosl	contents of number field (default 1), and if comparsion to
+aose	zero is true, skip the next instruction in the stream.
+aosle	If the register field is non-zero, load (new) contents of
+aosa	EA there.
+aosge
+aosn
+aosg
+
+sos	As aos, but subtract.
+sosl
+sose
+sosle
+sosa
+sosge
+sosn
+sosg
+
+	-- two operand arithmetic --
+
+addi	Add EA (immed constant) to register.
+add	Add contents of EA to register.
+subi	Subtract...
+sub
+addci	Add w/ carry.
+addc
+subci	Subtract w/ carry.
+subc
+xori	Exclusive or.
+xor
+andi	And.
+and
+iori	Inclusive OR.
+ior
+eqvi	Eqvivalence.
+eqv
+
+imuli	Multiply, 64 * 64 => 64.
+imul
+muli	Multiply, 64 * 64 => 128.
+mul
+iumuli	Multiply, 64 * 64 => 64, unsigned.
+iumul
+umuli	Multiply, 64 * 64 => 128, unsigned.
+umul
+
+idivi	Divide, 64 / 64 => 64.
+idiv
+divi	Divide, 128 / 64 => 64.
+div
+iudivi	Divide, 64 / 64 => 64, unsigned.
+iudiv
+udivi	Divide, 128 / 64 => 64, unsigned.
+udiv
+
+maddi	Multiply 64 * 64 and add to 128.
+madd
+msubi	Multiply 64 * 64 and subtract from 128.
+msub
+umaddi	Multiply 64 * 64 and add to 128, unsigned.
+umadd
+umsubi	Multiply 64 * 64 and subtract from 128, unsigned.
+umsub
+	
+	-- shift/rotate --
+
+lsh	Logical shift register EA (immediate) bits to the left (or right)
+lshc	Logical shift register pair combined.
+ash	Arithmetic shift register.
+ashc	Arithmetic shift register combined.
+rot	Rotate register.
+rotc	Rotate register combined.
+
+	-- floating point --
+
+faddi	Floating add.
+fadd
+fsubi	Floating subtract.
+fsub
+fmuli	Floating multiply.
+fmul
+fdivi	Floating divide.
+fdiv
+fmaddi	Floating multiply and add.
+fmadd
+fmsubi	Floating multiply and subtract.
+fmsub
+
+
+	-- bit test --
+
+trn	Bit test instructions.  Second letter is which half of register
+trne	to test, "r" is right half, "l" is left half.  All of these
+trna	instructions are immediate ones, and the "l" versions just shift
+trnn	the argument left 32 bits, this means that the "r" versions can
+trz	touch the full 64 bits of the register if EA has them...
+trze
+trza	The third letter is what kind of modification to do, "n" means
+trzn	no modification, "z" means zero the masked bits, "c" means
+	complement the masked bits, and "o" means ones, i.e. set the
+trc	masked bits to one.  The fourth letter (if present) is under
+trce	what conditions to skip the next instructions, blank means
+trca	dont skip, "e" means skip if all the masked bits were zero
+trcn	(before modification), "a" means always skip and "n" means
+tro	skip if not all bits were zero.
+troe
+troa
+tron
+
+tln
+tlne
+tlna
+tlnn
+tlz
+tlze
+tlza
+tlzn
+
+tlc
+tlce
+tlca
+tlcn
+tlo
+tloe
+tloa
+tlon

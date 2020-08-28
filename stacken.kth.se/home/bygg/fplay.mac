@@ -1,0 +1,92 @@
+title	play -- play music to a file.
+search	jobdat, uuosym, macten
+
+file==1
+
+t1==1
+t2==2
+
+ob:	block	3		;buffer header.
+
+; Data describing what we are outputting.
+
+tptr1:	block	1		;Pointer to sequence of notes...
+tptr2:	block	1
+
+tctr1:	block	1		;Number of "ticks" left of current waweform.
+tctr2:	block	1
+
+data1:	block	1		;Data from note table.
+data2:	block	1
+
+wrap1:	block	1		;wrap counters.
+wrap2:	block	1
+
+bptr1:	block	1		;byte ptr to data stream.
+bptr2:	block	1
+
+;Define a nice shiny macro to check for next tone in each score.
+
+define next(n,%lbl,%lbl2),<
+	sosle	tctr'n		;;Time to change waveform?
+	 jrst	%lbl
+	ildb	t1,tptr'n	;;Yes.
+	jumpe	t1,stop		;;Check for end of tune.
+	hlrzm	t1,tctr'n	;;Set up time to use next note.
+	andi	t1,777		;;Only nine bits of note number.
+	addi	t1,note##	;;Get note descriptor.
+	move	t1,(t1)		;;Get data.
+	movem	t1,data'n	;;Store for massa.
+	setzm	wrap'n		;;Reset data stream ptrs.
+%lbl:!	sosle	wrap'n		;;Data left?
+	 jrst	%lbl2		;; Yes, done.
+	move	t1,data'n	;;No, get virgin data ptr.
+	hlrzm	t1,wrap'n	;;Set up wrap counter.
+	hrli	t1,(point 6)	;;Make byte pointer.
+	movem	t1,bptr'n	;;Set up new pointer.
+%lbl2:!
+>;next.
+
+; Set up the tune to play.
+
+play::	jfcl			;Ignore runoffset.
+	reset			;Stop the world.
+	open	file,[
+		exp	.ioasc
+		sixbit	'muzak'
+		xwd	ob,0]
+	 jrst[	outstr[	asciz "please assign the logical name 'MUZAK:'
+"]
+		monrt.
+		jrst	play]
+	enter	file,[
+		exp	3,0
+		sixbit	'TUNE'
+		sixbit	'PCM']
+	 halt
+	dmove	t1,[
+		point ^D36,score1##
+		point ^D36,score2##]
+	movem	t1,tptr1
+	movem	t2,tptr2
+	setzm	tctr1
+	setzm	tctr2
+loop:	next (1)
+	next (2)
+	ildb	t1,bptr1
+	ildb	t2,bptr2
+	add	t1,t2
+	lsh	t1,-1
+	addi	t1,41
+store:	sosge	ob+.bfctr
+	 jrst[	out file,
+		 jrst	store
+		halt]
+	idpb	t1,ob+.bfptr
+	jrst	loop
+
+stop:	close	file,
+	monrt.
+	jrst	play
+
+end	play

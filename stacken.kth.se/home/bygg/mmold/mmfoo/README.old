@@ -1,0 +1,31 @@
+This is the official source for Columbia MM.  Files in this directory:
+
+	README			this file
+	mm-0.90.tar.Z		compressed tar file containing all the
+				sources to MM version 0.90 and CCMD
+	mm-in-2-pages.hqx	MacWrite II format 2-page quick reference
+	mm-in-2-pages.txt	Plain text file version of above, not
+				quite in two pages, and crudely formatted.
+	mm-intro.txt		Introductory document to MM
+	mm-manual-mss.tar.Z	Scribe sources to MM manual (mm-manual.ps)
+				(Only grab this if you have Scribe)
+	mm-manual-palatino.ps.Z	Postscript format MM manual (Palatino font
+				family)
+	mm-manual-times.ps.Z	Postscript format MM manual (TimesRoman
+				font family)
+	mm-manual.txt.Z		Text file format of MM manual (with
+				some ammount of lossage where figures
+				did not format correctly due to line
+				length)
+	patch.*			patches to MM version 0.90 (need to be
+				applied to the sources in mm-0.90.tar.Z)
+	release-0.87.txt	release notes for version 0.87 (changes
+				since version 0.86)
+	release-0.88.txt	release notes for version 0.88
+	release-0.90.txt	latest release notes.  Note: there was
+				no release 0.89
+
+
+If you get MM and run it, please consider registering it with us by sending
+mail to info-mm-request@cunixf.cc.columbia.edu.  This way you will receive
+bug reports and patches by mail.

@@ -1,0 +1,438 @@
+title	arpser - ARP service.
+
+search	f, s
+search	ip4sym
+
+ifndef debugging,<debugging==-1>
+
+	$reloc
+	$high
+
+arpser::entry	arpser
+
+	$low			;Low segment data:
+
+%arttl:	exp	^D300		;Default timeout in seconds.
+%aritl:	exp	^D5		;Default timeout for incompletes.
+%arcnt:	exp	0		;Count of known arps.
+%arlst:	exp	0		;Head of list of arp blocks.
+%arndl:	exp	0		;Soft interlock. (delays timeouts)
+
+	$high			;Back to high seg:
+;*
+;* An arp block:
+;*
+$phase	0
+ab.prv:!block	1		;Pointer to prev.
+ab.nxt:!block	1		;Pointer to next.
+ab.ipa:!block	1		;IP address.
+ab.pak:!block	1		;Packet to send when resolved.
+ab.ttl:!block	1		;TTL field.
+ab.flg:!block	1		;Flags.
+    abf.pm==1b0			;    Permanent, don't timeout.
+    abf.ic==1b1			;    Incomplete at this time.
+    abf.rw==1b2			;    Refill wanted.
+    abf.rf==1b3			;    Refill in progress.
+ab.eth:!block	2		;Ethernet address, 1.5 words.
+absize:!block	0		;Size of block.
+$dephase
+
+;***********************************************************************
+;*
+;* Here to allocate a new arp block and link it in.  Call with IP address
+;* in t1.  Returns pointer to new block in t4.
+
+getab:	push	p,t1		;Save address.
+	movei	t2,absize	;Size of block, in words.
+	pushj	p,getwds##	;Allocate.
+	 jrst	gab.2		; No?
+	pop	p,ab.ipa(t1)	;Store IP address.
+	move	t2,%aritl	;Get default TTL for infants.
+	movem	t2,ab.ttl(t1)	;Set up.
+	movsi	t2,(abf.ic)	;Incomplete for now.
+	movem	t2,ab.flg(t1)	;Set up default flags.
+	setzm	ab.pak(t1)	;No packet here.
+
+	unaoff			;Hands off now:
+	skipe	t2,%arlst	;$ Is the list empty?
+	 movem	t1,ab.prv(t2)	;$  No, set up next's prev.
+	movem	t2,ab.nxt(t1)	;$ This follows us now.
+	movem	t1,%arlst	;$ We are first in list.
+	setzm	ab.prv(t1)	;$ None before us.
+	unaon			;Int's OK again.
+
+	aos	%arcnt		;Count us.
+	move	t4,t1		;Return as specified.
+	popj	p,
+
+gab.2:	pop	p,(p)		;Trim off stack
+	setz	t4,		;Return zero.
+	popj	p,
+
+;***********************************************************************
+;*
+;* Return an arp block to the free core pool.
+;* Call with t4/ address.  Returns pointer to next block in t4.
+
+givab:	skipn	%arndl		;Is the soft interlock on?
+	 jrst	giva.1		; No, proceed.
+	setom	ab.ttl(t4)	;Yes, mark block as dead, -
+	move	t4,ab.nxt(t4)	; get pointer to next, -
+	popj	p,		; and let next call to arpsec zap us.
+
+giva.1:	unaoff			;Keep all others out of the cookie jar:
+	move	t1,ab.prv(t4)	;$ Get prev.
+	skipe	t2,ab.nxt(t4)	;$ Get next, if any.
+	 movem	t1,ab.prv(t2)	;$  Set up next's prev.
+	jumpn	t1,giva.2	;$ Got a prev?
+	movem	t2,%arlst	;$ No, deleting first in list.
+	jrst	giva.3
+
+giva.2:	movem	t2,ab.nxt(t1)	;$ Got a prev. Fix it's fwd link.
+giva.3:	unaon			;Done with linked list.
+	sos	%arcnt		;One less to care about.
+	push	p,t2		;Save next.
+	movei	t1,absize	;Number of words.
+	move	t2,t4		;Address.
+	pushj	p,givwds##	;Go do the job.
+	pop	p,t4		;Restore next.
+	popj	p,		;Return.
+
+;***********************************************************************
+;*
+;* Here to find the arp block for an IP address.  Call with IP addr in T1.
+;* Returns pointer in T4.  Returns zero on failure.
+
+arpluk:	skipn	t4,%arlst	;Get first entry, if any.
+	 popj	p,		; None, return.
+luk.1:	camn	t1,ab.ipa(t4)	;Is this it?
+	 popj	p,		; Yes, return.
+	move	t4,ab.nxt(t4)	;No, get next.
+	jumpn	t4,luk.1	;Loop if more.
+	popj	p,		;Return zero on failure.
+
+;***********************************************************************
+;*
+;* arpfnd looks for an IP address in the arp cache, and (skip) returns
+;* with the corresponding ethernet address in t1/t2 if found.  If not
+;* found, non-skip return (with flags?).  Argument IP address in T1.
+
+;* This should be revamped into a routine to take an IP packet for
+;* transmission, checking the arp cache and/or asking the network,
+;* queueing the packet as needed, until the net answers or something
+;* times out.
+
+arpfnd::pushj	p,arpluk	;Look in cache.
+	jumpe	t4,fnd.2	;Empty?
+	move	t1,ab.flg(t4)	;No.  Get flags.
+	tlne	t1,(abf.ic)	;Incomplete?
+	 popj	p,		; Yes, fail.
+	dmove	t1,ab.eth(t4)	;Get ethernet address.
+	jrst	cpopj1##	;Skip return.
+
+; Here when we have to send an arp query.
+
+fnd.2:	pushj	p,save3##	;We use some p's.
+	move	p3,t1		;Save IP address in P3.
+	movei	t1,^D28		;Length of ARP query.
+	pushj	p,getpd##	;Get a packet descriptor.
+	 popj	p,		; Huh, beat it then.
+	move	t1,[hex 0806]	;Load type code, -
+	movem	t1,pd.typ(p1)	; and store in descriptor.
+	move	p2,pd.ptr(p1)	;Get message pointer.
+	move	t1,[byte (16) 1 (4) 0,^D8,0,0]
+	movem	t1,0(p2)	;Set up hardware/protocol family.
+	move	t1,[byte (8) 6, 4 (16) 1]
+	movem	t1,1(p2)	;Set up lengths and function code.
+	movei	t1,0		;Some zeroes.
+	dpb	t1,p.tha1	;Clear first part of target hw addr.
+	dpb	t1,p.tha2	;Clear second part of target hw addr.
+	dpb	t1,p.tha3	;Clear third part of target hw addr.
+	movem	p3,6(p2)	;Finally, store target IP address.
+	pushj	p,unasnd##	;Send packet.
+	move	t1,p3		;Load IP address.
+	pushj	p,getab		;Get an arp block.
+	jumpe	t4,cpopj##	;Fail. Sorry.
+
+	; Final fixups on the new block.
+
+	popj	p,		;Return.
+
+;***********************************************************************
+;*
+;* arpipo takes a datagram for transmission, finds the ethernet address
+;* to use, fills it in and passes the datagram to unaser.
+
+unisnd::!			;Alternative name.
+arpipo::skipe	t1,pd.via(p1)	;Do we have a specified next-hop?
+	 jrst	ipo.2		; Yes, just go and use it.
+	move    t1,pd.ptr(p1)   ;Get datagram header.
+	load.	t1,ih.dst,(t1)	;Get destination IP address.
+ipo.2:	pushj	p,arpfnd	;Check cache, maybe probe.
+	 jrst	givpd##		; No good, return packet.
+	dmovem	t1,pd.dst(p1)	;Store ethernet address.
+	move	t1,[hex 0800]	;Load protocol type.
+	movem	t1,pd.typ(p1)	;Store in descriptor.
+	jrst	unasnd##	;Go send datagram.
+
+;***********************************************************************
+;*
+;* Here when we receive a packet with type 0x0806.
+;* Get here with p1/ pointer to packet descriptor.
+;*
+;* Format of arp packets:
+;*
+;* (2) hardware family, ethernet = 1.
+;* (2) protocol family, uses ethernet protocol field, hex 0800.
+;*
+;* (1) length of hardware addr = 6 bytes.
+;* (1) length of protocol addr = 4 bytes.
+;* (2) opcode, request = 1 or reply = 2.
+;*
+;* (6) my hardware addr, sender.
+;* (4) my IP addr.
+;* (6) target hardware addr.
+;* (4) target IP addr.
+;*
+;* Pointers to some parts of msg:
+
+p.hlen:	point  8, 1(p2),  7	;Points to length of hardware address.
+p.plen:	point  8, 1(p2), 15	;Points to length of protocol address.
+p.func:	point 16, 1(p2), 31	;Points to function code (opcode).
+
+p.sha1:	point 16, 2(p2), 15	;Points to part 1 of sender hw addr.
+p.sha2:	point 16, 2(p2), 31	;Points to part 2 of sender hw addr.
+p.sha3:	point 16, 3(p2), 15	;Points to part 3 of sender hw addr.
+p.spa1: point 16, 3(p2), 31	;Points to part 1 of sender proto addr.
+p.spa2: point 16, 4(p2), 15	;Points to part 2 of sender proto addr.
+
+p.tha1:	point 16, 4(p2), 31	;Points to part 1 of target hw addr.
+p.tha2:	point 16, 5(p2), 15	;Points to part 2 of target hw addr.
+p.tha3:	point 16, 5(p2), 31	;Points to part 3 of target hw addr.
+p.tpa1: point 16, 6(p2), 15	;Points to part 1 of target proto addr.
+p.tpa2: point 16, 6(p2), 31	;Points to part 2 of target proto addr.
+
+arpinp::skipn	ouripa##	;(temp) have we an IP address?
+	 jrst	givpd##		; (temp) nope, toss packet.
+	move	p2,pd.ptr(p1)	;Get data pointer.
+	move	t1,0(p2)	;Get <hw family>,,<proto famliy>
+	came	t1,[byte (16) 1 (4) 0,^D8,0,0] ;Check if it is ethernet/IP.
+	 jrst	givpd##		; No.  Toss it.
+	ldb	t1,p.hlen	;Get length of hardware.
+	ldb	t2,p.plen	;Get length of protocol.
+	cain	t1,6		;Six byte hw addr?
+	 caie	t2,4		; Yes, four byte prot. addr?
+	  jrst	givpd##		;  No.  Lose.
+	ldb	t1,p.func	;Get function code.
+	soje	t1,fnc.1	;Function code 1?
+	soje	t1,fnc.2	;Function code 2?
+	jrst	givpd##		;None of them, toss packet.
+
+; Function code 1, query.
+
+fnc.1:	pushj	p,store		;Store sender in cache.
+	move	t1,6(p2)	;Get last word (target IP addr).
+	pushj	p,ansarp##	;Are we to answer?
+	 jrst	givpd##		; No, don't reply.
+	dmove	t1,unahwa##	;Get hardware address of the DEUNA.
+	rot	t1,^D16		;Get first part.
+	dpb	t1,p.tha1	;Store in packet.
+	rot	t1,^D16		;Get second part.
+	dpb	t1,p.tha2	;Store.
+	rot	t2,^D16		;Get third part.
+	dpb	t2,p.tha3	;Store.
+
+	movsi	t3,-5		;Number of 16-bit words to swap.
+	hrri	t3,p.sha1	;Load address of first ptr.
+fnc.1a:	ldb	t1,(t3)		;Swap one pair of 16-bit words.
+	ldb	t2,5(t3)
+	dpb	t1,5(t3)
+	dpb	t2,(t3)
+	aobjn	t3,fnc.1a	;Loop over them all.
+	movei	t1,2		;Set up new function code, reply.
+	dpb	t1,p.func
+	movei	t1,^D28		;Load significant data length.
+	move	t1,pd.len(p1)	;Store in header.
+	jrst	unasnd##	;Go put packet on output queue.
+
+; Function code 2, reply.  Store data in cache, check for packets waiting.
+
+fnc.2:	pushj	p,store		;Store sender in cache.
+	jrst	givpd##		;All done!  deallocate packet.
+
+; Store a new entry in the cache.
+
+store:	ldb	t1,p.spa1	;Get first part of sender IP addr.
+	ldb	t2,p.spa2	;Get second half.
+	lsh	t1,^D20		;Position words.
+	lsh	t2,^D4
+	ior	t1,t2		;Join.
+	aos	%arndl		;Get the soft interlock.
+	pushj	p,arpluk	;% Look for this address.
+	jumpn	t4,stor.1	;% Found it.
+	pushj	p,getab		;% Did not find it, allocate new block.
+	jumpe	t4,stor.9	;% Check that we got a block.
+stor.1:	ldb	t1,p.sha1	;% Get first half of sender HW addr.
+	lsh	t1,^D20		;% Position.
+	ldb	t2,p.sha2	;% Get second half.
+	lsh	t2,^D4		;% Position.
+	ior	t1,t2		;% Join them.
+	ldb	t2,p.sha3	;% Get third half.
+	lsh	t2,^D20		;% Position.
+	dmovem	t1,ab.eth(t4)	;% Save in block.
+	movsi	t1,(abf.ic!abf.rf)
+	andcam	t1,ab.flg(t4)	;% No longer incomplete, no refill yet.
+	move	t1,%arttl	;% Get new TTL.
+	movem	t1,ab.ttl(t4)
+stor.9:	sos	%arndl		;Release soft interlock.
+	popj	p,		;Done with allocated entry.
+
+comment /*
+
+ARP uuo functions:
+
+	Install new entry.		(priv)
+	Delete entry.			(priv)
+	Clear cache.			(priv)
+	Get size of cache.
+	Get copy of cache.
+	Get arp for given address.
+
+	movei	ac,[
+		exp	func
+		exp	buflen
+		exp	bufadr]
+	call	ac,[sixbit 'arpuuo']
+	 jrst	error		;Error code in ac.
+	jrst	ok		;Number of arps in ac.
+
+ */
+
+; Error codes:
+
+apadc%==ecod1##			;Address check.
+apifc%==ecod2##			;Illegal function code.
+apanf%==ecod3##			;Address not found.
+apnpv%==ecod4##			;No Privs.
+apndl%==ecod5##			;No Delete flag set.
+
+arpuuo::move	m,t1		;Copy arg block addr.
+	pushj	p,sxpcs##	;Do we need this?
+	 jrst	apadc%		; Address check.
+	pushj	p,getewd##	;Get function code.
+	 jrst	apadc%		; Address check again.
+	skipl	p1,t1		;Copy and check function code:
+	 cail	p1,arpmfc	; In range?
+	  jrst	apifc%		;  No, complain.
+	jrst	@arptbl(p1)	;Yes, dispatch.
+
+arptbl:	exp	arpgtn		;(00) Get number of arps.
+	exp	arpgt1		;(01) Get a single entry.
+	exp	arpgta		;(02) Get all of them.
+	exp	arpwr1		;(03) Write one entry.
+	exp	arpdl1		;(04) Delete one entry.
+	exp	arpcla		;(05) Clear cache.
+arpmfc==.-arptbl		;Max function code.
+
+;* UUO function -- Get size of cache.
+
+arpgtn:	move	t1,%arcnt	;Get number of arps.
+	jrst	stotc1##	;Skip return value to user.
+
+;* UUO function -- Get a specified arp entry.
+
+arpgt1:	pushj	p,getbal	;Get buffer address/length.
+	 jrst	apadc%		; Address check.
+	pushj	p,getewd##	;Get IP address word.
+	 jrst	apadc%		; Address check.
+	pushj	p,arpluk	;Lookup address.
+	jumpe	t4,apanf%	;Address not found.
+	pushj	p,wrtone	;Write one arp to users buffer.
+	 jrst	apadc%		; Address check.
+	jrst	arpgtn		;Finish off with number of entries.
+
+;* UUO function -- Get all entries.
+
+arpgta:	pushj	p,getbal	;Get buffer info.
+	 jrst	apadc%		; Address check.
+	skipn	t4,%arlst	;Get arp list.
+	 jrst	arpgtn		; None, done here.
+gta.lp:	move	t1,ab.ipa(t4)	;Get IP address.
+	pushj	p,putewd##	;Store for user.
+	 jrst	apadc%		; Address check.
+	pushj	p,wrtone	;Write rest of info.
+	 jrst	apadc%		; Address check.
+	movei	m,1(m)		;Bump for next entry.
+	skipe	t4,ab.nxt(t4)	;Get next entry, if any.
+	 sojg	p2,gta.lp	; Loop over all of our buffer.
+	jrst	arpgtn		;When done, return total number to user.
+
+;* UUO function -- Install one specified arp.
+
+arpwr1:	jrst	apifc%		;Not written yet.
+
+; UUO function -- Delete one specified arp.
+
+arpdl1:	jrst	apifc%		;Not written yet.
+
+;* UUO function -- Clear all arps.
+
+arpcla:	pushj	p,arpriv	;Check privs.
+	 jrst	apnpv%		; Not enough.
+	skipe	%arndl		;Soft lock?
+	 jrst	apndl%		; Yes, soft fail.
+	unaoff			;Prevent races:
+	move	t4,%arlst	;$ Get start of list.
+	setzm	%arlst		;$ Forget list.
+	setzm	%arcnt		;$ Forget count.
+	unaon			;OK to move again.
+cla.lp:	jumpe	t4,cpopj1##	;Done?
+	pushj	p,giva.1	;No, return one more. (bypass %arndl test)
+	jrst	cla.lp		;Loop over all of them.
+
+;* Here to check privs.
+
+arpriv:	movsi	t1,jp.pok	;Check for poke, -
+	pushj	p,prvbit##	; [1,2] or jacct.
+	 jrst	cpopj1##	; Got some, good.
+	popj	p,		;Got nothing, bad.
+
+;* Here to get buffer length and address from user.  p2 := length; m := addr.
+
+getbal:	pushj	p,getew1##	;Get next word, number of entries.
+	 popj	p,		; Failed.
+	move	p2,t1		;Copy length.
+	pushj	p,getew1##	;Get buffer address.
+	 popj	p,		; Failed again.  Rats.
+	move	m,t1		;Set up for further accesses to buffer.
+	jrst	cpopj1##	;Give good return.
+
+; Here to write one arp block to users buffer.
+
+wrtone:	move	t1,ab.eth+0(t4)	;Get first half of HW addr.
+	pushj	p,putew1##	;Give to user.
+	 popj	p,		; Address check.
+	move	t1,ab.eth+1(t4)	;Get second half of HW addr.
+	pushj	p,putew1##	;Give to user.
+	 popj	p,		; Address check.
+	move	t1,ab.flg(t4)	;Get flags, -
+	hrr	t1,ab.ttl(t4)	; and TTL.
+	pushj	p,putew1##	;Give to user.
+	 popj	p,		; Address check.
+	jrst	cpopj1##	;Good return.
+
+;***********************************************************************
+;*
+;* Once/second routine.
+
+arpsec::skipn	t4,%arlst	;Get head of list, if any.
+	 popj	p,		; Empty, all done.
+asec.2:	move	t1,ab.flg(t4)	;Get flags.
+	tlnn	t1,(abf.pm)	;Permanent?
+	 sosle	ab.ttl(t4)	; No, decrement TTL, check if still alive.
+	  skipa	t4,ab.nxt(t4)	;  This one's OK, get next.
+	   pushj p,givab	;   Just died. Go perform the funeral.
+	jumpn	t4,asec.2	;Loop over them all.	  
+	popj	p,		;Done!
+
+arpend::end			;... and done!

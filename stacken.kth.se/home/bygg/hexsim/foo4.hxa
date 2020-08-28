@@ -1,0 +1,34 @@
+kaka= foo + 1
+
+r1=1
+r2=2
+
+foo:    .word kaka
+	move r1, foo(r2, 4)
+
+negate=<arithi {0} 42>
+skloff=<arithi 43>
+
+	.word negate
+	.word skloff
+
+	.end
+
+kaka=foo+1
+
+negate=<arithi {0} 42>
+	.opdef negate[arithi 42]
+
+	.blkw 4
+foo:	negate 1,
+	popj 15,
+
+	.end
+
+
+;; alternatives for scaled indexes:
+
+	move r1, foo(*4 r2)
+	move r1, foo(r2) *4
+	move r1, foo(r2, *4)
+	move r1, foo(r2, 4)

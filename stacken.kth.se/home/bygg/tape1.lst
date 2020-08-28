@@ -1,0 +1,444 @@
+Saveset name: total backup 20-apr-1994
+Written on: Venus Dec-2020 7.02
+  1  dskc:1_4..adres.exe
+  2  dskc:1_4..ai.sys
+  3  dskc:1_4..aid.exe
+  4  dskc:1_4..alcfil.exe
+  5  dskc:1_4..amis.exe
+  6  dskc:1_4..atrmod.exe
+  7  dskc:1_4..auxacc.sys
+  8  dskc:1_4..backup.exe
+  9  dskc:1_4..bascom.exe
+ 10  dskc:1_4..bascrf.exe
+ 11  dskc:1_4..basddt.exe
+ 12  dskc:1_4..baserr.exe
+ 13  dskc:1_4..basic.exe
+ 14  dskc:1_4..basxct.exe
+ 15  dskc:1_4..batcon.exe
+ 16  dskc:1_4..bignum.lsp
+ 17  dskc:1_4..bktbl.bkt
+ 18  dskc:1_4..blis10.err
+ 19  dskc:1_4..blis10.exe
+ 20  dskc:1_4..c74lib.rel
+ 21  dskc:1_4..c74o12.exe
+ 22  dskc:1_4..cam.exe
+ 23  dskc:1_4..cbl74.exe
+ 24  dskc:1_4..cbl74c.exe
+ 25  dskc:1_4..cbl74d.exe
+ 26  dskc:1_4..cbl74e.exe
+ 27  dskc:1_4..cbl74f.exe
+ 28  dskc:1_4..cbl74k.exe
+ 29  dskc:1_4..cbl74o.exe
+ 30  dskc:1_4..cdbots.exe
+ 31  dskc:1_4..change.dat
+ 32  dskc:1_4..change.exe
+ 33  dskc:1_4..charge.exe
+ 34  dskc:1_4..cobddt.rel
+ 35  dskc:1_4..cobol.exe
+ 36  dskc:1_4..cobolc.exe
+ 37  dskc:1_4..cobold.exe
+ 38  dskc:1_4..cobole.exe
+ 39  dskc:1_4..cobolf.exe
+ 40  dskc:1_4..cobolk.exe
+ 41  dskc:1_4..cobolo.exe
+ 42  dskc:1_4..comp10.exe
+ 43  dskc:1_4..compil.exe
+ 44  dskc:1_4..complr.exe
+ 45  dskc:1_4..cprogr.sys
+ 46  dskc:1_4..cpylib.exe
+ 47  dskc:1_4..credir.exe
+ 48  dskc:1_4..cref.exe
+ 49  dskc:1_4..cref.lsp
+ 50  dskc:1_4..crscpy.exe
+ 51  dskc:1_4..csort.exe
+ 52  dskc:1_4..cspr22.new
+ 53  dskc:1_4..cust.sys
+ 54  dskc:1_4..dae701.exe
+ 55  dskc:1_4..date75.exe
+ 56  dskc:1_4..dbinfo.exe
+ 57  dskc:1_4..ddt.exe
+ 58  dskc:1_4..ddt.rel
+ 59  dskc:1_4..declog.exe
+ 60  dskc:1_4..defaul.dat
+ 61  dskc:1_4..delfil.exe
+ 62  dskc:1_4..direct.exe
+ 63  dskc:1_4..dis016.seg
+ 64  dskc:1_4..discon.exe
+ 65  dskc:1_4..disprm.sai
+ 66  dskc:1_4..distab.1
+ 67  dskc:1_4..distab.2
+ 68  dskc:1_4..distab.3
+ 69  dskc:1_4..distab.4
+ 70  dskc:1_4..distab.5
+ 71  dskc:1_4..dmpfil.exe
+ 72  dskc:1_4..dms.exe
+ 73  dskc:1_4..dostap.exe
+ 74  dskc:1_4..dskcpy.exe
+ 75  dskc:1_4..dskcpy.log
+ 76  dskc:1_4..dsklst.exe
+ 77  dskc:1_4..dskmsg.spe
+ 78  dskc:1_4..dskrat.exe
+ 79  dskc:1_4..dump.exe
+ 80  dskc:1_4..edit.exe
+ 81  dskc:1_4..factyp.sys
+ 82  dskc:1_4..failsa.exe
+ 83  dskc:1_4..fasbol.exe
+ 84  dskc:1_4..faslib.rel
+ 85  dskc:1_4..fctchk.sys
+ 86  dskc:1_4..fed.exe
+ 87  dskc:1_4..filcom.exe
+ 88  dskc:1_4..fildae.exe
+ 89  dskc:1_4..fildat.sys
+ 90  dskc:1_4..filddt.exe
+ 91  dskc:1_4..fildmp.exe
+ 92  dskc:1_4..filex.exe
+ 93  dskc:1_4..fine.exe
+ 94  dskc:1_4..focal.exe
+ 95  dskc:1_4..for531.exe
+ 96  dskc:1_4..forlib.rel
+ 97  dskc:1_4..forms.ini
+ 98  dskc:1_4..formt.exe
+ 99  dskc:1_4..forots.exe
+100  dskc:1_4..fortr.exe
+101  dskc:1_4..fsort.exe
+102  dskc:1_4..fudge2.exe
+103  dskc:1_4..fur.exe
+104  dskc:1_4..galgen.exe
+105  dskc:1_4..get.exe
+106  dskc:1_4..glob.exe
+107  dskc:1_4..glxlib.exe
+108  dskc:1_4..grin.
+109  dskc:1_4..gripe.exe
+110  dskc:1_4..help.exe
+111  dskc:1_4..hlbsa8.rel
+112  dskc:1_4..hlbsa9.rel
+113  dskc:1_4..index.exe
+114  dskc:1_4..intro.spe
+115  dskc:1_4..isam.exe
+116  dskc:1_4..jobdat.rel
+117  dskc:1_4..jobdat.sys
+118  dskc:1_4..kdpldr.exe
+119  dskc:1_4..kill.exe
+120  dskc:1_4..kjob.exe
+121  dskc:1_4..klmsg.spe
+122  dskc:1_4..lap.lsp
+123  dskc:1_4..lib40.rel
+124  dskc:1_4..libary.exe
+125  dskc:1_4..libfor.rel
+126  dskc:1_4..libman.exe
+127  dskc:1_4..libo10.exe
+128  dskc:1_4..libo12.exe
+129  dskc:1_4..libol.rel
+130  dskc:1_4..libsa8.rel
+131  dskc:1_4..libsa9.rel
+132  dskc:1_4..link.exe
+133  dskc:1_4..lisp16.exe
+134  dskc:1_4..lisp16.sav
+135  dskc:1_4..lnk999.exe
+136  dskc:1_4..lnkerr.exe
+137  dskc:1_4..lnklod.exe
+138  dskc:1_4..lnkmap.exe
+139  dskc:1_4..lnkov1.exe
+140  dskc:1_4..lnkov2.exe
+141  dskc:1_4..lnkscn.exe
+142  dskc:1_4..lnkx11.exe
+143  dskc:1_4..lnkxit.exe
+144  dskc:1_4..loader.exe
+145  dskc:1_4..login.exe
+146  dskc:1_4..logout.exe
+147  dskc:1_4..macdlx.exe
+148  dskc:1_4..macro.exe
+149  dskc:1_4..macy11.exe
+150  dskc:1_4..mail.exe
+151  dskc:1_4..maklib.exe
+152  dskc:1_4..makrno.exe
+153  dskc:1_4..makvfu.exe
+154  dskc:1_4..matr1.err
+155  dskc:1_4..matr2.err
+156  dskc:1_4..matrix.exe
+157  dskc:1_4..mic.exe
+158  dskc:1_4..mici.exe
+159  dskc:1_4..mlabd.txt
+160  dskc:1_4..mntlog.sys
+161  dskc:1_4..mongen.exe
+162  dskc:1_4..monitr.exe
+163  dskc:1_4..mount.exe
+164  dskc:1_4..netldr.exe
+165  dskc:1_4..netldr.ini
+166  dskc:1_4..netmsg.spe
+167  dskc:1_4..netspy.exe
+168  dskc:1_4..networ.exe
+169  dskc:1_4..nice.exe
+170  dskc:1_4..nik.exe
+171  dskc:1_4..nik.hlp
+172  dskc:1_4..normal.vfu
+173  dskc:1_4..oldtyp.sys
+174  dskc:1_4..omount.exe
+175  dskc:1_4..omplot.exe
+176  dskc:1_4..opr.hlp
+177  dskc:1_4..opr.old
+178  dskc:1_4..opser.exe
+179  dskc:1_4..ovrlay.rel
+180  dskc:1_4..pascal.exe
+181  dskc:1_4..pased.exe
+182  dskc:1_4..paslib.rel
+183  dskc:1_4..pasx.exe
+184  dskc:1_4..path.exe
+185  dskc:1_4..pfh.exe
+186  dskc:1_4..pip.exe
+187  dskc:1_4..pivot.exe
+188  dskc:1_4..plc.exe
+189  dskc:1_4..please.exe
+190  dskc:1_4..plotta.exe
+191  dskc:1_4..pltspl.exe
+192  dskc:1_4..podtyp.sav
+193  dskc:1_4..ppndat.sys
+194  dskc:1_4..progno.sys
+195  dskc:1_4..prolog.exe
+196  dskc:1_4..ptpspl.exe
+197  dskc:1_4..qmangr.exe
+198  dskc:1_4..qsim.exe
+199  dskc:1_4..quasar.exe
+200  dskc:1_4..queue.exe
+201  dskc:1_4..quikdm.ccl
+202  dskc:1_4..quolst.exe
+203  dskc:1_4..react.exe
+204  dskc:1_4..read.exe
+205  dskc:1_4..reatta.exe
+206  dskc:1_4..recus.exe
+207  dskc:1_4..rerun.exe
+208  dskc:1_4..runoff.exe
+209  dskc:1_4..safeio.eng
+210  dskc:1_4..safeio.swe
+211  dskc:1_4..saft.exe
+212  dskc:1_4..sail.exe
+213  dskc:1_4..sailow.rel
+214  dskc:1_4..saisg8.exe
+215  dskc:1_4..saisg9.exe
+216  dskc:1_4..scan.exe
+217  dskc:1_4..scdmap.sys
+218  dskc:1_4..scdset.exe
+219  dskc:1_4..schema.exe
+220  dskc:1_4..script.exe
+221  dskc:1_4..sddt.rel
+222  dskc:1_4..sdlcnv.exe
+223  dskc:1_4..selots.exe
+224  dskc:1_4..send.exe
+225  dskc:1_4..sendo.sys
+226  dskc:1_4..setsrc.exe
+227  dskc:1_4..sfor.exe
+228  dskc:1_4..show.exe
+229  dskc:1_4..show.hlp
+230  dskc:1_4..sim11.exe
+231  dskc:1_4..simatr.exe
+232  dskc:1_4..simdd4.abs
+233  dskc:1_4..simdd5.abs
+234  dskc:1_4..simddt.abs
+235  dskc:1_4..simdir.exe
+236  dskc:1_4..simed.exe
+237  dskc:1_4..simerr.err
+238  dskc:1_4..simlib.rel
+239  dskc:1_4..simnlg.exe
+240  dskc:1_4..simses.exe
+241  dskc:1_4..smfile.exe
+242  dskc:1_4..smile.
+243  dskc:1_4..sort.exe
+244  dskc:1_4..sos.exe
+245  dskc:1_4..space.exe
+246  dskc:1_4..spear.exe
+247  dskc:1_4..spear.spe
+248  dskc:1_4..spranl.exe
+249  dskc:1_4..sprcom.exe
+250  dskc:1_4..sprcom.spe
+251  dskc:1_4..sprint.exe
+252  dskc:1_4..sprmsg.spe
+253  dskc:1_4..sprout.exe
+254  dskc:1_4..sprret.exe
+255  dskc:1_4..sprret.spe
+256  dskc:1_4..sprsum.exe
+257  dskc:1_4..sprsum.spe
+258  dskc:1_4..statp.chn
+259  dskc:1_4..statp.exe
+260  dskc:1_4..strlst.sys
+261  dskc:1_4..sys404.exe
+262  dskc:1_4..sys414.exe
+263  dskc:1_4..sysdpe.exe
+264  dskc:1_4..sysdpy.exe
+265  dskc:1_4..sysera.exe
+266  dskc:1_4..syserb.exe
+267  dskc:1_4..syserc.exe
+268  dskc:1_4..syserd.exe
+269  dskc:1_4..syserk.exe
+270  dskc:1_4..sysern.exe
+271  dskc:1_4..syserr.exe
+272  dskc:1_4..sysers.exe
+273  dskc:1_4..sysinf.exe
+274  dskc:1_4..systat.exe
+275  dskc:1_4..systel.exe
+276  dskc:1_4..sysv52.exe
+277  dskc:1_4..table.exe
+278  dskc:1_4..talk.sav
+279  dskc:1_4..teco.err
+280  dskc:1_4..teco.exe
+281  dskc:1_4..tpemsg.spe
+282  dskc:1_4..trace.lsp
+283  dskc:1_4..track.exe
+284  dskc:1_4..ttyspl.exe
+285  dskc:1_4..twice.exe
+286  dskc:1_4..type.exe
+287  dskc:1_4..uflip.exe
+288  dskc:1_4..uflipx.exe
+289  dskc:1_4..umount.exe
+290  dskc:1_4..vided.exe
+291  dskc:1_4..vmddt.exe
+292  dskc:1_4..voldat.sys
+293  dskc:1_4..volnr.exe
+294  dskc:1_4..volume.exe
+295  dskc:1_4..volume.sys
+296  dskc:1_4..wheel.exe
+297  dskc:1_4..wsboot.exe
+298  dskc:1_4..xglob.exe
+299  dskc:1_4..zap.exe
+300  dskc:1_4..11tape.exe
+301  dskc:1_4..2ops2.ops
+302  dskc:1_4..68274.exe
+303  dskc:1_4..68274c.exe
+304  dskc:1_4..68274d.exe
+305  dskc:1_4..68274e.exe
+306  dskc:1_4..68274f.exe
+307  dskc:1_4..68274k.exe
+308  dskc:1_4..komold.exe
+309  dskc:1_4..ttycon.exe
+310  dskc:1_4..simdd6.abs
+311  dskc:1_4..acct.old
+312  dskc:1_4..sysdpb.exe
+313  dskc:1_4..conv10.exe
+314  dskc:1_4..projct.exe
+315  dskc:1_4..simddt.rel
+316  dskc:1_4..forot6.exe
+317  dskc:1_4..clib.rel
+318  dskc:1_4..forot7.exe
+319  dskc:1_4..cd.exe
+320  dskc:1_4..access.log
+321  dskc:1_4..r.exe
+322  dskc:1_4..declar.exe
+323  dskc:1_4..config.exe
+324  dskc:1_4..netque.exe
+325  dskc:1_4..daemon.exe
+326  dskc:1_4..send.sys
+327  dskc:1_4..nft.exe
+328  dskc:1_4..actdae.exe
+329  dskc:1_4..nrt.exe
+330  dskc:1_4..initia.exe
+331  dskc:1_4..orion.exe
+332  dskc:1_4..nml.exe
+333  dskc:1_4..opr.exe
+334  dskc:1_4..pulsar.exe
+335  dskc:1_4..sysans.exe
+336  dskc:1_4..crash.sys
+337  dskc:1_4..netacc.sys
+338  dskc:1_4..netman.exe
+339  dskc:1_4..ftpspl.exe
+340  dskc:1_4..qsrms1.qsr
+341  dskc:1_4..ksspl.exe
+342  dskc:1_4..sysddt.exe
+343  dskc:1_4..fortb.exe
+344  dskc:1_4..fortc.exe
+345  dskc:1_4..fortd.exe
+346  dskc:1_4..forte.exe
+347  dskc:1_4..fortf.exe
+348  dskc:1_4..fortg.exe
+349  dskc:1_4..fortra.exe
+350  dskc:1_4..forddt.rel
+351  dskc:1_4..kermit.exe
+352  dskc:1_4..trmspl.exe
+353  dskc:1_4..salar.exe
+354  dskc:1_4..foro10.exe
+355  dskc:1_4..who.exe
+356  dskc:1_4..filfct.sys
+357  dskc:1_4..ppnfct.sys
+358  dskc:1_4..volfct.sys
+359  dskc:1_4..komini.exe
+360  dskc:1_4..mlab.exe
+361  dskc:1_4..kumini.exe
+362  dskc:1_4..lmeny.exe
+363  dskc:1_4..lmenu.exe
+364  dskc:1_4..mail.add
+365  dskc:1_4..idleti.exe
+366  dskc:1_4..netwrk.add
+367  dskc:1_4..fal.exe
+368  dskc:1_4..ncp.cmd
+369  dskc:1_4..simnon.exe
+370  dskc:1_4..simnon.ovl
+371  dskc:1_4..foro10.ori
+372  dskc:1_4..access.usr
+373  dskc:1_4..skriv.exe
+374  dskc:1_4..talk.exe
+375  dskc:1_4..dnhost.txt
+376  dskc:1_4..decnet.cmd
+377  dskc:1_4..lptspl.exe
+378  dskc:1_4..lpform.ini
+379  dskc:1_4..nodnam.exe
+380  dskc:1_4..presor.sys
+381  dskc:1_4..jobfct.sys
+382  dskc:1_4..totfct.sys
+383  dskc:1_4..fact.sys
+384  dskc:1_4..fact.x01
+385  dskc:1_4..g14jun.log
+386  dskc:1_4..g21jun.log
+387  dskc:1_4..fact.x02
+388  dskc:1_4..g28jun.log
+389  dskc:1_4..g05jul.log
+390  dskc:1_4..simula.exe
+391  dskc:1_4..simdd7.abs
+392  dskc:1_4..simp3.exe
+393  dskc:1_4..simr21.exe
+394  dskc:1_4..simr22.exe
+395  dskc:1_4..simr41.exe
+396  dskc:1_4..simr42.exe
+397  dskc:1_4..simr50.exe
+398  dskc:1_4..simr51.exe
+399  dskc:1_4..simr60.exe
+400  dskc:1_4..simr6a.exe
+401  dskc:1_4..simr70.exe
+402  dskc:1_4..simp2.exe
+403  dskc:1_4..libsim.atr
+404  dskc:1_4..libsim.rel
+405  dskc:1_4..acct.sys
+406  dskc:1_4..initia.jmr
+407  dskc:1_4..g12jul.log
+408  dskc:1_4..g19jul.log
+409  dskc:1_4..g28jul.log
+410  dskc:1_4..g04aug.log
+411  dskc:1_4..g11aug.log
+412  dskc:1_4..g18aug.log
+413  dskc:1_4..g25aug.log
+414  dskc:1_4..g01sep.log
+415  dskc:1_4..g12sep.log
+416  dskc:1_4..g19sep.log
+417  dskc:1_4..g27sep.log
+418  dskc:1_4..g04oct.log
+419  dskc:1_4..g11oct.log
+420  dskc:1_4..g18oct.log
+421  dskc:1_4..g25oct.log
+422  dskc:1_4..g31oct.log
+423  dskc:1_4..g07nov.log
+424  dskc:1_4..g14nov.log
+425  dskc:1_4..g21nov.log
+426  dskc:1_4..g28nov.log
+427  dskc:1_4..g05dec.log
+428  dskc:1_4..g12dec.log
+429  dskc:1_4..fact.x03
+430  dskc:1_4..g28mar.log
+431  dskc:1_4..g06may.log
+432  dskc:1_4..initia.txt
+433  dskc:1_4..system.cmd
+434  dskc:1_4..system.exe
+435  dskc:1_4..tty.ini
+436  dskc:1_4..avail.a01
+437  dskc:1_4..g13may.log
+438  dskc:1_4..avail.a02
+439  dskc:1_4..g20may.log
+440  dskc:1_4..avail.a03
+441  dskc:1_4..g13jun.log
+442  dskc:1_4..avail.a06

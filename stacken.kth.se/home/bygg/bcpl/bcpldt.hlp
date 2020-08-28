@@ -1,0 +1,26 @@
+BCPLDT -- the BCPL debugger.
+KNOWN BUGS:
+----------
+(none) 15 apr 75
+KNOWN DEFICIENCIES
+------------------
+
+.REE causes a break only at the  next  procedure  call  or  exit.   (
+compiled without /F of course )
+
+.DDT does not prompt, and forces a break  of  the  currently  running
+function.  It  is  not  possible to GO from a break of this kind. All
+that can be done is to resume a previous procedure with,
+(eg) 1 FRAME FOO GO expr.
+This is what to use when the debugger or your program goes illegal.
+This will be remedied in the near future.
+
+The command DDTSYMBOL hasn't been implemented.
+
+The file BCPLIB.SMB doesn't exist.
+
+n FRAME FOO causes a misleading  error  message  when  there  are  <n
+frames of FOO in existence.
+
+BACK ( with no following number ) only goes back 1 frame, it  should,
+of course, go back to the base of the stack.

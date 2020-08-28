@@ -1,0 +1,17 @@
+# Wrapper to pick up environment when we use BSD make.
+
+SYS != uname
+
+LDADD=
+
+.if ${SYS} == "Linux"
+LDADD= -ldl
+.endif
+
+.if ${SYS} == "SunOS"
+LDADD= -ldl
+.endif
+
+# Now do common stuff.
+
+.include "Makefile"

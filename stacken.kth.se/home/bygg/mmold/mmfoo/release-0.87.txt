@@ -1,0 +1,141 @@
+	     "Release Notes" for Columbia MM Version 0.87-Beta
+
+Below is an informal list of changes in MM since Version 0.86-Beta.
+Some of the bug fixes have already been announced as patches number 
+1-6 to our mailing list.  Some of the changes refer to additional
+external features, and others will only concern people that are more
+familiar with the code.
+
+1) movemail program:  we have rewritten the movemail program from
+scratch.  The one that comes with gnuemacs had too many security holes
+in it.
+
+2) Makefile:  We have made various changes to the Makefile to make it
+more portable.  
+	a) Some people complained about the awk script and the
+	nonexistence of 'test' on some systems.  We now run awk 
+	explicitly (I hope it's in everyone's path) when building 
+	h files (mkdefines).
+
+	b) don't declare MACHINE unless absolutely necessary.  use cpp
+	predefines instead.
+
+3) Aliases:
+	a) don't hang on "foo@@bar" addresses
+
+	b) add "deferred indirect files".   You can define an alias to
+	have an indirect file, and have that file read when the alias 
+	is used, rather than when it is defined.   The syntax is:
+		define foo @@ind_file1, @@ind_file2
+
+	c) allow ! in aliases
+
+	d) fix some problems in break masks.   allow leading digits
+	and dashes.
+
+4) Keywords: 
+	a) fix lots of keyword bugs
+
+	b) handle keywords with whitespace/wierd characters in them
+
+
+5) parse_sequence: parse_sequence takes more args now.
+
+6) Help strings:  Help strings are no longer strings inside the MM
+source.  They are kept in a separate database and read in by MM.
+
+There is a file called help.src which contains a source file for all
+the help strings.  This file is run through the c preprocessor (cpp)
+and a help.cpp file is created.  This file is then read by buildhelp
+which creates an mm.help file which you put somewhere accessible by
+all mm users.  The mm.help file has an index at the top, followed by
+all the help strings.  The first time you ask for help, MM will read
+the index into core, and get the correct offset into this file for the
+requested help string.  Subsequent help requests will use the in core
+offset table.
+
+in config.h define HELPFILE - path to help database.  (Yes, this will
+be a settable variable in mm in the future.)
+
+routines don't need to be called with helpflag anymore
+
+7) chartype.h: fix isprint() definition
+
+8) cmds.c: take out unused ancient #ifdef undef's
+
+9) the sequence n#m requires typing n^V#m, since # is a comment character
+   so, use + instead and leave # as an invisible synonym
+
+10) celerity: added if accel for celerity systems
+
+11) Backup files: remove gnuemacs and spell backups (~ and .bak
+files)
+
+12) shell(): shell returns correct return code now
+
+13) mm_execute: added mm_execute function, like shell, but forks and 
+exec's the specified program.
+
+14) use mm_execute() instead of shell() when running editor or
+speller.
+
+15) SIGINT handler: much better ^C handler -- don't use CCMD, 
+use read/write instead.
+
+use quiet flag in update -- used when called from ^C handler so we don't
+do printf's then...
+
+16) MMHOSTNAME: need argument for isourhost even if MMHOSTNAME defined
+
+17) add reply_initial_display variable and use it in reply when set.
+
+18) write a rename function for SYSV
+
+19) use getcwd in sysv instead of getwd
+
+20) Celerity (accel) is like SUN for quotas
+
+21) avoid printing banner twice, since people coming in over slow 
+    connections hate it...
+
+22) turn off backups on .mm* files (mmail.el)
+
+23) make "mm take /dev/tty /dev/tty" work (i.e. exit when you finish
+    with a "take").  Not perfect: if you take a file while inside the
+    take, then no number of "take"s will make mm exit.
+
+24) fix problem with null default-{send,read}-command
+
+25) newmail: don't give "cannot read" error message all the time
+    (we get this when sendmail is still writing our mail)
+
+26) switch ordering of directory path for file creation
+    (mail-directory .) -- so new files will be created in your
+    "mail-directory" (if defined) rather than "."
+
+27) LITERAL command defaults to LITERAL TYPE but now does not need to parse
+    the "type"
+
+28) print command parses optional /separate-pages switch
+
+29) mm core dumped in cmd_type since it was using n instead of cf->current
+    when setting flags.
+
+30) fix erase all bug
+
+31) setpgrp the child (sendmail) so it can continue even if we suspend
+    mm.  (make sure all wait()'s do a sendmail_delete)
+
+32) don't fflush or print to NULL
+
+33) make "headers on <date>" work correctly
+
+34) accept an fdb chain in parse_sequence, to be linked before
+    sequence fdbs
+
+35) try not to let mail-file be one of the incoming-mail files
+
+36) make fastfile init's work with new deferred indirect files properly
+
+37) parse movemail-path as a command, not a readable file
+

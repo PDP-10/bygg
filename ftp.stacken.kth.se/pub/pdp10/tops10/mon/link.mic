@@ -1,0 +1,15 @@
+.r link
+*/loglevel:5
+;*iptest/map
+*iptest/log
+*iptest/save = /noinitial/hash:13k/locals -
+*common, comdev, commod, -
+*comcon, -
+*uuocon, scnser, -
+*mpxser, autcon, netser, -
+*ip4sub, ipser, iprout, -
+*arpser, unaser, slip, -
+*udpser, -
+*sysini, -
+*tops10/search, -
+*/patch:200/go

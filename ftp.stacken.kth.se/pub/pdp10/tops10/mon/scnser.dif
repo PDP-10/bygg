@@ -1,0 +1,34 @@
+File 1)	DSKB:SCNSER.MAC[10,10,SYSTEM,KS,TOPSY,IPTEST]	created: 2009 13-May-101
+File 2)	DSKB:SCNSER.MAC[10,7,MON]                    	created: 1159 29-Jun-88
+
+1)15	ifn ftip4,<
+1)	LTLTEL==:020000	;Telnet virtual terminal.
+1)	LTLREM==:LTLREM!LTLTEL		;Update symbol.
+1)	>
+1)	LTLUSE==:040000	;ALLOCATABLE LDB IS IN USE (SEE GETLDB/FRELDB)
+****
+2)15	LTLUSE==:040000	;ALLOCATABLE LDB IS IN USE (SEE GETLDB/FRELDB)
+**************
+1)20	ifn ftslip,<		;Slip support?
+1)	LDBSLP::!0		;Pointer to interface block.
+1)	>;End ifn ftslip
+1)	;*** ADD NEW LDB WORDS ABOVE THIS LINE
+****
+2)20	;*** ADD NEW LDB WORDS ABOVE THIS LINE
+**************
+1)34	ifn ftslip,<
+1)		skipe	ldbslp(u)	;Running slip?
+1)		 jrst	sliptx##	; Yes, do this differently.
+1)	>
+1)	XMTCH1:	SCNOFF			;MAKE SURE BITS ARE CONSISTENT
+****
+2)34	XMTCH1:	SCNOFF			;MAKE SURE BITS ARE CONSISTENT
+**************
+1)58	ifn ftslip,<
+1)		skipe	ldbslp(u)	;Running slip?
+1)		 jrst	sliprx##	; Yes.
+1)	>
+1)	RECINM:	ANDI	T3,CK.CHR!CK.FDE ;JUST 8 BITS OF CHARACTER.
+****
+2)58	RECINM:	ANDI	T3,CK.CHR!CK.FDE ;JUST 8 BITS OF CHARACTER.
+**************

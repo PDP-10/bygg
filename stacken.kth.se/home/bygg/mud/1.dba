@@ -1,0 +1,49 @@
+
+	MUD and VALLEY are multi-player games of magic and mystery. You
+are an adventurer exploring the dungeons and caves in the Land. They will
+accept simple imperative sentences from you in (a subset of) English and
+attempt to move you about the Land. Most simple movement commands are
+allowed, eg n, sw, west, up, jump, plus others you'll have to find out! They
+have the following set commands, minimum abbreviation in upper case:
+
+<name> <message>	Sends <message> to the player called <name>
+Get <item>		Allows you to pick up the <item>
+DRop <item>		Allows you to let go of the <item>...
+Kill <name>		If <name> is nearby, start fighting!
+Inventory		What am I carrying?
+WHO			Say who is playing
+BUG			There's something wrong/I wish to complain!
+Look			What can I see here? You can Look <direction>
+SCore			How well am I doing?
+Quit			I've had enough!
+"<message>		Send <message> to all in the room (talk)
+SHout, <message>	Send <message> to everyone
+STEAL <item> FROM <name>	Attempt to transfer possession of <item> from
+				<name> to you!
+FOLLOW <name>		Attempt to follow <name> wherever he goes.
+LOSE <name>		Stop <name> from following you!
+LOG			Record the game in a disc file <yourname>.LOG . Toggles.
+HELP <name>		Assist <name> in his actions, if he needs it
+			(eg HELP BERT will allow Bert to, say, open
+			a heavy door if he says OPEN HEAVYDOOR or
+			whatever).
+REFUSE <name>		Stop <name> from trying to assist you!
+KEEP <item>		If you say DROP <class>, where <item> is in
+			<class>, eg TREASURE, then don't drop <item>
+BACK			Go in opposite direction (may be rubbish if
+			there isn't one, eg for swamp and jump).
+PASSWORD		Put a password on this persona to stop miscreants
+			using it. NOPASSWORD zeroes it again.
+COMMANDS		Short list of names of the above commands and
+			some others you might want to use.
+
+Commands are processed up until a conjunction, such as 'and', 'then'
+'.', ',' or end of line. If nothing matches an attempt to use the
+previous command is made. Thus, 's<cr><cr>' will move twice south.
+To score full points for any treasure, it must be dropped in the
+swamp. You'll have to find the swamp yourselves! Points can also
+be gained (or lost) for certain actions, eg killing someone...
+If you leave a game by QUITing then you can start again later. One
+point of lost stamina (from fights!) is regained per minute you're
+out. If you're killed, however, you have to start anew.
+Hope this message is informative enough. For extra info type INFO.

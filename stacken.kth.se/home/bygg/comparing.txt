@@ -1,0 +1,361 @@
+
+   Lineo - The Embedded Linux Solutions Company Home - Company - Site Map
+   - Contact Us - Shop 
+   --Main Menu--
+   
+                                                           File Index    
+                                                                         
+                                                                Products 
+                                                                Services 
+                                                                 Support 
+                                                           Developer Info
+                                                                Downloads
+                                                           Hints & Tricks
+                                                                 How To's
+                                                              Open Source
+                                                           Resource Links
+                                                                Technical
+                                                                Bulletins
+                                                             White Papers
+                                                                Partners 
+                                                           News & Events 
+                                                               Education 
+                                                                         
+                                                              Search Site
+                                                                 ________
+                                                                   Submit
+                                                                         
+   
+   Comparing two approaches to real-time Linux
+   
+   Tim Bird, CTO of Lineo (Dec. 21, 2000)
+   
+   In recent years, two alternative approaches to providing real-time
+   services within Linux systems have surfaced. In this paper, I will
+   define these two systems and discuss some of the main advantages and
+   disadvantages of each.
+   
+   The two share some interesting similarities. However, they also have
+   some important distinctions which impact their appropriateness for
+   various types of "real-time" applications, which span a broad spectrum
+   from what is termed "hard real-time," to what is considered "soft
+   real-time."
+   
+   The two approaches will be referred to as "preemption improvement" and
+   "interrupt abstraction."
+   
+   Preemption Improvement
+   
+   In the preemption improvement approach, the Linux kernel code is
+   modified to reduce the amount of time that the kernel spends in
+   non-preemptible sections of code. In general, the strategy is to
+   reduce the length of the longest section of non-preemptible code in
+   order to minimize the latency of interrupts or real-time task
+   scheduling in the system. The reason this is important is that the
+   amount of time spent in the longest section of non-preemptible code is
+   the shortest scheduling latency that can be guaranteed for a hard
+   real-time system running on Linux. This, of course, has a direct
+   impact on the value that the real-time system can provide.
+   
+   It is interesting to note that there are multiple ways of trying to
+   improve preemptibility in the Linux kernel. One is to add additional
+   points in the Linux kernel, where the currently executing kernel
+   thread relinquishes control (or explicitly makes itself available for
+   preemption). The code to do this is often referred to as "low latency
+   patches", the most famous of which has been written by Ingo Molnar, a
+   prominent Linux kernel contributor.
+   
+   Another technique, recently pioneered by MontaVista, is a system
+   utilizing SMP macros already in the Linux kernel to treat the machine
+   as if it were running SMP even on a uniprocessor system. Then the
+   preemption capabilities of the kernel used to provide SMP support are
+   automatically invoked to enhance the preemptibility of the Linux
+   kernel.
+   
+   Another interesting aspect of this approach is that it is usually
+   coupled with a new scheduler implementation that provides fixed
+   overhead for scheduling real-time tasks. This scheduler is put in
+   place in front of the normal Linux process scheduler, in order to give
+   real-time tasks scheduling priority (as well as fixed scheduling
+   cost).
+   
+   Interrupt Abstraction
+   
+   The other major approach to providing real-time with the Linux kernel
+   is what I refer to as "interrupt abstraction". In this approach, a
+   separate scheduler is also used. However, instead of trying to
+   instrument the existing Linux kernel in order to increase
+   preemptibility, the entire kernel is made preemptible by having a
+   separate hardware-handling layer intercept and manage the actual
+   hardware interrupts on a system. This hardware abstraction layer has
+   complete control over the hardware interrupts, and simulates the
+   interrupts up to the Linux kernel in a way that allows the kernel to
+   run unmodified on the real-time scheduler. This system is often
+   described as a micro-kernel system, where the full Linux kernel runs
+   as the lowest priority task alongside real-time tasks in the system on
+   top of the real-time scheduler.
+   
+   This approach is provided by two different real-time Linux projects:
+   the RTLinux system, which originated at the University of New Mexico;
+   and the Real Time Application Interface (RTAI), which originated at
+   the University of Milan, in Italy.
+   
+   Limitations of the Preemption Improvement model
+   
+   The preemption improvement model of real-time support in the Linux
+   kernel suffers from several key limitations.
+   
+   Limits to guarantees
+   
+   First, while this system does result in increased general
+   preemptibility in the Linux kernel, (thus providing an environment for
+   decreased real-time context switch latencies), there are severe limits
+   on the guarantees that can be made about the latencies. You will often
+   see statements in the literature about this approach with wording such
+   as "the longest measured interrupt latency". The reason for this is
+   that it is impossible to provide a guarantee about the latency for
+   this approach, unless every possible code path in the kernel is
+   examined. Thus, the discussion always revolves around historical
+   measurements and observations -- NOT on a guarantee based on complete
+   analysis of code paths.
+   
+   A normal Linux kernel in the embedded space is somewhere between 300K
+   to 500K. The code for the entire Linux kernel runs into about 40
+   megabytes of source code. Code is added to and modified on a daily
+   basis in the source base. Thus, it is impossible in the general case
+   to make any certifiable guarantee about the longest possible
+   non-preemptible code path in the Linux kernel. The amount of code
+   examination that would be required for this type of guarantee is
+   prohibitive.
+   
+   Implementers of the preemption improvement systems have utilized a
+   variety of techniques to identify and eliminate "problem" code paths
+   in the Linux kernel. MontaVista, for example, has issued some tools
+   and instrumentation patches to analyze latencies in the Linux kernel.
+   However, it should be noted that none of these techniques is
+   exhaustive. That is, no one has gone to the effort of analyzing every
+   possible code path, especially when coupled with error conditions.
+   Note that it is not even possible in a test environment to simulate
+   every conceivable error condition that the Linux kernel might
+   encounter. This makes the analysis statistical in nature rather than
+   comprehensive and conclusive.
+   
+   What this essentially means, is that guarantees of hard real-time
+   performance can not be made in this environment. While this approach
+   appears to produce favorable results for soft real-time uses, it
+   cannot produce a system with hard real-time capabilities.
+   
+   Difficulty of maintenance
+   
+   A second major problem with the preemption improvement approach to
+   real-time is that it imposes an additional burden on all contributing
+   Linux kernel programmers. Not only must all current Linux code by
+   analyzed for preemptibility, but new code added to the kernel must
+   meet the strict requirements that it not introduce additional long
+   non-preemptible kernel code paths.
+   
+   It is more difficult to program fully preemptible algorithms than it
+   is to program non-preemptible algorithms. This means that this
+   approach imposes a large burden (and I believe an unrealistic one) on
+   kernel programmers. Requiring preemptibility analysis on all new
+   drivers or kernel features would unnecessarily slow the rate of kernel
+   development. Not requiring preemptibility analysis on new kernel code
+   leaves the kernel subject to non-measurable code path latencies.
+   Either case leads to undesirable effects. One of the main reasons that
+   developers and companies are interested in Linux is the rate at which
+   the kernel is enhanced and debugged (modified). Crippling this rate in
+   order to guarantee real-time performance would do serious damage to
+   the value proposition that Linux provides.
+   
+   Risk of bugs
+   
+   Another major problem with the preemption improvement approach is that
+   it requires substantial modifications to the Linux kernel, spread
+   throughout the kernel. This poses the risk of introduction of bugs
+   into the Linux kernel by the preemption improvement patches. In
+   general, the larger a large-scale patch, the more likely it is to
+   disturb the complex inner workings of the Linux kernel.
+   
+   Limitations of the Interrupt Abstraction model
+   
+   In contrast to the above problems, with the interrupt abstraction
+   model, the Linux kernel is largely untouched. For example, the patch
+   for the X86 version of Linux is only 9 lines long. The Linux kernel
+   runs essentially unmodified under this system, and thus will run as
+   expected for all kernel sub-systems (such as drivers), as well as
+   user-space programs and applications. No code path analysis of the
+   kernel is required. The only code that needs extensive analysis is the
+   real-time scheduler (and associated IPC and service code), and the
+   hardware abstraction layer. In its entirety, this code amounts to only
+   about 64K. Several of the modules in this system are optional,
+   bringing the total amount of code that must be analyzed to under 30K
+   for most applications. Of course, this code already has been analyzed
+   extensively by a large body of real-time experts.
+   
+   However, the interrupt abstraction model also has some important
+   limitations that developers should be aware of.
+   
+   Unique programming model for real-time tasks
+   
+   Currently, this model requires that real-time tasks be implemented as
+   Linux kernel loadable modules. This is the same format that is used
+   for other kernel features, such as file systems, device drivers,
+   alternate loaders, and others. Kernel loadable modules utilize several
+   APIs that are different from the POSIX APIs available for normal Linux
+   process development. However, it should be noted that the bulk of the
+   APIs used for real-time tasks is the same as that used for Linux
+   drivers. There is copious documentation and examples for writing code
+   for this environment, and it is a Linux environment.
+   
+   It should be noted that the APIs to deal specifically with the
+   real-time environment are new to the Linux kernel. A few different
+   APIs can be used for real-time task management and communication,
+   including a set of POSIX real-time APIs. This means that real-time
+   tasks can be programmed using industry standard POSIX APIs for
+   real-time systems.
+   
+   A solution, but with caveats
+   
+   There is work under way to produce a version of this system (at least
+   with the RTAI project), which will allow scheduling using the
+   real-time scheduler with a user-space process. This solution, once
+   completed, should prove attractive for those who wish to avoid loading
+   their real-time tasks in kernel mode.
+   
+   However, it is important to recognize that even this system will have
+   some important drawbacks, compared to a system where all real-time
+   tasks reside in the Linux kernel. The most important one is that there
+   are certain context switch latencies involved when a process is
+   switched into in user space (due to MMU processing overhead, cache
+   line flushes, and other things), that will inherently yield more
+   jitter, and thus worse case guaranteed task switch latencies.
+   
+   Anticipating objections
+   
+   There are a few more objections to the interrupt abstraction approach
+   which are often raised, and which I will address.
+   
+   "But it's not Linux!"
+   
+   Proponents of the preemption improvement model often say that this
+   system is "not really Linux". For this assertion to have any meaning,
+   one has to determine just what exactly it means for something to be
+   Linux. A general consensus in the community is that Linux is what
+   Linus Torvalds says it is. He is the primary moderator of what goes
+   into the main kernel tree, and thus decides what features will become
+   a standard part of Linux. However, this metric is not useful in this
+   case, since neither approach has yet been incorporated into the main
+   Linux kernel. Indeed, every single Linux vendor (in the desktop,
+   server, and embedded markets) ships a modified Linux kernel that
+   deviates from the official source base as published on kernel.org.
+   
+   If Linux is instead defined by the Linux API in user space, then this
+   also poses a problem. Very few would dispute that an Ethernet driver
+   is a part of Linux. Ethernet drivers are coded in a manner requiring
+   special skills, as kernel modules, using a special in-kernel API. The
+   same can be said of real-time tasks intended to be used with the
+   interrupt abstraction model of Linux real-time.
+   
+   Finally, at least one more definition of Linux would include the basic
+   correctness and robustness that is provided by the kernel due to the
+   peer-review and contributions of the open source community. Making
+   large-scale modifications to the Linux kernel without the same level
+   of peer review and open source community involvement potentially
+   damages that value that developers have come to expect.
+   
+   On the need for a different programming model . . .
+   
+   It is true that writing Linux kernel modules requires different
+   programming skills than does writing a Linux application process.
+   However, these skills are likely to be required by an embedded
+   developer anyway, for such other things as device drivers, board
+   initialization code, and other kernel features that are
+   required for embedded projects.
+   
+   Other arguments often thrown up are other issues related to writing
+   your application in kernel space, like the absence of normal process
+   memory protection features. A very significant reason that people are
+   adopting a full-featured operating system like Linux is that the
+   embedded market is tending towards complex system requirements, and
+   thus increased system code complexity. Memory protection,
+   comprehensive resource management, and process isolation are important
+   keys to building a robust complex embedded system. However, these
+   arguments ignore the fact that using the interrupt abstraction model
+   does not require that the entire application or system be written in
+   kernel space.
+   
+   Indeed, it is undesirable to put everything into the kernel. The
+   nature of the complex systems that embedded designers want to build is
+   such that there are now significant portions of the application that
+   do NOT have real-time requirements. For example, an industrial control
+   application may have hard real-time data acquisition requirements, as
+   well as other aspects (such as data storage, networking, display and
+   presentation, data transformation, and others) which do not require
+   hard real-time capabilities. This division is true more often than
+   not.
+   
+   It is faulty logic to assume, just because an application is written
+   in user space, that the portions requiring hard real-time performance
+   will therefore be more easily written, or especially that they will be
+   able to take advantage of the full POSIX API without limitation. For
+   example, when a user-space thread is switched onto the real-time
+   scheduler in the preemption improvement model, it must avoid using
+   APIs and system calls which would eliminate its real-time
+   characteristics.
+   
+   In general, this means it must avoid using networking, disk I/O,
+   memory allocations, and other services which cannot be guaranteed to
+   respond with certain latencies. Also, this thread must be isolated
+   from other non-real-time threads in the application (that DO use these
+   services). So, whether the hard real-time portion of the application
+   is implemented in kernel space or user space, there are a host of
+   issues that the real-time designer will have to deal with, in order to
+   preserve the real-time guarantees of the system.
+   
+   Although programming in the kernel and implementing real-time tasks as
+   loadable modules does impose an extra learning burden, this burden is
+   extremely minor compared to the knowledge and expertise required to
+   correctly design and code real-time algorithms in the first place. In
+   other words, writing a kernel module is probably one of the least of
+   your worries when you undertake to write an application with some
+   real-time requirements. In some cases, being forced to
+   separate the real-time tasks into kernel modules can help define and
+   clarify the separation between the real-time and non-real-time
+   portions of the application.
+   
+   Conclusion: "Different strokes for different folks"
+   
+   In conclusion, while the preemption improvement model does provide
+   some key benefits for developing certain types of real-time
+   applications, it is incapable of yielding true hard real-time
+   performance. Attempting to do so would certainly incur costly
+   penalties in terms of other Linux benefits -- such as driver breadth
+   or development pace -- in order to achieve true guarantees of hard
+   real-time latencies.
+   
+   Therefore, although the preemption improvement model does hold promise
+   as a means to obtain soft real-time capabilities from Linux, which can
+   benefit all Linux applications, it is unlikely to provide a viable
+   long-term solution for Linux tasks that require true hard real-time
+   performance.
+   
+   The interrupt abstraction model, on the other hand, while imposing
+   minor programming burdens on the embedded developer, is immediately
+   capable of providing a true hard real-time environment for
+   appropriately written applications within a Linux environment.
+     _________________________________________________________________
+   
+   Author's bio: As Lineo's CTO, Tim Bird is accountable for the
+   architecture, design and development of Lineo's embedded operating
+   system platforms and applications. He holds bachelor's and master's
+   degrees in Computer Science from Brigham Young University. Bird began
+   his career as an engineer at Novell, Inc., where, in 1993, he began
+   working with Linux. In 1995, he joined Caldera, Inc. as a senior
+   developer. In 1998, Bird helped create the Caldera division that
+   eventually became Lineo, Inc. in 1999. He is also co-author of
+   "Special Edition: Using OpenLinux" by MacMillan Publishing.
+   
+   
+     Products | Services | Support | Developer Info | Partners | News &
+                                   Events
+   © 2000 Lineo. All Rights Reserved. Website Terms & Conditions of Use.

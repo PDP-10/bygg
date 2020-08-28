@@ -1,0 +1,86 @@
+1. Cirkulationskylare
+
+Utrymme på väggen delas av cirkulationskylare och två elcentraler. 
+Inritad utrymme är 600x1200. Med 600 djup erhålles 1200 ryggavstånd
+till första rackraden. Aggregat överblåsande med så högt utblås som
+möjligt. Cirkulationskylare matas från elcentral 3.
+
+2. Befintlig elcentral för skyddsrums- och normaldrift 237a
+
+Elcentral används till samlingsrum och pentry med befintliga
+grupper. 6 lediga enfasgrupper som kan användas enligt följande:
+	1 10A kylskåp
+	1 10A kokplatta
+	1 10A micro
+	1 10A kaffebryggare 
+	2 reserv (tex varmvattenberedare)
+	
+3. Ny elcentral för Datorhallsdel 237b
+
+Effektbehov 15KW datorhall och max 5KW kylare. Näststörre avsäkring på
+inkommande el 32A trefas. Huvudmatning genom kontaktor med tryckknapp
+för påslag och övertemptermostat för avslag (dvs nödstopp) för hela
+centralen. Alla säkringar C-karateristik. Grupper:
+	1 enfasgrupp 6A manöver. 
+	1 trefasgrupp för cirkularionskylare
+	6 enfasgrupper 16A utag på elstege
+	3 enfasgrupper 10A reserv / utbyggnad
+	3 enfasgrupper 16A reserv / utbyggnad
+
+
+4. Pentry
+
+Förslag på hörnpentry designad med IKEAs program. Mest som
+"Designförslag". Val av hörnpentry för att gömma avloppsinstallation
+till befintlig golvbrunn av skyddsrumstyp under skåpet. Pentry
+innehåller: Värmeplatta + undermonteradkylskåp t.v., diskho i mitten,
+plats för kaffebryggare (timerkontakt) till höger. Kallvatten se
+ritning. Varmvatten finns till exempel i toaletten tvärs över
+korridoren.
+
+5. Defem stege 320/60 för el och datornät. Pendelmontage
+från tak. Position anpassas med hänsyn till befintlig
+tak. H.ö.g: 2200mm.
+
+6. Defem stege 320/60 för el och datornät. Hängs på 5. samt
+väggmontage i kortändan.
+
+7. Rack med nätverksutrustning 600x900 19' montage
+
+Nätkablage för datorer i rummet backas tillbaks från korridor och
+viks ner på stege 6. Termineras i 19' panel för rackmontage. 
+1U uttagspanel med 12 RJ45 platser
+1U uttagspanel med par av SC kontaktdon
+
+8. Positon av vägg anpassas till undertakets skarv.
+
+Undertaket skarvad i mitten av rummet där väggen skall finnas.
+Undertak i inre rummet rivs.
+
+9. KB kanal kapas vid vägg och lösa änden sättes fast i vägg.
+
+10. KB kanal behålles vid  yttervägg. KB kanal i mitten av rummet
+demonteras
+
+11. Ny 100-dörr 
+
+12. Entrédörr
+
+Görs ogenomskinligt på lämpligt sätt ("frostas"?) så att det passar
+med KTHs design med mera.
+
+13. Överströmningskanaler luft
+
+Överströmningskanaler för luft från datordelen 237b sätts igen.
+
+Överströmningskanal för luft från samlingsdelen 237a måste kanske
+ökas i genomskärning eller forceras.
+
+14. Luftvärdesgivare flyttas till samlingsrummet
+
+15. Förlängd dagdrift på friskluft
+
+
+
+
+

@@ -1,0 +1,59 @@
+Patch number: 1
+MM Version: 0.90
+Date: Thu Jan  3 10:23:10 1991
+Reported by: Michael A. Cooper <mcooper@usc.edu> *
+	     "Gary E. Barnes" <geb@amber.Rational.COM> *
+	     lim@NISC.SRI.COM (Bill Lim)
+	     *with patches
+File: file.c
+
+
+Description:
+
+1) EXPUNGE command doesn't on some systems.
+2) .mm-newmail file does not get removed on some systems.
+
+
+Fix:
+
+Both caused by the return value from update_1() not being passed up
+from update() in file.c.  Return value is random and works on some
+systems.
+
+
+Patch:
+
+*** /tmp/,RCSt1004366	Thu Jan  3 10:09:39 1991
+--- file.c	Thu Jan  3 10:05:10 1991
+***************
+*** 695,701 ****
+  	if (!check_mtime(*pf, &err))	/* didn't pass the check */
+  	    return (err);
+      }
+!     update_1 (pf, updflags);
+  }
+  
+  int
+--- 695,701 ----
+  	if (!check_mtime(*pf, &err))	/* didn't pass the check */
+  	    return (err);
+      }
+!     return (update_1(pf, updflags));
+  }
+  
+  int
+
+
+*** /tmp/,RCSt1025403	Thu Jan  3 10:10:24 1991
+--- mm-patchlevel.h	Thu Jan  3 10:04:32 1991
+***************
+*** 10,13 ****
+   * release.  Don't forget to send diffs for this file in the patch file.
+   */
+  
+! #define MM_PATCH 0
+--- 10,13 ----
+   * release.  Don't forget to send diffs for this file in the patch file.
+   */
+  
+! #define MM_PATCH 1

@@ -1,0 +1,1207 @@
+   THE RISE AND FALL AND RISE OF THE DECSYSTEM-20 AT COLUMBIA UNIVERSITY
+
+                    Frank da Cruz and Christine Gianone
+                                       
+                            Columbia University
+                            New York, NY  10027
+
+                           T H I R D    D R A F T
+
+                             December 29, 1988
+
+                         Copyright (C) 1988, 2001,
+                  Frank da Cruz and Christine M. Gianone,
+                            All rights reserved.
+
+
+Until the middle 1970s, Columbia University was firmly entrenched in IBM
+mainframe OS/360 batch-mode computing.  The "Self Service Input/Output"
+area was proudly named because it was such a great leap forward from the
+days when students and researchers would meekly present their card decks to
+the operators and return the next working day for their output -- usually
+to find that their SYSMSG was full of incomprehensible complaints, whose
+painful decipherment generally led the frustrated user to a missing comma
+or an extra space in the Job Control Language.  Or if the JCL passed
+inspection then there was a 3-foot thick core dump to curl up with.  The
+SSIO area was a room filled with the mind-numbing cacaphony of key punches,
+the shrieking of IBM's fearsome 1403 printers, the staccato flutter of card
+readers, sorters, and interpreters; anxious crowds gathered around the
+printers, waist deep in discarded output...
+
+Columbia's IBM 360 Model 91, with its 360/75 front end, was one of the
+biggest, fastest, heaviest, loudest computers in the world when installed
+in the late 1960s.  It covered acres of floor space, and you could look at
+the magnetic cores through little windows in the 6-foot-tall memory boxes,
+standing in rows that disappeared into the vanishing point.  Power was
+supplied by a rumbling cast-iron motor generator, and cooling by chilled
+water pumped through miles of internal plumbing.  The CPU control panel had
+more lights than a Times Square billboard.  According to legend, among the
+thousands of toggles and buttons was one whose lethal mission was "Bulb
+Eject" -- certain suicide to any who pressed it.  The control panel now
+lies in repose at the Computer Museum in Boston, its hypnotic bulbs dimmed
+forever.
+
+This massive grey and blue Stonehenge, its tentacles reaching into the SSIO
+area, executed ponderous Fortran "codes" for our engineers: twisting
+bridges; bombarding hapless substances with neutrons; calculating Pi to
+millions of digits; transforming the earth's magnetic field into music...
+For our social scientists, it predicted the outcome of the 1956 presidential
+election with deadly accuracy.  For the administrators it spewed forth
+paychecks and transcripts and accounting statements.  And eventually some
+small corner of it was allocated to our engineering students, applying their
+laboriously crafted DO-loops and GOTOs to Taylor's series, Simpson's rule,
+Gauss's quadrature, and Laplace's transform.  These students had a
+relatively simple task: write the program, place it in a sandwich of magic
+JCL cards, feed the sandwich to the card reader, and collect the resulting
+output.  Many teachers would come to look back upon these simple days with
+melancholy fondness, though student memories were haunted more by images of
+slippery fingers gathering up stacks of dropped punch cards.
+
+Terminals began to appear in the early 1970s, at first only a scattering
+among the shadowy system programmers on Olympus, who were able to converse
+in arcane languages with "terminal monitors" having names like Milten, Cleo,
+Orvyl, and Wylbur, and eventually APL and TSO (the former being the "Irtnog"
+of computer languages, the latter a form of JCL typed at one's terminal).
+Interacting with the computer was appealing, and yet unsatisfying.  The
+commands were obscure, and computation was still -- apart from APL -- in the
+batch.
+
+Enter, in 1975, our first true timesharing system, a DEC PDP-11/50 running
+RSTS/E.  This was to be a low-budget experiment in genuine interactive
+computing.  Built around the BASIC language, RSTS allowed up to 32
+simultaneous users sitting at DECwriters to program, debug, communicate with
+each other, and generally misbehave -- all in real time.  RSTS proved
+enormously popular, and the PDP-11 was soon overwhelmed by eager students.
+
+DEC was chosen because IBM didn't really offer any kind of general purpose
+interactive timesharing in those days.  Compared to the other contenders,
+the DEC offering was better developed, more mature, and... more fun.  And
+RSTS was chosen as an operating system, rather than, say, UNIX because
+Version 6 of UNIX was a mighty trusting system that let anyone to do
+anything.  We had the germ of an idea that the system should take some role
+in protecting users from one another and from themselves.  While UNIX
+offerred little or no facility in this area, RSTS was not without its own
+weaknesses.  Users soon learned that they could assign all the TTYs, so that
+no one else could use them.  Better still, having assigned a TTY, they could
+run a program on it to masquerade as the login process, faithfully
+transcribing the IDs and passwords of other users into a file, and then
+dying in a gasp of simulated noise:
+
+  WELCOxE T@\R\~~~~xxx }}}}}~~
+
+Other resourceful users found that if they opened a new file for
+record-oriented access, they could read records before writing them, picking
+up old data from other users' deleted files, or the system password file.
+
+And at one point, our system was infested by a cabal of teenagers from a
+nearby prep school, who had broken in by exploiting a bug in the login
+process.  They had their way with the system for several weeks before they
+were detected, and it took several days of round-the-clock work to eradicate
+the numerous trap doors and time bombs they had left behind.
+
+Despite its problems, RSTS proved quite popular, and rapidly became
+overloaded.  The experiment was declared a success, and we began to look
+about for something bigger and somewhat more sophisticated -- BASIC not
+being exactly the language of choice among computer scientists.  This was
+about when DEC first announced the DECSYSTEM-20 (its logo, all uppercase
+unlike that of its older cousin the DECsystem-10, was said to be a slip of
+the Caps Lock key on the trademark application).  Before even looking at the
+system, we forced the marketing people to drag in some technical help, and
+quizzed them mercilessly about whether users could assign all the devices,
+fill up the disk, control-C out of the login process, bombard each other
+with stupid messages, even whether a file was "scrubbed" when it was
+deleted.  When all seemed to our satisfaction, we took a look at the system.
+
+Wonder and amazement, this computer knows what you're going to type and
+types it for you!  Well, almost.  But its attractions were apparent at first
+glance.  If you don't know what to type, then type a question mark, and it
+tells you.  Suddenly "fill-in-the-blank" became more like "multiple choice".
+Well of course it can tell you!  It knows what the choices are, so why
+shouldn't it tell you???  A question that might have been asked to good
+advantage ten or fifteen years earlier (visions of veteran system
+programmers rooting through manual after manual looking for what to type in
+the next field of some obscure command...  a common sight on some machines
+even to this day).  And this "?"  was not a highly priviliged function (as
+was ownership of the manual set) -- even ORDINARY USERS could employ it.
+Astonished, we discovered that error messages came out in plain,
+comprehensible text, rather than 17-digit hexadecimal numbers, so that they
+could be understood without a "messages and codes" book.
+
+We were sold immediately on the friendliness, the casual attitude, the
+humor.  We didn't know until later that COOKIE (which survives today in UNIX
+as 'fortune') was not a standard part of the system, and then there was
+TECO:
+
+  @make love
+  not WAR?
+
+The DEC-20 was a real, general-purpose timesharing system.  It was not built
+around a particular language, as RSTS was around BASIC.  It offered a wide
+range of compilers, interpreters, text editors, and utilites, reflecting
+many years of TOPS-10 and TENEX software development.  It could absorb not
+only our RSTS users, but also many of our IBM mainframe Fortran and APL
+users, and its ease of use would attract many first-time users as well.
+
+Our new DEC-20 arrived June 29, 1977, with TOPS-20 version 1B.  Installation
+was finished by July 26th.  Next to the IBM 360/91, and even the DEC PDP-11,
+it was disappointingly featureless -- no lights to speak of, no switches for
+entering data, no dials, no motors, no pumps...  Yet the DEC-20 was
+infinitely more powerful than the feeble PDP-11.  It was equipped with four
+state-of-the-art RP06(*) disk drives that could never fill up, and an
+unbelievable 256K of main memory -- words, not bytes!  Such a machine would
+meet our instructional computing requirements for years to come.
+
+ (*) For those who don't recall, an RP06 is the size of a dishwasher,
+     weighs a ton, and uses a removable disk pack that can hold about
+     75 Megebytes.
+
+Whenever a computer facility gets a new kind of computer, the programmers
+embark immediately on a furious spate of activity to turn the new system
+into their beloved old system.  As delivered, the DEC-20's only editor
+(besides an unofficial copy of TECO) was the cryptic, line-oriented EDIT,
+descended from TOPS-10 SOS.  Our users were accustomed to Wylbur, the much
+less cryptic line editor on our IBM 360/91, so we immediately embarked on
+writing a version of Wylbur for the DEC-20, to make our IBM users feel more
+at home.
+
+We began to learn DEC-20 assembly language, and to read the Monitor Calls
+Reference Manual.  We soon discovered that this was a wonderful machine
+indeed.  The instruction set and the repertoire of monitor calls (JSYS's)
+were astoundingly rich.  Included among the monitor calls was a special set,
+unlike anything we had ever seen: built into the system itself were standard
+functions for conversion between internal and external representations of
+all the different kinds of data meaningful to the system: numbers in
+different radices, characters, strings, filenames, directory names, dates
+and times.  Programmers from an earlier era knew that the most difficult and
+tedious part of writing an interactive program was the prompting, accepting,
+and validating of data typed in by the user.  How many programs written in
+Fortran have blown up in your face when you typed a letter instead of a
+digit?...
+
+Best of all, these conversion functions were collected into a single package
+called the COMND JSYS, developed by Dan Murphy, which allowed programmers to
+make use of the same "user interface" in their programs as the one in the
+TOPS-20 Exec: full prompting, editing, help on every field; abbreviation and
+recognition of keywords and switches; completion of filenames; forgiveness
+when the user makes a typo, etc.
+
+Programs coded with the COMND JSYS had many virtues.  They were friendly,
+helpful, and consistent.  All programs written using COMND worked the same
+way: type "?" to find out what the commands or options are, type ESC to
+complete the current field (if possible) and receive a prompt for the next
+field.  People could use the "?" and ESC features liberally to learn their
+way through a new program, and later, could type terse, abbreviated commands
+for speed.  This approach, called "menu on demand," does not favor the
+novice over the expert (as menu-oriented systems do), nor the expert over
+the novice (as do the cryptic, terse command sets of APL or UNIX).
+
+Our new Wylbur-like editor, called "Otto", was written to take full
+advantage of the COMND JSYS.  For all its stubborn limitations, Otto was an
+immediate success because it allowed IBM mainframe users to move painlessly
+to the new environment, while simultaneously indoctrinating them in the ways
+of the DEC-20.  Its hidden purpose was to get them hooked, and then
+frustrate them sufficiently that they would take the time to learn a "real"
+editor.
+
+
+PROGRAMMING LANGUAGES
+
+As the months wore on, we made contact with other DEC 36-bit sites, many of
+them -- Stanford, CMU, MIT, Rutgers, BBN, SRI -- with many years of TOPS-10,
+TENEX, WAITS, or ITS experience, and received from them programs that were
+to occupy us for years to come.  Some were false starts, but others will
+thrive in some form well into the next century, the legacy of the DEC-10 and
+-20.  From this experience we learned the benefits of sharing, and knew that
+if we should ever produce anything of general utility, we would share it
+with others in the same spirit that these institutions shared their work
+with us.
+
+Our major goal in canvassing these sites was to find out what they did about
+programming.  In conception, the DEC-20 user and system interfaces came as
+close to perfection as anyone at the time (outside of Xerox PARC) could
+imagine, but in practice the conception was incompletely realized.  Most of
+the programming languages came directly from TOPS-10, and did not provide
+access to the TOPS-20 monitor calls or its file system.  And yet we were
+determined that, in this era of structured programming, we would not write
+systems-level code in assembly language.  After brief flirtations with
+Bliss-10, BCPL, Simula, and even an early Portable C (which was ill suited
+to the 36-bit architecture), we settled upon Stanford University's Sail as
+our "offical language," and plunged into a frenzy of the kind of programming
+incumbent upon every site that gets a new kind of computer: user ID
+management, resource management, accounting systems, tape conversion
+programs, ...  But several years of devotion to Sail resulted finally in
+disillusion.  There were too many bugs, too much dependence on the runtime
+system and knowing where it was, too much conversion necessary upon new
+releases of Sail or of TOPS-20, too many grotesque workarounds to accomplish
+what would have been natural in assembler -- the only language that really
+understood the machine and the operating system.  And from that day forward,
+all our systems programming was done in assembler.
+
+Like many things, dependence on assembler is good and bad.  It was good
+because it touched a creative nerve -- programmers were unfettered,
+unhampered by the bureaucratic requirements and authoritarian strictures of
+high-level languages, and they had full access to the machine's instruction
+set and repertoire of monitor calls, which, on the DEC-20, were a joy to
+behold.  Programming in assembler was just plain fun, and our programmers
+gleefully turned out millions of lines of code, but with the nagging feeling
+that there was something sinful in it.  This was because of the bad side:
+assembly language programs are specific to the underlying machine and
+operating system.  What happens to these programs when the machine
+disappears?
+
+Nevertheless, MACRO was irresistible (MACRO is used here as a generic term,
+encompassing DEC's MACRO-10 and -20, as well as MIT's Midas and Ralph
+Gorin's FAIL).  Unlike FORTRAN or BASIC or any other language on the DEC-20
+(except for Sail, for which we had written a COMND JSYS interface package),
+MACRO let you write real DEC-20 programs -- programs that were helpful,
+gentle, and forgiving to the user.  For assembly language programmers with
+an IBM 360 background, the machine architecture and instruction set were
+delightful.  A 256K word linear address space (no more BALR's and USING's!),
+hundreds of exotic instructions...  And the assembler itself allowed for
+relatively clean, even "structured" programs.  For instance, MACRO's in-line
+literals are almost equivalent to the "begin ...  end" blocks of Algol or
+Pascal, obviating the horrendous spaghetti logic that plagues most assembly
+language programs.  For example, here's an IF-THEN-ELSE construction with
+multiple statements in each part, and no GOTOs or labels (excuse any
+mistakes, this is from memory):
+
+        CAIL B, FOO                     ; IF (b < foo) THEN
+         PUSHJ P, [                     ;   BEGIN
+                HRROI A, [ASCIZ/.LT./]  ;     message = ".LT.";
+                SETOM LESS              ;     less = -1;
+                AOS (P)                 ;   END (skip around ELSE-part)
+                POPJ P, ]               ; ELSE
+         PUSHJ P, [                     ;   BEGIN
+                HRROI A, [ASCIZ/.GE./]  ;     message = ".GE.";
+                SETZM LESS              ;     less = 0;
+                POPJ P, ]               ;   END;
+        PSOUT                           ; PRINT message;
+
+Anything within square brackets is a literal; the assembler finds a place to
+put it, and replaces the literal with the address of that place.  Thus,
+(nearly) any amount of data or code can be placed "in line", rather than in
+a separate data area.  And as you can see from the example, literals can be
+nested.  Other common control structures can be simulated using literals
+too, such as the CASE statement:
+
+        MOVEM B, @[EXP FOO, BAR, BAZ](A)
+
+This example stores B in FOO, BAR, or BAZ, depending on the value of A.
+Such an operation would require many lines of code in most other assembly
+languages, and in most high-level languages.
+
+To cap it off, assembly language programs could be debugged interactively on
+a symbolic level using "DDT" -- not Dichloro-Diphenyl-Trichloroethane, but a
+"Dynamic Debugging Tool" designed to get the bugs out just as effectively as
+the real thing, with fewer undesirable side effects (other debugging aids
+bore similarly insecticidal names, like RAID).  With DDT, there need be no
+more poring through thick hex dump printouts, no more inserting print
+statements and reassembling, etc etc.  DDT dates from the early PDP-10
+(maybe even PDP-6) days; its command syntax is a bit obstruse, consisting
+mostly of cryptic single letters, punctuation marks, tabs, and liberal use
+of the ESC character, often doubled.  But DDT can do anything.  In fact, the
+creators of MIT's "Incompatible Timesharing System" (ITS) for the PDP-10
+liked DDT so much, they used it as their top-level command processor.  What
+a sense of humor!
+
+The DEC-10/20 instruction set, monitor calls, assembler, and debugger lured
+many otherwise sensible programmers into prolonged coding sessions, or "hack
+attacks".  A subculture of DEC-10/20 programmers arose, speaking strange
+words and phrases whose etymologies were mainly traceable to the PDP-10
+Hardware Reference Manual.  The ingredient added by the hackers (in those
+days, not a perjorative term) was the pronunciation of mnemonics never
+intended for human speech organs (AOS, BLT, JRST, ILDB, HRROI), and
+extension of their meanings into other areas of life (mostly eating).
+Eventually, this lexicon was collected and codified by Guy Steele of CMU and
+others as the "Hacker's Jargon," published originally as a file, later
+expanded into a book (see bibliography).
+
+DEC-10/20 hackers were a small group at first, owing mainly to a paucity of
+usable documentation.  To write a functioning program, one could consult the
+Hardware Reference Manual, the Monitor Calls Reference Manual, and the MACRO
+Assembler Reference Manual.  But these manuals were just lists of
+instructions, monitor calls, and pseudo-ops, and did not impart the
+slightest notion of how to put a program together.  In 1981, the situation
+changed dramatically with the publication of Ralph Gorin's DEC-20 assembly
+language programming book, and the world was soon overpopulated with
+undergraduate DEC-20 programmers.
+
+Nevertheless, the lack of a coherent set of high-level programming
+languages, fully integrated with the operating system and file system, was
+one of the fatal flaws of the DEC-20.  This weakness was remedied by DEC in
+VAX/VMS, where programs written in a variety of languages can call upon
+common or compatible runtime support, and systems programs can be written in
+practically any language -- even BASIC or FORTRAN.
+
+Many TOPS-10 holdovers ran -- and will still run until the final gasp of the
+last DEC-20 -- in "compatibility mode."  This meant that programs written in
+these languages could only access files according to TOPS-10 rules: no long
+filenames, no funny characters in filenames, no explicit references to
+directories or generation numbers.  In particular, source programs for most
+programming languages had this restriction: most compilers had not been
+TOPS-20-ized, and even if they had, LINK had not.  Ultimately, this meant
+that the user had to know about TOPS-10 in order to use TOPS-20, and that
+high-level language programmers were denied access to many of TOPS-20's
+features.
+
+
+COPING WITH GROWTH
+
+Within a year, our DEC-20 was hopelessly overburdened, with load averages
+through the roof and the disks filling up regularly.  It remained in this
+condition for another year until we found a way to buy a second machine.
+Soon that was full too, and in the ensuing years came a third and a fourth,
+plus a DEC-20 in Columbia's Computer Science department and another in the
+Teachers College.  The Computer Center systems were upgraded by adding
+memory and disks, and eventually by interconnecting them all with CFS, and
+installing RA-81 disk drives and an HSC-50.  Eventually, all the CPUs were
+upgraded to 2065's with maximum memory, and there was nothing further we
+could do to get more performance out of them.  Like other DEC-20 loyalists,
+we had filled our machine room to capacity with DEC-20s and had no room for
+more.  Our only option for expansion would be a new model, with more power
+in less floor space.  For several years, we made periodic trips to Marlboro
+to discuss a forthcoming machine.  There were actually 2 projects.
+
+DOLPHIN began as a high-end system which would offer a truly distributed
+36-bit architecture.  Large DOLPHINS would sit amid small single-user
+MINNOWS on a high-bandwidth network.  Both DOLPHIN and MINNOW succumbed to
+problems with technology.  DOLPHIN used custom designed Motorola chips that
+had reliability problems.  MINNOW's dense packaging, designed to fit into a
+VT52 terminal case, coupled with the need for a locally attached RP06 disk
+drive(!), were its downfall.  Ethernet was still years away from commercial
+use, and the network problem remained as well.
+
+The JUPITER project came along several months after DOLPHIN was canceled.
+Its design did not incorporate distributed MINNOWs, but did endorse the
+requirement for a fast centralized processor.  It was to be 10+MIPS, and
+cheap.  A long and difficult design process resulted in neither of these
+goals being met and in 1983 the project was canceled, although portions of
+it eventually reached the marketplace -- the CI, the HSC-50, etc.
+
+LCG management and engineers always assured us on each visit to Marlboro
+(sometimes including helicopter and limo rides, plus lodging in "theme"
+hotels) that the new system was just "18 months away" from announcement,
+regardless of its code name.  The cost of ownership of either system would
+have been significantly lower than the equivalent number of KLs.
+
+While waiting for the Jupiter to appear, we still needed ways to apportion
+our existing DEC-20 resources among the users in the fairest way.  This had
+been a concern since early on.  The DEC-20, as originally delivered, allowed
+ordinary users to take over the machine in various ways, making it unusable
+by everyone else.  Users wrote programs to endlessly create self-replicating
+forks, they assigned all the PTYs and used them to write password stealers,
+they ran programs in infinite loops that consumed all available CPU cycles,
+they monopolized scarce terminal lines for long hours, they filled up the
+batch queues, they bombarded the operators with thousands of spurious tape
+mount requests, they printed millions of pages of nonsense, etc etc.
+
+As a monitor and exec source site, Columbia was able to make modifications
+to restrict access to certain resources by certain classes of users, based
+upon user ID or account string, or by taking over "unused" bits in the
+capability word.  But back in our OS/360 days, we learned the painful lesson
+that local modifications to operating systems come back to haunt us when new
+releases appear: it took years to upgrade our heavily modified IBM OS/360
+21.0 to 21.8.  Therefore we felt obliged to convince DEC that our
+requirements applied universally.  To do this, we went through channels,
+first submitting Software Performance Report forms, then writing letters,
+and finally we had a series of meetings with the monitor group in Marlboro.
+
+One product of these meetings was the Access Control Job.  This was a
+customer-supplied task which would be consulted by the monitor whenever
+users requested access to certain resources.  The ACJ could decide whether
+to grant or deny access based upon the customer site's own criteria.  Some
+of these resources included login, enabling of capabilities, job creation,
+fork creation, device assignment, batch job submission, tape mounts,
+structure mounts, directory creation, scheduler class changes, access and
+connect, etc.  This was a great boon to security and resource management.
+
+But the ACJ did not allow us to regulate ongoing consumption of resources.
+For this we needed to produce a monitoring program to collect per-user
+statistics on CPU and connect time.  Students were granted a weekly budget
+of connect and CPU time, and received periodic warnings as they approached
+the cutoff.  Even after cutoff, they were allowed to return during off-peak
+hours to complete their work.  The ACJ and Omega allowed our DEC-20s to
+accommodate a population upwards of 6000 active students on four machines at
+the peak of the DEC-20 era.
+
+One area was of particular interest to us.  Terminals were not connected
+directly to our DEC-20s, but were switched through a data PBX.  Therefore,
+the DEC-20 did not know that TTY37 (for instance) was terminal number X in
+room Y of building Z.  For reasons of both security and convenience, it was
+necessary to have this knowledge.  If a user was suspected of misbehavior,
+the staff had to know the user's physical location.  And upon job creation,
+the exec needed to know the terminal type and speed, so the user would not
+be confused by fractured, jumbled screens.  Fortunately, the data PBX had a
+console terminal that kept a log of connections.  This was connected, via an
+octopus RS-232 cable, to ports on each of the DEC-20s, which kept a database
+of PBX ports, locations, terminal types, and speeds.  This database was used
+by the ACJ to prevent enabling of capabilities by users at insecure
+locations like student terminal rooms and dialups, and to prevent login of
+certain IDs (like Operator and Field Service) altogether outside of the
+machine room.
+
+The logs kept by the ACJ and Omega included the physical location of the
+job.  These logs enabled us to track down more than a few would-be and
+actual violators of system security, and other users' privacy.
+
+
+NETWORKING
+
+Our first DEC-20 was connected to the IBM 360/91 using DEC's HASP/RJE
+product, which required its own dedicated DN20 front end.  This method of
+communication was quite painful, requiring the DEC-20 to masquerade as a
+card reader and line printer to the IBM system.  We wrote a series of Sail
+programs that would build the "magic JCL sandwich" for our users who wanted
+to send files or submit jobs to the IBM system.
+
+As soon as we got our second DEC-20, we connected it to the first one with
+DECnet [date?], and then connected this small network with other DEC systems
+on campus.  DECnet was also in use on the Carnegie-Mellon University
+computer center machines, and so we merged our two DECnets into one with a
+leased phone line between New York and Pittsburgh, calling the expanded
+network CCnet [date?] (CC stands for Computer Center, or maybe
+Carnegie-Columbia).  Before long, other institutions joined the network --
+Stevens Institute of Technology, Case Western Reserve University, New York
+University, the University of Toledo, and others.  The major benefit was
+sharing of software and programming work by the computer management staffs
+at these sites, which included DEC-20s, DEC-10s, VAXes, PDP-11s, and other
+DEC systems.  For many years, Columbia and CMU ran a common DEC-20 Galaxy
+system, jointly developed, which allowed transparent printing over DECnet
+and spooled print tapes for the Xerox 9700 printer.  One of Columbia's
+DEC-20s served as a mail gateway between CCnet and BITNET, a large academic
+network based upon IBM mainframe RSCS protocols.
+
+The most important contribution of the DEC-20 to networking was its support
+for the ARPANET protocols, first NCP and later TCP/IP.  For many years, DEC
+was the only major computer vendor to support these protocols, which were
+mostly developed on DEC 36-bit machines under TENEX, TOPS-10, and TOPS-20
+(and later on VAXes for Berkeley UNIX).  DEC even had a DEC-20 of its own on
+the ARPANET, which allowed major DEC-20 academic and research sites to
+communicate directly with TOPS-20 engineers, to send bug reports or fixes by
+e-mail, to transfer files, and so forth.  An ARPANET mailing list of TOPS-20
+managers was set up by Mark Crispin at Stanford.  The mailing list included
+TOPS-20 developers at DEC, and there was much useful give and take which
+bypassed the cumbersome SPR procedure.
+
+Locally, our own DEC-20s received NIA20 Ethernet interfaces to replace the
+awkward and oversized DN20 front ends.  Ethernet allowed us to run TCP/IP
+alongside DECnet, and before long [circa 1982] there was a large campus-wide
+Ethernet connecting the computer center DEC-20s with departmental systems
+all over campus, and beyond, thanks to the Computer Science department's
+Internet membership [1982?], and later [1984?], our own membership in other
+wide-area TCP/IP based networks like NYSERNET and JVNCNET.  Ethernet and
+TCP/IP even allowed us to discard our HASP RJE link to the IBM mainframes,
+which by now were on the Ethernet, running TCP/IP code from the University
+of Wisconsin (later incorporated by IBM into their own product line).
+
+
+KERMIT
+
+At the height of the DEC-20's popularity, the demand among students and
+faculty for user IDs was so great that we could no longer afford to give out
+perpetual IDs.  Instead, instructional IDs were assigned on a per-course
+basis and then deleted at the end of each semester.  Even though files were
+scrupulously backed up to tape, students were not allowed to request
+restoral of a previous term's files because of limited tape drive capacity
+and operator coverage.  And even during the term, a student's disk quota
+(something like 35K as I recall) was often not sufficient to keep all her
+files online at the same time.
+
+If the DEC-20 had some kind of removable media, then users could take
+responsibility for managing and archiving their own files.  Our first effort
+in this area involved a little-known product called the DN200, a remote
+DECnet station that was originally designed to connect 32 terminals and a
+line printer to the DEC-20 (this product never quite ripened).  The DN200
+was a PDP-11/34 running some derivative of RSX.  Ours -- one of a kind --
+included a dual 8-inch floppy disk drive.  Our plan was to write DN200
+software for copying files between the diskettes and the DEC-20 file system.
+Users would simply insert their own floppies and issue COPY commands to save
+or restore their files.  Fortunately, this project never got off the ground.
+
+But the idea of removable media felt right.  Computer users had had it for
+years in the form of cards, paper tape, or even DEC's own irresistible little
+spinning DECtapes, such a fixture on the PDP-8, -9, -10, -11, -12, etc, and
+sorely missing from the -20.  A number of crazy schemes were considered and
+rejected: letting users send files to the IBM mainframe's card punch,
+putting a 9-track "self service" tape drive in a public area, writing a
+program that would convert the user's data to bar codes for printing on our
+Printronix printers...
+
+Right around this time (1980), 8-bit CP/M microcomputers were appearing on
+the scene.  Even if they weren't good for much else, they could communicate,
+and they could read and write floppy disks.  Put a few of these in public
+areas, connect them to the DEC-20s, and students would have their removeable
+media -- little disks they could take away with them, store and reuse
+without reliance on the computer center staff.  The big question was how to
+move a file from a big timesharing mainframe to a small personal computer.
+
+We looked at the marketplace and saw that there were a few commercial RS-232
+communication packages for micros, but none for the DEC-20.  And we had not
+only DEC-20s and micros to worry about, but also our IBM mainframes.  If we
+bought software to transfer files between the DEC-20 and the Intertec
+Superbrain (this was the micro we selected, primarily for its tank-like
+user-proof construction, and despite its silly name), assuming it was
+available, we would have to buy yet another software package for our IBM
+mainframe users to do the same.  We also had to consider that the Superbrain
+might not be everyone's micro of choice.  Columbia, being a highly
+decentralized and diverse organization, was likely to have as many different
+kinds of computers as there were places to put them.  If a separate software
+package was required to connect each unique pair of systems, then we'd find
+ourselves needing nearly n-squared distinct packages, where n is the number
+of different kinds of computer systems, with sufficient copies to cover each
+instance of each system.
+
+Far better to have one software package on each computer, a package that is
+capable of exchanging data with all the other computers.  This reduces the
+number of required programs to n, which in turn eases the burden on the
+budget, and makes the user's life a little easier.
+
+All of these questions resulted in the decision to invest in our own
+programmers rather than the software companies.  This way we could have
+software specifically designed for our own needs.  The end result was the
+Kermit file transfer protocol.  Our first Kermit programs were written for
+the DEC-20 and the Superbrain.  Superbrains were placed in public areas to
+allow students to copy their own files onto floppies, and restore them to
+the DEC-20 later.
+
+The Kermit protocol was largely influenced by limitations of the DEC-20.
+The DEC-20, with its PDP-11/40 front end, was designed on the assumption
+that terminal input comes directly from people sitting at keyboards typing
+with their fingers at a relatively slow rate -- maybe 10 characters per
+second, tops -- whereas large amounts of sustained output can be sent from
+the computer to the screen.  RSX20F, the front end's operating system,
+therefore allocates small buffers for input and large ones for output.  We
+learned about this the hard way, when we bought our first terminals that
+included a "transmit screen" function (HDS Concept-100s).  As soon as
+someone tried it, the front end crashed.  Similar phenomena were observed
+with autorepeat keys (as when one of our programmers fell asleep on the
+keyboard)(*), and again when DEC first released its VT100 terminal: when
+doing smooth scrolling at 9600 bps the terminal overwhelmed the poor front
+end with XOFFs and XONs.  Later releases of RSX20F coped with these problems
+in draconian fashion -- if input buffers could not be allocated fast enough,
+the front end would set the line's speed to zero for a second or two!  The
+lesson?  Don't send sustained bursts of terminal data into the DEC-20 --
+it's like trying to make sparrow eat a meatball hero.  Kermit's normal
+packets are therefore quite short, 96 characters maximum -- seeds, insects,
+and worms that a sparrow can digest.
+
+ (*) The steady stream of characters caused a crash; the system recovered
+     but the steady stream continued; the system crashed again, and so on
+     throughout the night.
+
+Another peculiarity of the DEC-20 is its sensitivity to control characters.
+During normal terminal dialog, 17 of the 33 ASCII control characters are
+used for special purposes -- editing, program interruption, flow control,
+status reporting, signalling end of file, etc. -- rather than being accepted
+as data.  Even though a DEC-20 program can open the terminal in "binary
+mode" to bypass the special processing of these characters, it is not
+necessarily desirable to do so, because some of these functions could be
+useful during data transfer.  The lesson here is don't send control
+characters "bare" when transferring data.  In fact, the Kermit protocol
+sends packets that are strictly lines of text.
+
+The IBM mainframe (by this time, the 360/91 had been replaced by a 4341
+running the VM/CMS operating system) had its own set of peculiarities.
+Unlike the DEC-20, it used half duplex communication, and used 7 data bits
+with parity always.  This meant that our file transfer protocol would have
+to be half duplex too, and would require a special mechanism for
+transmitting 8-bit binary data through a 7-bit communication link.
+Furthermore, as all communication was through either a 3705 front end
+(linemode) or an IBM Series/1 (or equivalent, e.g. 7171 or 4994) 3270
+protocol converter, both of which treated many of the control characters as
+commands to be executed immediately, the prohibition on bare control
+characters in data was reinforced.  Reducing the protocol to the lowest
+common denominator made it work in all cases, but at the expense of
+efficiency and elegance.  Some of the resulting shortcomings were addressed
+in later years by the addition of long packets and full-duplex packet
+transfer to the protocol.
+
+By happy coincidence, the combined quirks of the DEC-20, the IBM mainframe,
+and the CP/M microcomputer resulted in a design that would prove adaptable
+to practically any computer capable of asynchronous communication.  A
+file was first transferred with Kermit protocol on April 29, 1981, by two
+instances of Kermit-20 running on a single DEC-20, using two serial ports
+interconnected by a null modem cable.
+
+The idea of sharing our Kermit programs and giving away the source code was
+a natural outgrowth of our experiences with the community of DEC-10/20
+customers.  We received so much of our own software this way, it was only
+fair.  We included Kermit on our export tapes and submitted it to DECUS.
+DEC was one of the first companies to recognize Kermit as a tool of
+widespread value, and publicized it in their Large Systems flyers and
+newsletters (e.g. Copy-N-Mail).  And DEC was the first organization to port
+Kermit to a new platform -- their VT-180 CP/M micro.  Because we wanted
+Kermit software to the shared openly, we did not place our Kermit programs
+into the public domain.  While this might seem contradictory, we felt that
+by copyrighting the programs, we could prevent them from being taken by
+entrepreneurs and sold as commercial products.  We had even heard stories of
+other universities that had been enjoined from using programs which they
+themselves had written by firms that had taken their work and copyrighted it
+for themselves.
+
+Because of the widespread distribution of early Kermit programs, along with
+source code and the protocol specification, sites with other kinds of
+systems began to write Kermit programs of their own and send them back to
+us.  Some of the early contributions in this vein were DECsystem-10 and
+VAX/VMS Kermit programs from Stevens Institute of Technology (written in
+Common Bliss so the code could be shared), PDP-11 Kermit from the University
+of Toledo, and the first bare-bones UNIX Kermit in C from our own Computer
+Science department.  The process continued for many years, resulting in
+the large collection of Kermit programs you can find today at the Kermit
+Project FTP site.
+
+Columbia's Kermit Project used the DEC-20, our CU20B system, as its testbed,
+librarian, and network home since the beginning until CU20B (our last
+remaining DEC-20) was switched off in September 1988.  The electronic
+Info-Kermit newsletter was produced and sent out to people on academic and
+corporate networks all over the world from the DEC-20 using MM, the DEC-20
+mail program.  Those same users can use MM for queries and information, and
+they can also access programs, source code, and documentation through the
+DEC-20's DECnet and TCP/IP file servers.  Even our distribution tapes were
+originally shipped from our DEC-20s.
+
+During early days, DEC-20 Kermit was the "benchmark" against which all other
+Kermits were to be verified for interoperability.  Many new Kermit features
+were added to DEC-20 Kermit first (server mode, etc).  The DEC-20 user
+interface became the model for most Kermit programs, so millions of people
+today are using the COMND JSYS without knowing it.  Long after the DEC-20
+faded from the scene, Kermit programs on Windows, UNIX, MS-DOS, and many
+other platforms continue to "keep the faith".
+
+Soon after Kermit first appeared, microcomputing became an important force
+with the introduction of the IBM PC.  PCs suddenly became useful
+general-purpose computers in their own right.  In response to urgent
+requests from Columbia faculty members who had received the first IBM PCs,
+we hastily produced version 1 of IBM PC Kermit and found that Kermit was
+being used in ways we hadn't anticipated.  Rather than use the PC's floppies
+to store mainframe files, users were doing most of their file creation and
+manipulation on the PC, and sending the results to the mainframe for
+archiving and sharing.  Kermit had become an early model of distributed
+processing.  
+
+(In later years, after the original Kermit project was canceled by the
+university, it nevertheless managed to continue through various forms of
+self-funding.)
+
+
+SOFTWARE PACKAGES
+
+The DEC 36-bit large systems were the source of some of the most influential
+and enduring software packages yet written.  Here we arbitrarily mention a
+few of our favorites, with apologies to the hundreds that we have neglected.
+
+-- Editors
+
+Foremost among the programs created on these systems is the text editor
+EMACS, created by Richard M. Stallman on ITS, MIT's "Incompatible
+Timesharing System" for the PDP-10.  EMACS embodied the revolutionary
+concept that the terminal screen should act as a window upon the text being
+edited, and that any changes to the text should be reflected immediately on
+the screen.  After many years of line-oriented editing (and before that,
+keypunching) it was hard for us at first to comprehend the power and
+convenience of a screen editor.  There was even discussion about whether we
+should allow it on our system, as if it were a subsersive influence...
+"What do we need it for?  Every keystroke results in 37 context switches!"
+etc etc.  But soon even the skeptics began to appreciate EMACS for its
+enormous boost to human productivity, and it quickly became the editor of
+choice for staff, students, and faculty alike.  A cottage industry sprang up
+at Columbia for adding new terminal types and operations to TECO's database
+(DEC-10/20 EMACS was written in TECO), as well as new libraries for EMACS
+itself.
+
+While some may view EMACS and its descendents as "obsolete" today, compared
+to GUI editors and word processors, it has one great advantage over the
+newer editors: it is entirely driven by ordinary ASCII characters.  This
+means that touch typists never have to leave the home keys, and skilled
+EMACS users can enter and manipulate text faster than experts with other
+editors can.  And by restricting the command set to ordinary ASCII
+characters, EMACS is automatically compatible with any system -- micro or
+mainframe -- that supports full duplex ASCII communication.
+
+-- Text Formatters
+
+EMACS is an editor for ASCII text, which means that by itself it cannot
+ordinarily produce special printing effects like boldface, italics,
+underlining, math notation, different point sizes, graphics, etc.  For that
+we need -- at least in the world of character terminals -- a text formatter.
+EMACS was one of several screen editors for the DEC-20 (TV and TVEDIT were
+other early contenders), and there were also several text formatters.  The
+DEC-20 comes, of course, with RUNOFF, DEC's standard formatter.  RUNOFF is
+simple, not too powerful, but has the advantage that RUNOFF files are mostly
+portable among PDP-11's, VAXes, DEC-10s, and DEC-20s.  However, RUNOFF is
+proprietary and therefore not available on non-DEC systems.  RUNOFF also has
+three basic flaws.  First, it is strictly procedural, which means that the
+writer must behave like a programmer, instructing RUNOFF in the minutest
+detail.  Second, it can't do math.  And third, it does not support a wide
+variety of output devices.
+
+These shortcomings are addressed by several text formatters that were
+developed by users of DEC large systems, and for that matter some of its
+smaller systems (UNIX, for instance, was originally written for the PDP-7,
+and later moved to the PDP-11; UNIX nroff and troff are probably offshoots
+of RUNOFF).  Early efforts on 36-bit systems included R and Pub.
+
+Brian Reid, working on a DECsystem-10 for his PhD thesis at CMU, devised a
+document production language called Scribe, which addressed the procedural
+element.  Where in RUNOFF one must say, "center and underline this word,
+leave 7 blank lines, indent 4 spaces, etc", in Scribe one says "This is an
+article, here is the title, here is a section, here is a footnote, here is a
+bibliographic citation, put this in the index, etc" and leaves the stylistic
+decisions and details up to Scribe, which comes with a vast database of
+document types and publication styles.  For example, if you have written an
+article for the CACM, you can ask Scribe to format it in the CACM's required
+style.  When the CACM rejects it, you simply tell Scribe to redo it in IEEE
+Computer format, and then submit it there.  During its development, Scribe
+was shared freely with other universities, and there was much give and take
+between Brian and users all over.  When Brian left CMU, however, rights to
+Scribe were sold to a private company, Unilogic Ltd, sold it as a commercial
+product.  Scribe was a fixture at many DEC-10 and -20 sites, and has been
+converted from the original Bliss to other languages for use on systems like
+UNIX, VMS, and even IBM mainframes.
+
+Meanwhile at Stanford, Donald Knuth was planning new editions of his
+multivolume work, "The Art of Computer Programming."  But he soon discovered
+that in the time since his first editions were published, the art of
+mathematical typesetting, like that of architectural stonecutting, had died:
+he could not find a typesetter equal to the task.  So he set to work on a
+computer program for mathematical typesetting and a set of harmonious fonts
+suitable for computer downloading to a laser printer.  The work was done on
+a PDP-10 at Stanford, running their homegrown operating system WAITS, in the
+Sail language.  The result, a system called TeX (tau epsilon chi) (and
+METAFONT, its companion font-builder), attracted many devotees, and the
+original Sail program was soon translated into other languages for
+portability.  It now runs on many different machines and operating systems,
+and is responsible for the production of numerous books and articles of
+surpassing typographical beauty.
+
+Both TeX and Scribe support a wide variety of output devices, and are among
+the earliest text formatters to do so.  When Xerox let a few of its XGP
+printers (an experimental Xerographic printer with fonts downloaded from the
+host) escape into laboratories at Stanford, MIT, and CMU in the early 70's,
+these were quickly hooked up to PDP-10s, to be driven by formatters like R
+and Pub.  Their flexibility supplied the impetus to people like Don and
+Brian to include fullblown typesetting concepts in their designs, and
+because of this, it was possible later to add support to TeX and Scribe for
+printers like the GSI CAT (then widely used at Bell Labs with Troff), the
+Xerox Dover, the Imagen, and today's PostScript printers (and if I'm not
+mistaken, Brian was the guiding force behind PostScript too).
+
+-- Electronic Mail
+
+The benefits of electronic mail hardly need touting, but there was a time
+when people didn't use it or trust it.  Today, many of these same people can
+scarcely live without it.  Its major benefit is that it lets the people who
+participate in it communicate conveniently, and with some assurrance that
+the message will be received.  Unlike postal mail, e-mail can be sent on the
+spur of the moment, and a single message can be sent to more than one person
+at once.  Unlike telephone calls, e-mail does not depend on the callee being
+present when the message is sent.  There are those who say that it's a
+dehumanizing influence, that people in adjacent offices who once would visit
+and chat now sit glued to their screens and fire off e-mail messages to each
+other, messages whose true intent cannot be gleaned from facial expression,
+body language, or tone of voice.  This may be true, but e-mail is here to
+stay and most people will find a way to fit it into their lives in a
+sensible way.
+
+If you did a SYSTAT on any DEC-20 at Columbia since 1978, you would see
+about half the users running EMACS and the other half MM, with only
+occasional time out for text formatting, program compilation, file transfer,
+and other kinds of "real work".  MM is the Mail Manager, originally written
+by Mike McMahon and taken over later by Mark Crispin.  It is the "user
+agent" side of the mail system.  MM is an ordinary unprivileged user program
+which lets you read your mail, compose and send mail to other users, forward
+mail, and manage your mail file.  MM lets you move messages to different
+files, to print messages, delete them, flag them for later attention, and so
+on.
+
+Any operation that MM can perform on a single message can also apply to a
+message sequence.  This is one of MM's most powerful features.  MM's message
+selection functions let you treat your mail file almost like a database, and
+issue complex queries like "show me (or reply to, or delete, or forward, or
+flag, or print) all the messages from so-and-so sent between such-and-such
+dates that are longer than so-many characters and include the word 'foo' in
+their subject."
+
+MM is enormously powerful, but it's also easy to use because it fully
+employs the COMND JSYS.  Users can find out what's expected at any point by
+typing a question mark (except when composing message text, in which case
+the question mark becomes part of the text).  There is a SET command that
+allows many of MM's operations to be customized, and its default actions
+changed.  Users can save these customizations in an initialization file, so
+they are made automatically every time MM is run.
+
+MM was quickly adopted in favor of DEC-20 MAIL and RDMAIL, and was used
+initially among the programming staff.  Its use quickly spread to the
+students and faculty, to the extent that several courses came to totally
+depend on it.  Homeworks and readings were assigned, conferences were
+conducted, assignments turned in, questions asked and answered, all with MM.
+MM is also used to post messages to public "bulletin boards," which were
+used for everything from selling used motorcycles to trivia quizzes to
+raging controversies on political topics.
+
+At Columbia, many of the departments are spread across different buildings,
+on and off campus.  These departments were ideal candidates for electronic
+mail, and many of them run their daily business using MM.  And MM is equally
+at home in the networked environment.  Given the appropriate network
+connections and delivery agent, MM can be -- and is -- used to transmit
+electronic mail all over the world, faster than any post office or delivery
+service could deliver paper.  From Columbia, we send e-mail to locations as
+far-flung as Utah, England, Norway, Australia, and Japan, and receive
+replies within minutes (assuming our correspondents keep the same kind of
+odd hours we do!).
+
+
+OTHER NOTEWORTHY CONTRIBUTIONS
+
+The DEC-20 architecture actually goes back to the mid 1960s, to DEC's PDP-6,
+which was designed with LISP in mind -- the halfwords and associated
+instructions are perfect for CARs and CDRs (that's LISP talk, descended from
+instruction set of the IBM 7090, where LISP was first developed).  Most of
+the large implementations of LISP were done for DEC's 36-bit machines --
+MACLISP, INTERLISP -- and among the applications based on them, MIT's
+MACSYMA stands out as a landmark.  MACSYMA is used by scientists and
+engineers to manipulate mathematical expressions of arbitrary complexity on
+the symbolic, rather than numerical, level.  There is one famous (perhaps
+apocryphal) story about a 19th-century astronomer-mathematician who devoted
+his life to formulating the exact equation of motion of the moon.  The
+result filled a 300-page book.  MACSYMA was given the same problem and
+solved it in about half an hour, finding a few mistakes in the original to
+boot.
+
+In 1971, Ralph Gorin of Stanford University wrote the first known
+computer-based spelling checker for text, SPELL for TOPS-10.  It was later
+adapted to the DEC-20, and "interfaced" with packages like EMACS and MM.  The
+descendents of SPELL are legion -- no self-respecting PC-based word processing
+program would appear in public without a spelling corrector.
+
+
+CONVERTING TO UNIX
+
+"Smooth sailing through the 80's..."  By the late '80s, demand for DEC-20
+service leveled off and then began to drop.  The DEC-20 was like a clipper
+ship, the highest expression of a technology which many believed obsolete --
+the large central timesharing computer.  Students were now willing to forego
+the amenities of the DEC-20 for the control and predictability of a PC of
+their own.  Thanks to Columbia's membership in the Apple University
+Consortium, there were soon thousands of Macintoshes in student hands.
+Special arrangements with IBM also put IBM PCs in hundreds of offices and
+dorm rooms.  These systems met student's needs for small programming
+assignments in Pascal and Basic, as well as for modest word processing, and
+relieved the central systems of a large burden.  However, PCs did not
+fulfill the needs of the Computer Science and other engineering departments,
+where larger projects were assigned in languages like Fortran, C, Prolog,
+and Lisp, which were not readily and affordably available for PCs.
+
+Meanwhile, UNIX was taking over the computing world -- on mainframes, minis,
+workstations, and even PCs.  Our major group of instructional users -- CS
+students -- were doing most of their work on departmental ATT 3B2's, but
+badly needed a centralized, reliable environment with tolerable performance,
+backups, service, and all the rest.  We already had been running UNIX on a
+VAX 750 for some years (for internal development work), as well as Amdahl
+UTS on an IBM mainframe, so had developed some UNIX expertise.
+
+For these reasons, we decided that it was time to start converting from
+TOPS-20 to UNIX.  For financial reasons, we chose a VAX 8650 for this
+purpose.  The DEC-20 tradein was attractive, and we were able to keep our
+old disk and tape drives.  In fact, we figured that over 3 years, buying the
+VAX was cheaper than keeping the DEC-20.  And it was more powerful, with a
+bigger address space, in a smaller footprint, than the DEC-20 it replaced.
+
+VMS was not chosen for several reasons.  First, we were feeling somewhat
+betrayed by DEC's abandonment of TOPS-20, and did not want to leave
+ourselves open to the same treatment in the future.  UNIX, unlike VMS, does
+not tie you to a particular vendor.  Furthermore, UNIX has networking and
+communications for all our major requirements: Ethernet, TCP/IP, DECnet (our
+initial UNIX was Ultrix-32), BITNET (UREP), RS-232 and LAT terminals,
+Kermit.  And UNIX itself has many benefits: a very powerful applications
+development environment for experienced programmers, a programmable shell,
+piping of programs, simple but powerful utilities.
+
+UNIX, however, is notoriously terse, cryptic and unfriendly, especially to
+novice computer users.  VMS, though lacking the DEC-20's COMND JSYS, is
+certainly friendlier than UNIX, and verbose to a fault.  So it was not
+without some misgivings that we embarked on the conversion.
+
+Many of us DEC-20 users were resistant to change.  Familiarity, for better
+or for worse, is often more appealing than uncertainty.  But converting to
+UNIX did force us to give up some of the features which originally drew us
+to the DEC-20 in the first place.
+
+The "user-friendly" shell provided by the TOPS-20 Exec, which gives help to
+those who need it but does not penalize expert users, is probably the
+feature that was missed the most.  In UNIX, most commands are programs,
+assumed to have arguments of only options or filenames.  This means you
+can't have "?" for commands and arguments in the shell, because the programs
+that would act upon the help request hasn't even started running yet.  This
+is the opposite of TOPS-20, where most major functions are built into the
+exec, but which doesn't allow concise building-block programs to be piped
+together as UNIX does.
+
+To cite an example of the radical difference between the TOPS-20 and UNIX
+philosophies, suppose you wanted to create a procedure that would produce a
+directory listing, sort it in reverse order by filesize, and format the
+listing into numbered pages with three columns per page, suitable for
+printing.  In TOPS-20 you would spend a week writing an assembly language
+program to do all of this.  In UNIX, the tools are already there and only
+need to be combined in the desired way:
+
+  ls -s | sort -r | pr -3
+
+This makes UNIX look pretty attractive.  But the DEC-20 program, once
+written, will contain built-in help, command and filename completion, etc,
+whereas the UNIX procedure can only be used by those who know exactly what
+they are doing.  If you've typed "ls -s | sort" but don't know what the
+appropriate sort option is, typing question mark at that point won't do any
+good because the sort program isn't running yet.
+
+The DEC-20 (like most common operating systems) uses case-independent
+commands and filenames.  Case dependence, however, is a feature of UNIX
+which is vigorously defended by its advocates.  It can be quite confusing to
+users of other operating systems.  In general, UNIX commands are very
+different from the commands used in other systems.  Even if the DEC-20 had
+not offered a menu-on-demand help facility the average user could have
+probably guessed the proper commands to type -- DELETE to delete a file,
+COPY to copy a file, RENAME to rename a file, etc.  In UNIX, how do you
+delete a file?  DELETE?  No.... ERASE?  No, it's "rm" (small letters only!).
+
+Without a manual at your side, how could you find this out?  Even if you
+knew about "man -k" (keyword search through the online manual), UNIX doesn't
+give you much assistance: "man -k delete" doesn't turn up anything relevant,
+neither does "man -k erase".  But at least "rm" is somewhat suggestive of
+the word "remove", and indeed "man -k remove" would have uncovered the
+elusive command (early versions of UNIX had an even more elusive name for
+this command: dsw, an abbreviation for "do swedanya", Russian for goodbye,
+transliterated into Polish or perhaps German; this is not the only place
+where the censor has been at work...  Current "standard" versions of UNIX do
+not have a "help" command, but in earlier releases, a help command was
+provided which declared simply, "UNIX helps those who help themselves").
+
+A special amenity of TOPS-20 is its retention of multiple generations
+(versions) of each file, giving the ability to revert to an earlier version
+should the latest one suffer from human error, folly, or tragedy.  This,
+coupled with the ability to resurrect a file after it is deleted, imparts a
+sense of comfort and security that can only be appreciated once one moves to
+a more conventional and precarious file system.  If you delete a file in
+UNIX, or create a new file with the same name as an existing one, then the
+old file is just plain gone.  The "rm *" command in UNIX is simply too
+powerful, and too silent.  Yes, it did what you said, but how did it know
+you meant what you said?  UNIX does not save users from themselves.  After
+accidentally deleting all your files in UNIX you will never again be annoyed
+when you type a command and it asks "Are you sure?".
+
+Another important feature of TOPS-20 is the logical device name, which can
+be defined in infinite variety for the system as a whole, and for each
+individual user.  Each logical name can point to a particular device and/or
+directory, or to a whole series of them, to be searched in order.  These are
+built into the operating system itself, whereas the notion of PATH and
+CDPATH are afterthoughts, grafted into the UNIX shell, not available from
+within programs, and not applicable outside their limited spheres of
+operation.
+
+Then we have the programming languages which would no longer be available --
+ALGOL (60 & 68), APL, BASIC, BCPL, BLISS (10, 11, and 36), CPL (and "real"
+PL/I), ECL, FOCAL, PPL, SAIL, SIMULA, SNOBOL, ...  And TECO!  And MACRO and
+Midas and Fail...  In fact, few people will miss any of these, with the
+possible exceptions of APL (used in some classes) and SNOBOL (which can still
+be found for UNIX on selected platforms).
+
+Of course all our homegrown applications written in assembly language had to
+be be redone for UNIX: user ID entry and management (as opposed to editing
+the passwd file), accounting, user restrictions (ACJ, Omega).  And one
+feature which we could never again live without is MM, a powerful mail
+management system equally usable by novices and experts.
+
+On the positive side, we would not be giving up EMACS, Scribe, TeX, Kermit,
+or the TCP/IP utilities Telnet and FTP.  All of these programs are available
+in some form for UNIX.  Some of the UNIX implementations are definite
+improvements, such as GNU EMACS from the Free Software Foundation, without
+the memory limitations of TOPS-20 EMACS.  There is also a high quality
+Fortran from DEC for our engineers, and of course the whole C and LISP
+programming environments for CS students and other software developers, plus
+a set of powerful text manipulation utilities like sed, grep, awk, lex, and
+yacc, whose functions should be obvious from their names.
+
+The VAX installation was much quicker than the typical DEC-20 installation.
+The 8650's performance was quite snappy, and its reliability was excellent.
+After one year, the 8650 was sold, and a second DEC-2065 was traded in to
+DEC for a VAX 8700.  The 8700 is about the same power as the 8650, but,
+unlike the 8650, is compatible with the new BI devices, and upgradable to a
+bigger model VAX should it run out of steam.
+
+It turned out, however, that it when it came time for expansion, it was more
+cost-effective to buy Sun UNIX systems rather than upgrade the 8700 to a
+bigger VAX.  This is a choice you don't get with a proprietary operating
+system like TOPS-20, VMS, etc.  Converting from a VAX to a SUN requires some
+"giving up" (e.g. DECnet) but not nearly so much as the journey from DEC-20
+to VAX, and in return you get a very powerful machine in a fraction of the
+VAX's floorspace -- what the Jupiter should have been, but with UNIX instead
+of TOPS-20.
+
+
+MAJOR CONVERSION ISSUES
+
+A big question during the conversion to UNIX was user education.  UNIX does
+not help users the way TOPS-20 does.  There is no COMND-style ? help, there
+is not even a "help" command.  The commands themselves do not have
+intuititive names: a user would be hard-pressed to guess that "mv" is the
+command to rename a file, "cat" to type a file, etc.  How will users know
+how to respond to the mute "$" (or "%") staring them in the face?  Should we
+write a user-friendly shell for them?  Or reams of tutorials and reference
+manuals?
+
+For all its cryptic terseness, UNIX has become very popular.  UNIX systems
+run on computers of all kinds, from PCs to supercomputers.  Consequently,
+computer bookstores are loaded with books of the "Teach Yourself UNIX"
+variety.  Our feeling has been that no matter how cryptic and unfriendly
+UNIX itself may be, it shouldn't be changed.  Otherwise we lose the
+compatibility with other UNIX systems, the books and articles, we leave
+ourselves open to a maintenance nightmare, and we let our users in for a
+rude surprise should they ever encounter a real UNIX system.
+
+Another issue is the mail system.  As the user-level mail agent, you have
+the choice of UNIX mail or GNU EMACS RMAIL.  UNIX mail is primitive and
+unintuitive, and RMAIL is accessible only to those who know EMACS.  RMAIL
+has the advantage of a consistent interface -- no jumping in and out of the
+editor -- but it has a relatively limited command repertoire.
+
+Our users have become very much acclimated to electronic mail, thanks
+largely to the power, convenience, and friendliness of MM.  Many of the
+biggest users of MM are faculty or administrators who do not need to learn a
+new mail system.  But a program as powerful as MM requires a lot of
+commands, and when you have many commands, you need the kind of built-in
+help that comes for free on the DEC-20.  Similar comments apply to other
+complicated programs, for example (on our system) user ID entry and
+management programs, the operator interface (like OPR on the DEC-20), etc.
+
+For this reason, we decided to "turn our new system into our beloved old
+one" by writing a COMND package for UNIX.  This package, CCMD, started as
+part of the "Hermit" project, a Columbia research effort funded by DEC,
+1983-87.  We were trying to design a network architecture that would allow
+various kinds of PCs -- IBM, Rainbow, Pro-380, VAXstation, SUN, Macintosh,
+etc -- access to the files and services of our DEC-20 and IBM mainframes in
+a consistent and transparent way.  The project ultimately failed, because
+technology passed us by (cheap Ethernet & token ring connections and
+gateways, Sun NFS, VAX-based Macintosh file servers, etc).
+
+CCMD, written entirely in C, does all COMND functions and more, parses from
+the terminal, a file, redirected standard input, or a string in memory.
+It's not oriented to any specific keyboard or screen.  It favors neither the
+novice nor the expert.  It runs under 4.xBSD, Ultrix, AT&T System V, SunOS,
+and MS-DOS, and it should be easily portable to VAX/VMS, and any other
+system with a C compiler.
+
+CCMD is a fullblown COMND implementation, allowing chained FDBs (e.g. parse
+a filename, or a number, or a date), redirection of command input, and so
+forth.  Additions to the DEC-20 COMND JSYS include "?"-help lists for
+matching filenames, partial filename completion (up to first character
+that's not unique), a very flexible time and date parser, and additional
+data types.
+
+Using CCMD, Columbia's programmers were able to write a clone of DEC-20 MM
+entirely in C.  It has all the features of DEC-20 MM, plus a few more.  It
+handles a variety of mail-file formats, including DEC-20, Babyl (RMAIL), and
+mbox (UNIX mail).  It uses UNIX sendmail as its delivery system, and should
+be adaptable to the delivery services of non-UNIX systems.
+
+
+FINAL WORDS...
+
+Columbia is highly decentralized and facing the budget squeeze common to all
+higher education institutions.  There is no central mandate to put expensive
+workstations on every desk, connected by gigabit fiber optic networks.
+Students, faculty, and staff for the most part use their own or departmental
+funds to get the best PC they can use, typically an IBM PC or Macintosh with
+an RS-232 interface.  Most users communicate only sporadically via dialup,
+or by hauling a diskette to a public PC lab, where PCs are connected to the
+network or a laser printer.
+
+As PCs become cheaper and more powerful, what's left to be done centrally?
+There are those who claim that anything a VAX or DEC-20 can do, can also be
+done on a PC.  The only exceptions might be very large applications, shared
+and/or large and/or constantly changing databases, and communication in
+general -- wide area networks, mail, shared program libraries, bulletin
+boards, conferences, ...
+
+But massive decentralization of computing means enormous duplication of
+effort and expense for hardware, software licenses, and maintenance.
+Everyone becomes a system manager, doing backups, troubleshooting, software
+installation and debugging, consulting, training, scrounging for parts.
+Researchers who were once hot on the trail of a cure for cancer or AIDS are
+now twiddling DIP switches, running Norton utilities on their fractured hard
+disks, poring through the back pages of BYTE for bargains.  Each person or
+group may have a unique collection of software & hardware, which makes
+instruction, collaboration, and most other functions much more difficult
+than in the timesharing days.  And space must be found for computing
+equipment in practically every office and dorm room, rather than in one
+central area.  Some day, the budgeteers might notice the cumulative effect
+of all this distributed computing and the pendulum will start to swing back
+the other way.  What's the phrase, "economies of scale?"...
+
+There was an article in the paper some years ago during the fuel crisis,
+about bringing back clipper ships...  The DEC large systems, the clipper
+ships of the timesharing era, will never return, but they will live on in
+the software they spawned -- EMACS, TeX, Scribe, Spell, MM, Kermit.
+Meanwhile, as the computer industry struggles to turn PCs into multiuser
+systems and to reinvent multiprocessing, security, and other forgotten
+concepts, it might profitably pause to look back at the past decades, when
+the expense and limitations of computing equipment forced designers and
+coders to be...  well, smarter.
+
+
+EPILOG [January 2001]
+
+Today, when you can walk into a store and buy a computer with 10 times the
+power (and 100 times the main memory, and 1000 times the disk capacity) of
+the biggest, fastest KL10 for under $1000, plug it into an ordinary wall
+socket and phone jack (or cable box, etc), and be on the Internet in a few
+minutes with full color graphics, video, sound, and who knows what else, we
+might easily forget how computers have evolved from big stored-program
+calculators into primarily communications tools.  At least for us at
+Columbia University, the change began with the large DEC systems that
+exposed us all at once to file sharing, electronic mail, and local and
+wide-area networking, opening up possibilities of collaboration and
+communication in work and for fun: within the computer, across the campus,
+and all over the world.
+
+The PDP-10 postmortem has been long and painful (who killed it and why, how
+might it have survived, and what would the world be like today if it had),
+but those who might still like a glimpse into the exciting times of 1970s
+and 80s when computers first became a cultural phenomenon and communication
+medium might soon be able to do so, as various software- and hardware-based
+PDP-10 emulation projects near completion.  Perhaps the greatest legacy of
+those days is found in today's open software movement, in which developers
+all over the world cooperate on projects ranging from operating systems
+(Linux, FreeBSD, etc) to applications of all kinds, just like the original
+PDP-10 ARPAnet "hackers" did.
+
+
+BIBLIOGRAPHY
+
+da Cruz, Frank, "Kermit, A File Transfer Protocol", Digital Press, 1987.
+
+Gianone, Christine, Editor, "Kermit News", published periodically by
+Kermit Distribution, Columbia University Center for Computing Activities,
+612 West 115th Street, New York, NY 10025.
+
+Gorin, Ralph, "Introduction to DECSYSTEM-20 Assembly Language Programming",
+Digital Press, 1981.
+
+Knuth, Donald E, "TeX and Metafont", Digital Press, 1979 (now a collector's
+item).
+
+Murphy, Dan, [insert TENEX paper citations].
+
+Peterson, James L., "Computer Programs for Detecting and Correcting Spelling
+Errors", CACM, V23 #12, Dec 1980.
+
+Stallman, Richard M., "EMACS, the extensible, customizable, self-documenting
+display editor", ACM SIGPLAN Notices, V16 # 6, June 1981.
+
+Steele, Guy L., Don Woods, Raphael Finkel, Mark Crispin, Geoff Goodfellow,
+Richard Stallman, "The Hacker's Dictionary: A Guide to the World of Computer
+Wizards", Harper & Row, 1983.
+
+The Kermit Project Website: http://www.columbia.edu/kermit/ 
+
+(End)
+

@@ -1,0 +1,79 @@
+*  In the assembler, we need a way to assign a symbol in such
+   a way that the new symbol gets type OPCODE, for it to have
+   opcode semantics when used.  How?
+
+     foo: sets a label, and foo= sets a symbol.  foo=% or
+     something like that?  or implement the .opdef pseudo-op?
+
+   (we did the .opdef pseudo-op.  case closed.)
+
+*  Think about other operators for the assember.  ^< and ^> for
+   left/right shift?  ^| for XOR?
+
+*  Implement a terminal window and a built-in UART in the simulator.
+
+   (well on its way.)
+
+*  Instructions to think about having:
+
+   XCT  -- execute another word.
+
+   BLT  -- Block Transfer.
+
+   MEMSET?
+
+*  Opcode status for now:
+
+   Block 0
+      Nothing done, really.  Needs serious thinking on, like, what
+      it should look like in the first place.
+
+   Block 1
+      JSP and basic JRST done.  For others, see block 0.
+
+   Block 2
+      Basic move class.  Done, basically.  We might want to move
+      out EXCH from here and put in DMOVE/DMOVEM in 23/2B.
+
+   Block 3
+      Push/Pop and friends.  Done.
+
+   Block 4
+      CAI/CAM.  Done.
+
+   Block 5
+      JUMP/SKIP.  Done.
+
+   Block 6
+      AOJ/SOJ.  Done.
+
+   Block 7
+      AOS/SOS.  Done.
+
+   Block 8
+      Basic arithmetic.  Done, except for handling of the carry bit
+      for ADD/SUB.
+
+   Block 9
+      MUL and DIV.  Done as a kludge for short arguments/result.
+      Needs to be totally re-implemented.
+
+   Block A
+      Multiply + add/sub:  Not done at all.
+      Shift/Rotate:  Not done at all.
+
+   Block B
+      Floating point.  Not done at all.
+
+   Block C
+      TRxx, i.e. bit test etc.  Done.
+
+   Block D
+      TLxx, see block C.
+
+   Block E
+      Should become I/O and priviliged instructions.  Needs some
+      serious thinking.
+
+   Block F
+      See block E.

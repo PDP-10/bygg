@@ -1,0 +1,354 @@
+#
+# Copyright (c) 1986, 1990 by The Trustees of Columbia University in
+# the City of New York.  Permission is granted to any individual or
+# institution to use, copy, or redistribute this software so long as it
+# is not sold for profit, provided this copyright notice is retained.
+#
+
+# $Header: /src/sos5.bin/cucca/mm/mm/RCS/Makefile,v 2.15 1995/03/15 11:37:54 melissa Exp $
+
+.SUFFIXES: .H .h
+.c.o: ; $(CC) $(CFLAGS) -c $*.c
+
+CPP=/lib/cpp
+RM=/bin/rm
+
+# if you don't have a preprocessor predefine, then define your machine
+# type here:
+#MACHINE=-DBSD
+# if a next do this
+#MACHINE=-DNEXT
+# if Solaris 2.x/SVR4 do this
+#MACHINE=-D__svr4__
+
+CCMD = ../ccmd
+CCMDLIB=$(CCMD)/ccmd.a
+INCLUDE = -I$(CCMD)
+DEBUG = -g -DDEBUG 
+#DEBUG = -g -Bstatic -Dsun_stdio_bug -DDEBUG
+#DEBUG = -g -DDEBUG -DEXCESS=0 -DMDEBUG
+# define USAGE if you want MM to log usage statistics
+USAGE=-DUSAGE
+PATCHFILES=patch.*
+TESTHELP=
+
+CFLAGS = $(DEBUG) $(INCLUDE) $(MACHINE) $(USAGE) $(TESTHELP)
+LINTFLAGS = -DDEBUG -DMDEBUG $(INCLUDE) $(MACHINE)
+LDFLAGS = $(DEBUG)
+#LIBS =	$(CCMDLIB) -lcurses
+#for Solaris2:
+#LIBS =	$(CCMDLIB) -ltermcap -lnsl
+LIBS =	$(CCMDLIB) -ltermcap -lspoolmail
+BIN=$(DESTDIR)/usr/local/bin
+
+# where to install library type files
+LOCLIB=/usr/local/lib/mm
+
+# help files
+HELPDIR0=help/TOPICS.DIR
+HELPDIR1=help/READ.DIR
+HELPDIR2=help/SEND.DIR
+HELPDIR3=help/TOP.DIR
+HELPDIR4=help/VARS.DIR
+HELPDIR5=help/TOPICS.DIR/READ.DIR
+HELPDIR6=help/TOPICS.DIR/SEND.DIR
+HELPDIR7=help/TOPICS.DIR/TOP.DIR
+HELPDIRS=$(LOCLIB)/$(HELPDIR0) $(LOCLIB)/$(HELPDIR1) $(LOCLIB)/$(HELPDIR2) \
+	$(LOCLIB)/$(HELPDIR3) $(LOCLIB)/$(HELPDIR4) $(LOCLIB)/$(HELPDIR5) \
+	$(LOCLIB)/$(HELPDIR6) $(LOCLIB)/$(HELPDIR7)
+
+# Please keep these in alphabetical order for neatness
+
+SYSH =	s-bsd43.h s-dynix211.h s-hpux.h s-isi40.h s-mtxinu43.h \
+	s-sun34.h s-sun35.h s-sun40.h s-sysv52.h s-ultrix20.h 
+
+H = 	address.h babyl.h chartype.h cmds.h compat.h config.h extern.h \
+	help.h message.h mm.h osfiles.h pathnames.h parse.h rd.h seq.h \
+	set.h token.h
+
+SRCS =	action.c address.c alias.c babyl.c browse.c cmds.c compat.c \
+	dates.c debug.c display.c doinit.c dt.c edit.c \
+	exit.c file.c formattab.c headers.c \
+	help.c init.c keywords.c mailrc.c mbox.c mh.c misc.c mm.c \
+	more.c move.c mtxt.c newmail.c novice.c parse.c parsemsg.c pop2.c \
+	pop3.c print.c rd.c read.c send.c sendcmds.c sendmail.c seq.c set.c \
+	signals.c support.c token.c usage.c whoami.c
+
+OBJS =	action.o address.o alias.o babyl.o browse.o cmds.o compat.o \
+	dates.o debug.o display.o doinit.o dt.o edit.o exit.o \
+	file.o formattab.o headers.o \
+	help.o init.o keywords.o mailrc.o mbox.o mh.o misc.o mm.o \
+	more.o move.o mtxt.o newmail.o novice.o parse.o parsemsg.o pop2.o \
+	pop3.o print.o rd.o read.o send.o sendcmds.o sendmail.o seq.o set.o \
+	signals.o support.o token.o usage.o whoami.o
+
+all:	mm movemail sys-prof mm-trans
+
+mm:	patches $(OBJS) version.o $(CCMDLIB)
+	$(RM) -f $@
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) version.o $(LIBS)
+
+main-install: $(BIN)/mm $(LOCLIB) $(LOCLIB)/mmail.el \
+	 $(LOCLIB)/movemail $(BIN)/mm-trans
+	@echo mm installed
+
+re-install: main-install re-HELP
+
+install: main-install HELP $(LOCLIB)/mm.conf 
+
+$(BIN)/mm: mm
+	@echo installing MM EXECUTABLE
+	-@ls -alg $(BIN)/mm $(BIN)/mm.old
+	@cp mm $(BIN)/mm.new
+	@chmod 755 $(BIN)/mm.new
+	@if [ -f $(BIN)/mm ]; then \
+		mv $(BIN)/mm $(BIN)/mm.old; \
+	 fi
+	@mv $(BIN)/mm.new $(BIN)/mm
+	-@ls -alg $(BIN)/mm $(BIN)/mm.old
+
+$(LOCLIB):  $(LOCLIB)
+	-mkdir $(LOCLIB)
+	-@chmod 755 $(LOCLIB)
+
+$(LOCLIB)/mm.conf: mm.conf
+	@echo installing MM.CONF -- init file
+	-@ls -alg $(LOCLIB)/mm.conf $(LOCLIB)/mm.conf.old
+	@cp mm.conf $(LOCLIB)/mm.conf.new
+	@chmod 664 $(LOCLIB)/mm.conf.new
+	@if [ -f $(LOCLIB)/mm.conf ]; then \
+		mv $(LOCLIB)/mm.conf $(LOCLIB)/mm.conf.old; \
+	 fi
+	@mv $(LOCLIB)/mm.conf.new $(LOCLIB)/mm.conf
+	-@ls -alg $(LOCLIB)/mm.conf $(LOCLIB)/mm.conf.old
+	
+$(LOCLIB)/mmail.el: mmail.el
+	@echo installing MMAIL.EL
+	-@ls -alg $(LOCLIB)/mmail.el $(LOCLIB)/mmail.el.old
+	@cp mmail.el $(LOCLIB)/mmail.el.new
+	@chmod 664 $(LOCLIB)/mmail.el.new
+	@if [ -f $(LOCLIB)/mmail.el ]; then \
+		 mv $(LOCLIB)/mmail.el $(LOCLIB)/mmail.el.old; \
+	 fi
+	 @mv $(LOCLIB)/mmail.el.new $(LOCLIB)/mmail.el
+	-@ls -alg $(LOCLIB)/mmail.el $(LOCLIB)/mmail.el.old
+
+$(LOCLIB)/movemail: movemail
+	@echo installing MOVEMAIL
+	-@ls -alg $(LOCLIB)/movemail $(LOCLIB)/movemail.old
+	@cp movemail $(LOCLIB)/movemail.new
+	@if [ -f $(LOCLIB)/movemail ]; then \
+		mv $(LOCLIB)/movemail $(LOCLIB)/movemail.old; \
+	 fi
+	@mv $(LOCLIB)/movemail.new $(LOCLIB)/movemail
+	@chgrp mail $(LOCLIB)/movemail
+	@chmod 2751 $(LOCLIB)/movemail
+	-@ls -alg $(LOCLIB)/movemail $(LOCLIB)/movemail.old
+
+
+# copy the tree wholesale, assuming it's not there
+HELP:
+	@echo installing HELP
+	tar cf - help | (cd $(LOCLIB) ; tar xf - )
+
+# tries to update just the files that are changed
+re-HELP: $(LOCLIB)/help $(HELPDIRS) $(LOCLIB)/$(HELPDIR1)/.update \
+	$(LOCLIB)/$(HELPDIR2)/.update $(LOCLIB)/$(HELPDIR3)/.update \
+	$(LOCLIB)/$(HELPDIR4)/.update $(LOCLIB)/$(HELPDIR5)/.update \
+	$(LOCLIB)/$(HELPDIR6)/.update $(LOCLIB)/$(HELPDIR7)/.update
+
+help:	
+	@echo checking help files
+	
+$(LOCLIB)/help: help
+	@echo installing HELP
+	-mkdir $@
+	-@chmod 755 $@
+
+$(LOCLIB)/$(HELPDIR0): $(HELPDIR0)
+	-mkdir $@
+	-@chmod 755 $@
+
+$(LOCLIB)/$(HELPDIR1): $(HELPDIR1)
+	-mkdir $@
+	-@chmod 755 $@
+
+$(LOCLIB)/$(HELPDIR2): $(HELPDIR2)
+	-mkdir $@
+	-@chmod 755 $@
+
+$(LOCLIB)/$(HELPDIR3): $(HELPDIR3)
+	-mkdir $@
+	-@chmod 755 $@
+
+$(LOCLIB)/$(HELPDIR4): $(HELPDIR4)
+	-mkdir $@
+	-@chmod 755 $@
+
+$(LOCLIB)/$(HELPDIR5): $(HELPDIR5)
+	-mkdir $@
+	-@chmod 755 $@
+
+$(LOCLIB)/$(HELPDIR6): $(HELPDIR6)
+	-mkdir $@
+	-@chmod 755 $@
+
+$(LOCLIB)/$(HELPDIR7): $(HELPDIR7)
+	-mkdir $@
+	-@chmod 755 $@
+
+# need to delete HLP files, in case we have no write access to the files
+# themselves, though we have write access to the directories
+$(LOCLIB)/$(HELPDIR1)/.update: $(HELPDIR1)/*.HLP
+	@(cd $(LOCLIB) ; rm -f $? )
+	cp $? $(LOCLIB)/$(HELPDIR1)
+	@(cd $(LOCLIB) ; chmod 644 $? )
+	@rm -f $@
+	touch $@
+
+$(LOCLIB)/$(HELPDIR2)/.update: $(HELPDIR2)/*.HLP
+	@(cd $(LOCLIB) ; rm -f $? )
+	cp $? $(LOCLIB)/$(HELPDIR2)
+	@(cd $(LOCLIB) ; chmod 644 $? )
+	@rm -f $@
+	touch $@
+
+$(LOCLIB)/$(HELPDIR3)/.update: $(HELPDIR3)/*.HLP
+	@(cd $(LOCLIB) ; rm -f $? )
+	cp $? $(LOCLIB)/$(HELPDIR3)
+	@(cd $(LOCLIB) ; chmod 644 $? )
+	@rm -f $@
+	touch $@
+
+$(LOCLIB)/$(HELPDIR4)/.update: $(HELPDIR4)/*.HLP
+	@(cd $(LOCLIB) ; rm -f $? )
+	cp $? $(LOCLIB)/$(HELPDIR4)
+	@(cd $(LOCLIB) ; chmod 644 $? )
+	@rm -f $@
+	touch $@
+
+$(LOCLIB)/$(HELPDIR5)/.update: $(HELPDIR5)/*.HLP
+	@(cd $(LOCLIB) ; rm -f $? )
+	cp $? $(LOCLIB)/$(HELPDIR5)
+	@(cd $(LOCLIB) ; chmod 644 $? )
+	@rm -f $@
+	touch $@
+
+$(LOCLIB)/$(HELPDIR6)/.update: $(HELPDIR6)/*.HLP
+	@(cd $(LOCLIB) ; rm -f $? )
+	cp $? $(LOCLIB)/$(HELPDIR6)
+	@(cd $(LOCLIB) ; chmod 644 $? )
+	@rm -f $@
+	touch $@
+
+$(LOCLIB)/$(HELPDIR7)/.update: $(HELPDIR7)/*.HLP
+	@(cd $(LOCLIB) ; rm -f $? )
+	cp $? $(LOCLIB)/$(HELPDIR7)
+	@(cd $(LOCLIB) ; chmod 644 $? )
+	@rm -f $@
+	touch $@
+
+$(BIN)/mm-trans: mm-trans
+	@echo installing MM-TRANS \(transform\)
+	-@ls -alg $(BIN)/mm-trans $(BIN)/mm-trans.old
+	@cp mm-trans $(BIN)/mm-trans.new
+	@if [ -f $(BIN)/mm-trans ]; then \
+		mv $(BIN)/mm-trans $(BIN)/mm-trans.old; \
+	 fi
+	@mv $(BIN)/mm-trans.new $(BIN)/mm-trans
+	@chmod 755 $(BIN)/mm-trans
+	-@ls -alg $(BIN)/mm-trans $(BIN)/mm-trans.old
+
+
+$(OBJS): $(H)
+
+$(PATCHFILES): 
+
+patches:  $(PATCHFILES) prepatch argsort
+	./prepatch `./argsort $(PATCHFILES)`
+	touch patches
+
+prepatch: prepatch.c config.h osfiles.h compat.h
+	$(CC) $(CFLAGS) -o prepatch prepatch.c
+
+argsort: argsort.c
+	$(CC) $(CFLAGS) -o argsort argsort.c
+
+babyl.o: babyl.h
+
+tags:	$(H) $(SRCS)
+	etags *.[ch]
+
+lint:
+	lint $(INCLUDE) $(SRCS)
+
+mm.dist: 
+	-$(RM) -rf mm.dist
+	-mkdir mm.dist
+	(cd mm.dist; co -q ../RCS/*)
+
+tar: 	mm.dist
+	tar cf mm.tar mm.dist
+
+nobackup:
+	$(RM) -f *~ \#*
+
+set.h:	set.H mkdefines
+	awk -f mkdefines < set.H > set.h
+
+cmds.h: cmds.H mkdefines
+	awk -f mkdefines < cmds.H > cmds.h
+
+token.h: token.H mkdefines
+	awk -f mkdefines < token.H > token.h
+
+tokentest: token.c
+	cc -g -o token -DTEST token.c
+
+file.o rd.o: rd.h
+
+clean:
+	$(RM) -f *.o core a.out argsort mkversion mm mm-trans movemail \
+		prepatch sys-prof
+
+#whobuilt.o: $(SRCS) $(H)
+#	$(CC) $(CFLAGS) "`./whobuiltme`" -c whobuilt.c
+
+version.o: $(OBJS) version.c version.h mkversion $(CCMDLIB)
+	-chmod ug+w version.h
+	./mkversion +e
+	$(CC) $(CFLAGS) -c version.c
+
+config.h: $(SYSH)
+	touch config.h
+
+#config.h:;
+#	@echo See the README file for instructions on creating config.h
+#	@exit 1
+
+
+mkversion: mkversion.c whoami.o compat.o dates.o mm-patchlevel.h
+	$(RM) -f mkversion
+	$(CC) $(CFLAGS) -o mkversion mkversion.c whoami.o compat.o dates.o \
+		$(LIBS)
+
+mm-trans: mm-trans.c
+	$(CC) $(CFLAGS) -o mm-trans mm-trans.c
+
+sys-prof.o: sys-prof.c config.h set.h
+
+sys-prof: sys-prof.o formattab.o 
+	$(RM) -f sys-prof
+	$(CC) $(CFLAGS) -o sys-prof sys-prof.o formattab.o $(LIBS)
+
+mm.conf: sys-prof
+	./sys-prof
+
+lll:	
+	lint $(LINTFLAGS) $(SRCS)
+
+movemail:  movemail.c
+	$(RM) -f movemail
+	$(CC) $(CFLAGS) -o movemail movemail.c
+
+

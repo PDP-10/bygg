@@ -1,0 +1,1 @@
+lynx http://www.jwz.org/worse-is-better.html

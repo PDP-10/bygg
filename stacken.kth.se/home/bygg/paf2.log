@@ -1,0 +1,39 @@
+
+; <<>> DiG 8.3 <<>> @ns2.wineasy.se ahlens.se any 
+; (1 server found)
+;; res options: init recurs defnam dnsrch
+;; got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 4
+;; flags: qr aa rd; QUERY: 1, ANSWER: 8, AUTHORITY: 0, ADDITIONAL: 6
+;; QUERY SECTION:
+;;	ahlens.se, type = ANY, class = IN
+
+;; ANSWER SECTION:
+ahlens.se.		1D IN SOA	ns.wineasy.se. dns.songnetworks.se. (
+					2002120401	; serial
+					6H		; refresh
+					1H		; retry
+					1w1d		; expiry
+					1D )		; minimum
+
+ahlens.se.		1D IN NS	ns.wineasy.se.
+ahlens.se.		1D IN NS	ns2.wineasy.se.
+ahlens.se.		1D IN A		62.119.92.27
+ahlens.se.		1D IN MX	30 mail.sto.telegate.se.
+ahlens.se.		1D IN MX	60 smtp.tele.fi.
+ahlens.se.		1D IN MX	1 mail.ahlens.se.
+ahlens.se.		1D IN MX	20 fw.sto.telegate.se.
+
+;; ADDITIONAL SECTION:
+ns.wineasy.se.		2H IN A		195.42.198.5
+ns2.wineasy.se.		2H IN A		195.42.198.10
+mail.ahlens.se.		1D IN A		195.84.194.55
+fw.sto.telegate.se.	1D IN A		194.251.182.37
+mail.sto.telegate.se.	1D IN A		195.84.251.61
+smtp.tele.fi.		34m9s IN A	192.89.123.25
+
+;; Total query time: 6 msec
+;; FROM: hector-lector.stacken.kth.se to SERVER: ns2.wineasy.se  195.42.198.10
+;; WHEN: Sun Jan 12 14:07:50 2003
+;; MSG SIZE  sent: 27  rcvd: 337
+

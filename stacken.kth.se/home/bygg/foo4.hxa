@@ -1,0 +1,12 @@
+kaka= foo + 1
+
+r1=1
+r2=2
+
+foo:    .word kaka
+	move r1, foo(r2, 4)
+
+bar:	.word kaka + 3
+	move r2,@bar(r1)
+
+	.end

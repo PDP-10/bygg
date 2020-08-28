@@ -1,0 +1,82 @@
+Valid switches are:-
+
+/A	Allocate undefined names as 'EXTERNAL'.
+/B	Batch mode compilation forced if job run interactively. Messages
+	are listed on listing file if listing on or TTY if listing off.
+/C	Cross reference listing.
+/D	Debugger symbol tables required.
+/E	Error abort. Abort on single error.
+/E:n	Error abort if more than n errors. If n = 0 (default case) then
+	aborts on 30 errors for interactive run, 200 for batch run.
+/F	Fast code, contains no postmortem code.
+/G	Generation of code suppressed.
+/G:n	Syntax check only.
+/H	Help text printed on TTY.
+/H:n	Helpfull BCPL news printed on TTY.
+/I	Interactive mode compilation forced if job run as batch,
+	messages are listed on TTY.
+/J	Restore stack limit register after subroutine calls.
+/K	Keywords in upper case, lower and upper case not equivalent.
+/K:n	0 = (default) keywords in upper case, lower and upper case
+	    equivalent.
+	1 = keywords in upper case, lower and upper case not equivalent.
+	2 = keywords in lower and upper case, lower and upper case not
+	    equivalent.
+	>2  keywords in lower case, lower and upper case not equivalent.
+/L	List all source program regardless of any $NOLISTs found.
+/M	Machine code listed on message medium.
+/N	No real GETfiles, ignore all GET commands.
+/O	Optimise trace code, no postmortem or stackcheck code.
+/P	Pure/Impure code selector. (Pure default).
+/P:N	Alternative code generator selector
+	2=INTCODE, 3=Parse Tree.
+/Q	Include GETfile declarations in cross reference listing.
+/R	Reset all switches to zero or false (default condition).
+/S	Size of workspace increased by 1K.
+/S:n	Size of workspace set to nK, default is 3K.
+/T	Tree from parser listed on message medium.
+/U	User debugging code enabled.
+/V	Non reinitialised data.
+/W	Warning messages suppressed.
+/X	Processor type. 0=Default. 1=KA10. 2=KI10.
+/Y	Yank out NUMBARGS/LHS code.
+/Z	Generate library type rel file.
+
+n is read as octal unless preceeded by
++ or - in which case it is read as decimal.
+
+Switches start at zero or false, and values
+are retained until reset or compiler is reloaded.
+
+Form of command string is:-
+
+*relfilespec,listfilespec_inputfilelist
+or
+*relfilespec_inputfilelist
+or
+*inputfilespec
+
+inputfilelist is
+optional getfilespecs,inputfilespec
+
+_ can be replaced by =.
+
+Switches may appear after any filespec in form:-
+/switch:n/switch:n ... /switch:n	(:n is optional)
+or
+(switch:nswitch:n ... switch:n)		(:n is optional)
+
+Switch without value (:n) increments previous value by 1 each time.
+
+Default device is DSK:
+Default input file extension is .BCL, failing that .BCP
+Default GET input file extension is .GET, failing that .BCL
+Default listing file extension is .LST
+Default code file extension is .REL for binary files .OUT for ascii.
+If relfilespec or listfilespec is missing input file name is default.
+Default ppn is [SELF].
+
+Code file is produced unless /G switch set,
+Listing file not produced unless /L or /C set, or listfilespec appears.
+Symbol file produced with device, file and ppn as for relfile,
+but with extension .SMB.

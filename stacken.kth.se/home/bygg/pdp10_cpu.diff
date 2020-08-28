@@ -1,0 +1,145 @@
+*** pdp10_cpu.c	Sun Feb 24 09:35:09 2002
+--- dist/PDP10/pdp10_cpu.c	Thu Jan  3 19:33:44 2002
+***************
+*** 182,191 ****
+  extern int32 sim_interval;
+  extern int32 sim_brk_types, sim_brk_dflt, sim_brk_summ;	/* breakpoint info */
+  extern UNIT tim_unit;
+- 
+- int32 sleep_interval = 0;
+- int32 idlefast = 10;
+- t_bool idleflag = TRUE;
+  
+  /* Forward and external declarations */
+  
+--- 182,187 ----
+***************
+*** 369,376 ****
+  	{ FLDATA (T20V41, cpu_unit.flags, UNIT_V_T20V41), REG_HRO },
+  	{ ORDATA (WRU, sim_int_char, 8) },
+  	{ FLDATA (STOP_ILL, stop_op0, 0) },
+- 	{ FLDATA (IDLEFLAG, idleflag, 0) },
+- 	{ DRDATA (IDLEFAST, idlefast, 16) },
+  	{ BRDATA (REG, acs, 8, 36, AC_NUM * AC_NBLK) },
+  	{ NULL }  };
+  
+--- 365,370 ----
+***************
+*** 583,657 ****
+  #define POPF		if (LRZ (AC(ac)) == RMASK) SETF (F_T2)
+  #define DMOVNF		if (rs[1] == 0) { MOVNF (rs[0]); }
+  
+- 
+- /* Check for a standard null job at PC. */
+- 
+- t_bool nuljob(a10 PC)
+- {
+-   /*  typical null job:
+- 
+-       1: sojg	6,1		;367300,,1
+-       2: movei	6,n		;201300,,n
+-       3: tdne	7,addr		;612340,,addr
+-       4: wake			;47000,,73
+-       5: aoja	1		;344000,,1
+- 
+-       ; or
+- 
+-       1: sojg	6,1		;367300,,1
+-       2: movei	6,n		;201300,,n
+-       3: aoja	1		;344000,,1
+-   */
+- 
+-   if (PC != 2) return FALSE;
+-   if (ac_cur[1] != XWD(0367300, 1))  return FALSE;
+-   if ((ac_cur[2] >> 18) != 0201300)  return FALSE;
+-   if (ac_cur[3] == XWD(0344000, 1))  return TRUE;
+-   if ((ac_cur[3] >> 18) != 0612340)  return FALSE;
+-   if (ac_cur[4] != XWD(047000, 073)) return FALSE;
+-   if (ac_cur[5] == XWD(0344000, 1))  return TRUE;
+- 
+-   return FALSE;
+- }
+- 
+- #include <sys/time.h>
+- 
+- extern int32 tmxr_poll;		/* calibrated delay */
+- 
+- int32 sys_idle(int32 cycles)
+- {
+-   struct timeval starttime, stoptime;
+-   struct timespec zzz;
+- 
+-   uint32 nspi;			/* Nano-seconds per instruction. */
+-   uint32 ips;			/* Instructions per second. */
+-   uint32 sleeptime;		/* Time slept, in usec. */
+- 
+-   if (cycles <= 0) return 1;	/* Silly request? */
+- 
+-   ips = tmxr_poll * 50;		/* UGH! */
+-   nspi = 1000000000 / ips;
+- 
+-   if (nspi <= 0) return 1;	/* Fast hardware? */
+- 
+-   zzz.tv_sec = 0;
+-   zzz.tv_nsec = nspi * cycles;
+-   /*  zzz.tv_nsec = 1; */
+- 
+-   (void) gettimeofday(&starttime, NULL);
+-   (void) nanosleep(&zzz, NULL);
+-   (void) gettimeofday(&stoptime, NULL);
+- 
+-   sleeptime = (stoptime.tv_sec - starttime.tv_sec) * 1000000;
+-   sleeptime += stoptime.tv_usec;
+-   sleeptime -= starttime.tv_usec;
+-   sleeptime /= 1000;		/* Convert to milliseconds. */
+-   if (sleeptime == 0) return 1;	/* Short sleep. */
+- 
+-   return ((ips * sleeptime) / 1000);
+- }
+- 
+- 
+  t_stat sim_instr (void)
+  {
+  a10 PC;
+--- 577,582 ----
+***************
+*** 723,739 ****
+  pager_tc = FALSE;					/* not in trap cycle */
+  pflgs = 0;						/* not in PXCT */
+  xct_cnt = 0;						/* count XCT's */
+- 
+- if (sleep_interval > 0) {
+-   if (sleep_interval > idlefast) {
+-     sim_interval -= idlefast;
+-     sleep_interval -= idlefast;
+-   } else {
+-     sim_interval -= sleep_interval;
+-     sleep_interval = 0;
+-   }
+- }
+- 
+  if (sim_interval <= 0) {				/* check clock queue */
+  	if (i = sim_process_event ()) ABORT (i);	/* error?  stop sim */
+  	pi_eval ();  }					/* eval pi system */
+--- 648,653 ----
+***************
+*** 1086,1096 ****
+  case 0364:	SOJ; JUMP(ea); break;			/* SOJA */
+  case 0365:	SOJ; if (TGE (AC(ac))) JUMP (ea); break;/* SOJGE */
+  case 0366:	SOJ; if (TN (AC(ac))) JUMP (ea); break;	/* SOJN */
+! case 0367:      if (idleflag && (sleep_interval == 0) && nuljob(PC)) {
+!                    sleep_interval = sys_idle(sim_interval);
+! 		   if (sleep_interval == 0) idleflag = FALSE;
+!                 }
+! 		SOJ; if (TG (AC(ac))) JUMP (ea); break;	/* SOJG */
+  case 0370:	SOS; break;				/* SOS */
+  case 0371:	SOS; if (TL (mb)) INCPC; break;		/* SOSL */
+  case 0372:	SOS; if (TE (mb)) INCPC; break;		/* SOSE */
+--- 1000,1006 ----
+  case 0364:	SOJ; JUMP(ea); break;			/* SOJA */
+  case 0365:	SOJ; if (TGE (AC(ac))) JUMP (ea); break;/* SOJGE */
+  case 0366:	SOJ; if (TN (AC(ac))) JUMP (ea); break;	/* SOJN */
+! case 0367:	SOJ; if (TG (AC(ac))) JUMP (ea); break;	/* SOJG */
+  case 0370:	SOS; break;				/* SOS */
+  case 0371:	SOS; if (TL (mb)) INCPC; break;		/* SOSL */
+  case 0372:	SOS; if (TE (mb)) INCPC; break;		/* SOSE */

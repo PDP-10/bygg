@@ -1,0 +1,52 @@
+
+Varning! Långt inlägg!
+
+Ett av mina evighetsprojekt är att skriva en interaktiv korsdisassembler,
+det har jag hållt på med ett tag. När jag började med det byggde jag
+kommandotolken runt ett paket som heter CCMD, ett paket som skrevs på
+columbia i mitten på åttiotalet, tillsammans med bland annat MM, en MUA
+jag fortfarande använder. CCMD är en C-implemetation av COMND%, ett
+systemanrop i Tops-20 (finns i annan form i Tops-10). Det fungerar, men
+det finns samtidigt en del nackdelar, bland annat:
+
+* Koden skrevs för rätt länge sen, innan saker som ANSI C, Posix, och
+  andra moderniteter. Det finns dessutom maskinberoende stöd för ett
+  antal antika OS, samtidigt som stödet för moderna saker som FreeBSD/
+  NetBSD/OpenBSD/Linux/... inte är, skall vi säga, helt up-do-date.
+
+* På massor av ställen använder man bit 8 (den var ju ledig) som flagga
+  i textsträngar. 'nuff said.
+
+* Licencen är av typen "OK om du inte gör något kommersiellt". Ganska
+  OK för privat bruk, men...
+
+Jag fick för ett tag sen för mig att göra någonting åt saken, och
+började skriva på en ersättare, som jag kallar för COMND. För ett par
+dagar sen kändes det som att det var dags, och jag har nu konverterat
+min disassembler till att använda COMND i stället, enligt principen i
+subject. Ja, större testprogram hittar fler problem...
+
+Vad man kan göra nu om man vill är:
+
+* Att titta och ha åsikter om det API jag har hittat på.
+
+* Kolla om det fungerar under OSX, och hur cmsys.c känner igen
+  det fallet. (Jag misstänker att det fungerar rakt av med posix-
+  koden, men det bordet testas).
+
+* Ha andra åsikter.
+
+COMND har licens enligt BSD, två punkter. Vad gäller disass har jag
+inte riktigt bestämt mig ännu, men det kan bli GPL eller motsvarande.
+Tills vidare gäller "titta, lek med, men inte skicka vidare".
+
+Senaste versionerna finns på:
+
+http://www.stacken.kth.se/~bygg/comnd.tar
+http://www.stacken.kth.se/~bygg/disass.tar
+
+En annan iden är att dricka en pilsner eller två och diskutera saken
+face-2-face, det kan finnas saker man undrar över, som typ "varför i
+glödheta har han gjort på det här viset?".
+
+/En som borde lära sig programmera.

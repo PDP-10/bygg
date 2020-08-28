@@ -1,0 +1,3 @@
+#! /usr/bin/csh -f
+
+xv $argv

@@ -1,0 +1,125 @@
+title	play -- main loudspeaker driver.
+search	jobdat, uuosym, macten
+
+pichn==2			;Interrupt level to use.
+cpu==2				;Use CPU2.
+
+t1==1
+t2==2
+
+b==10
+
+define error(msg),<
+	jrst[	outstr[asciz "?
+?'msg'.
+"]
+		reset
+		exit]
+>;error
+
+play::	jfcl			;Ignore runoffset.
+	reset			;Stop the world.
+
+; Set up the tune to play.
+
+	dmove	t1,[
+		point ^D36,score1##(b)
+		point ^D36,score2##(b)]
+	movem	t1,tptr1
+	movem	t2,tptr2
+	setzm	tctr1
+	setzm	tctr2
+	setzm	time1
+	setzm	time2
+	setzm	delta1
+	setzm	delta2
+
+; Set up realtime stuff.
+
+	move	t1,[.stcpu,,1_cpu]
+	setuuo	t1,		;Must be on correct CPU.
+	 error(SET CPU UUO failed)
+	move	t1,[lk.hls+lk.lls]
+	lock	t1,		;Nail us down HERE!
+	 error(LOCK UUO failed)
+	lsh	t1,^D9		;Convert page # to addr.
+	hrrzm	t1,base		;Set up base register.
+	move	t1,[EXCH B,BASE];Load instruction.
+	add	t1,base		;Relocate.
+	movem	t1,fix1		;Store.
+	move	t1,[JRST @DKINT];Load second instruction.
+	add	t1,base		;Relocate.
+	movem	t1,fix2		;Store.
+	movei	t1,0
+	trpset	t1,
+	 error(TRPSET UUO failed)
+	cono	clk,1B26	;Clear clock prophylactically.
+	movei	t1,[
+		xwd	pichn,dkint
+		xwd	1,0
+		conso	clk,3B32
+		exp	0]
+	rttrp	t1,		;Link in device.
+	 error(RTTRP UUO failed)
+	setzm	donflg		;Clear doorbell.
+	cono	clk,1B26	;Clear interval timer.
+	datao	clk,[^D10]	;Interrupt each 100 microseconds.
+	cono	clk,7B32+pichn	;Start playing.
+wait:	movei	t1,^D1
+	sleep	t1,
+	skipn	donflg		;Done yet?
+	 jrst	wait		; No, wait on.
+	exit			;Yes, phew!
+
+; Data describing what we are outputting.
+
+tctr1:	block	1		;Number of "ticks" left of current waweform.
+tctr2:	block	1
+
+tptr1:	block	1		;Pointer to sequence of notes...
+tptr2:	block	1
+
+time1:	block	1
+time2:	block	1
+
+delta1:	block	1
+delta2:	block	1
+
+base:	block	1		;Base adress, for relocating at exec level.
+acsave:	block	2		;Save T1 & T2 here on interrupt.
+donflg:	block	1		;Doorbell from exec to user level.
+
+;Define a nice shiny macro to check for next tone in each score.
+
+define next(n,%lbl),<
+next'n':sosle	tctr'n'(b)	;;Time to change waveform?
+	 jrst	%lbl(b)
+	ildb	t1,tptr'n'(b)	;;Yes.
+	jumpe	t1,stop(b)	;;Check for end of tune.
+	hlrzm	t1,tctr'n'(b)	;;Set up time to use next note.
+	andi	t1,777		;;Only nine bits of note number.
+	addi	t1,note##(b)	;;Get exec addr of note descriptor.
+	move	t1,(t1)		;;Get data.
+	movem	t1,delta'n'(b)	;;Store for massa.
+%lbl:!
+>;next.
+
+; Here when DK10 interrupts.
+
+dkint:	block	1		;JSR here.
+	cono	clk,1B31+1B32+pichn ;Allow further interrupts.
+fix1:!	exch	b,0		;RH patched to exec addr of BASE at init.
+	dmovem	t1,acsave(b)	;Save T1 & T2.
+;*** compute output level here ***
+	datao	apr,t1
+	next(1)
+	next(2)
+quit:	dmove	t1,acsave(b)	;Restore everything.
+	exch	b,base(b)
+fix2:!	jrst	@0		;RH patched to exec addr of DKINT at init.
+
+stop:	cono	clk,1B26	;Clear interval timer.
+	setom	donflg(b)	;Ring doorbell.
+	jrst	quit(b)		;Join common exit.
+
+end	play

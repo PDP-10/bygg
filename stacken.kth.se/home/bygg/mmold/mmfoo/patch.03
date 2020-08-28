@@ -1,0 +1,30 @@
+Patch number: 3
+MM Version 0.90
+Date: Mon Feb  4 21:42:06 1991
+Reported by: Edward DeHart <dehart@cert.sei.cmu.edu>  (Ultrix 3.1)
+	     Antonio Querubin <tony@uhcmtg.phys.hawaii.edu> (Ultrix 4.0)
+Files: s-ultrix31.h, s-ultrix40.h
+
+Description:
+
+Modifications necessary to compile MM under Ultrix 3.1 and Ultrix 4.0.
+
+Fix:
+
+Rather than include the new files here, I'll describe how to generate
+the new files from the distributed s-ultrix20.h file.
+
+s-ultrix31.h:
+1) copy s-ultrix20.h to s-ultrix31.h
+2a) global replace string "ultrix20" with "ultrix31"
+2b) global replace string "ultrix 2.0" with "ultrix 3.1"
+3) comment out the "#define volatile static" line at the bottom
+
+
+s-ultrix40.h:
+1) copy s-ultrix20.h to s-ultrix40.h
+2a) global replace string "ultrix20" with "ultrix40"
+2b) global replace string "ultrix 2.0" with "ultrix 4.0"
+3) comment out the "#define volatile static" line at the bottom
+4) change "#undef HAVE_VOIDSIG" to "#define HAVE_VOIDSIG"
+

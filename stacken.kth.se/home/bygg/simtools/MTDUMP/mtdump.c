@@ -1,0 +1,87 @@
+/* This program dumps the format of a simulated magtape
+
+   Copyright (c) 1993-2001, Robert M. Supnik
+
+   Permission is hereby granted, free of charge, to any person obtaining a
+   copy of this software and associated documentation files (the "Software"),
+   to deal in the Software without restriction, including without limitation
+   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+   and/or sell copies of the Software, and to permit persons to whom the
+   Software is furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+   ROBERT M SUPNIK BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+   IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+   Except as contained in this notice, the name of Robert M Supnik shall not
+   be used in advertising or otherwise to promote the sale, use or other dealings
+   in this Software without prior written authorization from Robert M Supnik.
+*/
+
+#include "sim_defs.h"
+int main (int argc, char *argv[])
+{
+int32 i, k, fc, rc, tpos;
+t_mtrlnt bc;
+t_bool preveof;
+FILE *ifile;
+#define MAXRLNT 65536
+
+unsigned char hdr[4];
+
+if ((argc < 2) || (argv[0] == NULL)) {
+	printf ("Usage is: verb file [file...]\n");
+	exit (0);  }
+
+for (i = 1; i < argc; i++) {
+	ifile = fopen (argv[i], "rb");
+	if (ifile == NULL) {
+		printf ("Error opening file: %s\n", argv[i]);
+		exit (0);  }
+	printf ("Processing input file %s\n", argv[i]);
+	tpos = 0; rc = 1; fc = 1; preveof = FALSE;
+	printf ("Processing tape file %d\n", fc);
+	for (;;) {
+		fseek (ifile, tpos, SEEK_SET);
+		/* k = fread (&bc, sizeof (t_mtrlnt), 1, ifile); */
+		k = fread (&hdr, 4, 1, ifile);
+		if (k == 0) {
+			printf ("End of physical tape\n");
+			break;  }
+		bc = hdr[0] | (hdr[1] << 8) | (hdr[2] << 16) | (hdr[3] << 24);
+
+		if (MTRF (bc)) {
+			printf ("Error marker at record %d\n", rc);
+			bc = MTRL (bc);  }
+		if (bc == 0) {
+			if (preveof) {
+				printf ("Position %d, end of logical tape\n", tpos);
+				break;  }
+			preveof = TRUE;
+			printf ("Position %d, end of tape file %d\n", tpos, fc);
+			fc++;
+			rc = 1;
+			tpos = tpos + sizeof (t_mtrlnt);  }
+		else if (bc > MAXRLNT) {
+			printf ("Invalid record length %d, terminating dump\n", bc);
+			break;  }
+		else {	if (preveof) {
+				printf ("Processing tape file %d\n", fc);  }
+			preveof = FALSE;
+			printf ("Position %d, record %d, length = %d (0x%X)\n",
+				tpos, rc, bc, bc);
+			rc++;
+			tpos = tpos + (2*sizeof (t_mtrlnt)) +
+				((bc + 1) & ~1);  }
+		}
+	fclose (ifile);
+	}
+
+return 0;
+}

@@ -1,0 +1,157 @@
+universial notdef
+
+.directive .nobinary
+
+radix 10
+
+%32.3==	2
+%32==	3
+%16.3== 4
+%16==	6
+%16.==	9
+%8.3==  8
+%8==	12
+%8.==	18
+%4.3==  16
+%4==	24
+%4.==	36
+%2==	48
+%2.==	72
+%1==	96
+%1.==	144
+
+define xx(arg),<
+    zz==4
+    irpc arg,<
+	c'arg==zz+0
+	d'arg==zz+2
+	d'arg==zz+2
+	e'arg==zz+4
+	f'arg==zz+5
+	g'arg==zz+7
+	a'arg==zz+9
+	b'arg==zz+10
+	h'arg==zz+11
+	zz==zz+12
+    >;irpc
+>;define xx
+
+a0==1
+b0==2
+h0==3
+xx(12345)
+
+fchord==433
+
+define xx(arg),<
+    zz==fchord
+    irp arg,<
+	ifnb <arg>,<
+	    arg==zz
+	    arg'm==zz+12
+	    arg'7==zz+24
+	    arg'x==zz+36
+	>;ifnb arg
+	zz==zz+1
+    >;irp arg
+>;xx
+
+xx <C,,D,,E,F,,G,,A,B,H>
+
+define note(pitch,len),<
+	ifnb <len>,<.length==len>
+	ifge <pitch-fchord>,<<<.speed*.length>-.stacc>,,<pitch>>
+	ifl <pitch-fchord>,<<<.speed*.length>-.stacc>,,<pitch+.trans+.vofs>>
+	ifn .stacc,<.stacc,,0>
+	.count==.count+.length
+>;note
+
+define pause(len),<
+	xwd <<len>*.speed>,0
+	.count==.count+len
+>;pause
+
+define tbl(arg),<
+
+	.score==arg	;;Remember score #
+	.level==0	;;Block level 0, initially.
+	.count==0	;;Total length of this score.
+	.takt==0	;;"Taktnummer"
+	define $complain,<PrintX %Error in introduction>
+	.length==%4	;;1/4-note, until specified.
+	.speed==150	;;Default speed.
+	.trans==0	;;Normally not transposed.
+	.stacc==0	;;No staccato.
+	.vofs==0	;;Default waveform.
+
+	define x(pitch1,len1,pitch2,len2),<
+	    ifnb <pitch'arg>,<
+		ifdif <pitch'arg>,<->,<note pitch'arg,len'arg>
+		ifidn <pitch'arg>,<->,<pause len'arg>
+	    >
+	>
+
+	tune
+	exp 0
+>;tbl
+
+define $inc(n),<<n==n+1>>
+define $setc(n,v),<..'n'len==v>
+define $tstc(n,v),<<..'n'len-v>>
+
+define $save(n),<
+	..'n'length==.length
+	..'n'speed==.speed
+	..'n'trans==.trans
+	..'n'stacc==.stacc
+	..'n'vofs==.vofs
+>;$save
+
+define $restore(n),<
+	.length==..'n'length
+	.speed==..'n'speed
+	.trans==..'n'trans
+	.stacc==..'n'stacc
+	.vofs==..'n'vofs
+	.level==.level-1
+>;$restore
+
+;*** User macros below ***
+
+define init(arg<noise>),<
+    title 'arg'
+    pass2
+    radix 10
+    .require mus:play2,mus:tones
+    .text "/start:play/runame:'arg'"
+>;init
+
+define tables,<
+score1::tbl(1)
+score2::tbl(2)
+>;tables
+
+define s1,<ife <.score-1>,>
+define s2,<ife <.score-2>,>
+define dly(ms),<10*ms,,0>
+
+define check(msg),<
+	ife <.score-1>,<$setc(\<.takt==.takt+1>,.count)>
+	ife <.score-2>,<
+		ifn <$tstc(\<.takt==.takt+1>,.count)>,<$complain>
+		define $complain,<
+			PrintX %Error in score: 'msg'
+		>
+	>
+>;check
+
+define rit(n),<.speed==<.speed*<100+n>>/100>
+define vform(n),<ifg n,<ifle <n-6>,<.vofs==<n-1>*72>>>
+define staccato(n),<.stacc==<.speed*%4*n>/100>
+define transpose(n),<.trans==n>
+define speed(n),<.speed==n/10>
+
+define save<$save(\<.level==.level+1>)>
+define restore<$restore(\.level)>
+
+end

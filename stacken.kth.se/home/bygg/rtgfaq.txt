@@ -1,0 +1,87 @@
+
+   [rtg.gif]
+RTG Frequently Asked Questions (FAQ)
+Last Updated: February 8, 2003
+
+1. Where to obtain RTG?
+The RTG home page is: http://rtg.sourceforge.net/  Thanks to 
+SourceForge for their support.
+
+2. Why did you write RTG?
+Because other freely available traffic gathering programs:
+  a) did not finish polling and graphing all of our targets before the 
+     next polling interval
+  b) did not retain data long enough or without averaging
+  c) did not provide an interface to generate complex or custom reports or 
+     graphs
+  d) were resource intensive.
+
+3. Who should use RTG?
+If you have requirements to: 
+  a) record large amounts of time-series SNMP data quickly
+  b) keep the data for long periods
+  c) generate complex reports based on the data 
+then RTG is a good fit.  If you are simply looking to generate weekly/monthly 
+traffic plots, MRTG (http://people.ee.ethz.ch/~oetiker/webtools/mrtg/) or 
+RRDtool (http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/) or 
+Cricket (http://cricket.sourceforge.net/) are probably better bets.
+
+4. What systems does RTG run on?
+RTG is developed on FreeBSD and tested extensively on Solaris and Linux.  
+RTG should compile on most UNIX boxes although autoconf doesn't always
+work its magic properly.  If you modify RTG to support a new platform,
+please let us know.  RTG does not support Windows.
+
+5. How fast is RTG?
+It depends on many factors.  Several hundred objects (OIDs) per second is
+typical.  The current RTG speed record is over 1500 objects per second.  
+We maintain an RTG speed record page at:
+http://rtg.sourceforge.net/docs/rtgspeed.html.
+
+6. Does RTG support 64-bit SNMP counters?
+Yes.
+
+7. Does RTG support SNMPv2c?
+Yes.
+
+8. Does RTG support SNMPv3 (encryption)?
+Not yet.
+
+9. Do I need to load a special MIB for device X?
+No, assuming that polling device X's OID returns a 32 or 64 bit integer 
+or a gauge.
+
+10. Can RTG use a database other than MySQL? 
+Quite probably, but MySQL is the only supported database currently.
+
+11. Does RTG perform any averaging?
+No.  If your database tables are growing too large, you may wish to
+implemented a backend script that averages data into other tables.
+
+12. Does RTG align the data samples, say on 5 minute boundaries?
+No.  It is up to the supporting applications (graphers, perl reports)
+to do the right thing and calculate the time between successive samples.
+
+13. Aren't SQL databases a poor way to store time-series data?
+That's a matter of opinion.  We favor the abstract interface that a SQL
+database provides to the data.  This makes it easy to develop new and
+custom reports quickly in any language (C, Perl DBI, PHP, etc).  The
+new efficient database schema in RTG 0.7 was specially designed with
+large RTG installations in mind.
+
+14. RTG is not a very original name / What does RTG stand for?
+We weren't feeling terribly creative the day we named RTG and we 
+intended to pay our respects to the MRTG authors, Tobias Oetiker
+and Dave Rand.  RTG stands for "Real Traffic Grabber."  Real as
+in no averaging and Grabber to show its primary functionality.
+
+15. I'm seeing strange spikes/dips in my graphs?
+First, make certain that the device was not rebooted or its counters
+reset.  RTG can detect counter wraps, but there is no way to detect
+multiple counter wraps.  With 32 bit counters and 5 minute polling
+intervals, the interface cannot be running more than ~114Mbps or the
+counter will wrap multiple times.  Increase the polling interval or use 64
+bit counter (recommended).
+
+16. I wrote a {module,extension,patch,script} for RTG.
+Please send it: rbeverly at users dot sourceforge dot net.  Thanks!

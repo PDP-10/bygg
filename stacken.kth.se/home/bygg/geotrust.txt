@@ -1,0 +1,49 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+
+<HEAD>
+               <TITLE>GeoTrust</TITLE>
+               <SCRIPT LANGUAGE="JavaScript">
+               <!-- use this comment tag to hide the enclosed code from old browsers.
+
+               //Look for a version of Internet Explorer that supports ActiveX (i.e., one that's
+               //running on a platform other than Mac or Windows 3.1) or a browser that supports
+               //the plugin property of the navigator object and that has Flash Player 5.0
+               //installed.
+
+               if ((navigator.appName == "Microsoft Internet Explorer" &&
+                   navigator.appVersion.indexOf("Mac") == -1 &&   navigator.appVersion.indexOf("4.7") == -1) ||
+
+                   (navigator.plugins && navigator.plugins["Shockwave Flash"])
+                                      || navigator.plugins["Shockwave Flash 5.0"]){
+
+                  //Load a pre-defined HTML page with Flash Player in it into the browser window.
+                   window.location='index_flash.htm';
+               }
+               else {
+                   //Load a pre-defined HTML page without Flash Player into the browser window.
+                   window.location='index_default.htm';
+               }
+
+               // Close the comment tag. -->
+               </SCRIPT>
+               </HEAD>
+
+               <BODY bgcolor="black" link="#ff3300" alink="#ff3300" vlink="#ff3300">
+
+               <CENTER>
+			<table border="0" cellpadding="0" cellspacing="0" width="100%" height="100%">
+				<tr>
+					<td>
+						<center>
+							<h3><font face="Verdana" color="white" size="2">Performing </font><font face="Verdana" size="2" color="#ff3300">Browser </font><font face="Verdana" color="white" size="2">Detection<br>
+									------------------------------------</font></h3>
+						</center>
+					</td>
+				</tr>
+			</table>
+		</CENTER>
+
+               </BODY>
+               </HTML>
+

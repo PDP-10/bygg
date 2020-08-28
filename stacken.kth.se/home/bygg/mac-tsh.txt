@@ -1,0 +1,26 @@
+    define  cclear(name)<
+        define c.'name(ftxt)<
+            define c.'name(text)<
+                 helper <name>,<ftxt>,<text>
+	    >
+            define name<ftxt>
+        >
+        define name<>
+    >
+
+    define  helper(name,otxt,ntxt)<
+        define c.'name(text)<
+            helper <name>,<otxt'ntxt>,<text>
+        >
+        define name<otxt'ntxt>
+    >
+
+    define  concat(name,text)<c.'name <text>>
+
+    cclear (message)
+    concat (message, you)
+    concat (message, do not)
+    concat (message, understand)
+    concat (message, this)
+
+    message

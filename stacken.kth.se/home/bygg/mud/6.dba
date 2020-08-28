@@ -1,0 +1,22 @@
+
+WIZARD COMMANDS (minimum abbreviation in upper case):
+	ATT				CRASH
+	CTRAP				DET
+	DIRect				DRop <item> In <room>
+	EXorcise <name>			FOD <name>
+	FORCE <name> : <command>	FREEZE
+	GO <room> (or THERE)		LetGo <item>
+	LOCations			Look <room>
+	MELT				MOBILEs
+	PEACE				PickUp <item> From <room>
+	Pretend				RESET
+	RESurrect <item> : <stamina>	SCore <name>
+	SET <item> : <prop>		SNOOP <name>
+	SPeed <item> : <secs twixt moves>	SuperGO <room> : <game>
+	SUMMER				SUMMON <name>
+	uNSNOOP				WAR
+	WHERE <item>			WINTER
+	WIZard LOCK			WIZard MODE
+	WIZard UNLOCK			WIZard UNMODE
+	WIZARDS
+General format = <severely hurt> <victim> WIth <something unpleasant> .

@@ -1,0 +1,343 @@
+Date: Fri, 07 Jan 2000 10:06:13 -0500
+From: Howard Kaye <Howie.Kaye@msdw.com>
+
+This is a multi-part message in MIME format.
+--------------BD6A10902129B0DCD6BE69F6
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+
+Here are the y2k patches for mm and ccmd.
+
+Howie
+--------------BD6A10902129B0DCD6BE69F6
+Content-Type: text/plain; charset=us-ascii;
+ name="mm-y2k-patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="mm-y2k-patch"
+
+*** /tmp/mm/ccmd/datime.c	Fri Nov 21 09:44:20 1997
+--- ccmd/datime.c	Mon Aug  2 10:17:59 1999
+***************
+*** 141,147 ****
+  }
+  #endif
+  
+! #if defined(BSD) || defined(_AIX) || defined(SVR4) || defined(SOLARIS)
+  dttzone(offset, code)
+  int *offset, *code;
+  {
+--- 141,147 ----
+  }
+  #endif
+  
+! #if defined(BSD) || defined(_AIX) || defined(SVR4)
+  dttzone(offset, code)
+  int *offset, *code;
+  {
+***************
+*** 157,166 ****
+  }  
+  #endif /*  BSD */
+  
+! #if defined(SYSV) && (!defined(_AIX) || !defined(SVR4))
+  dttzone(offset, code)
+  int *offset, *code;
+  {
+    *offset = timezone / 60;		/* get the correct timezone */
+  #ifdef LCL_TZCODE
+    *code = LCL_TZCODE;		   /* and code from datime.h if there is one */
+--- 157,169 ----
+  }  
+  #endif /*  BSD */
+  
+! #if defined(SYSV) && (!defined(_AIX) || !defined(SVR4)) || defined(SOLARIS)
+  dttzone(offset, code)
+  int *offset, *code;
+  {
++ #ifdef SOLARIS
++   tzset();
++ #endif
+    *offset = timezone / 60;		/* get the correct timezone */
+  #ifdef LCL_TZCODE
+    *code = LCL_TZCODE;		   /* and code from datime.h if there is one */
+*** /tmp/mm/ccmd/dtpat.h	Fri Nov 21 09:44:20 1997
+--- ccmd/dtpat.h	Tue Jan  4 16:57:32 2000
+***************
+*** 663,669 ****
+  /* fixyr
+  **
+  ** Purpose:
+! **   Adjust a two-digit year by adding the current century.
+  **   Pattern element return value always zero
+  **/
+  
+--- 663,670 ----
+  /* fixyr
+  **
+  ** Purpose:
+! **   Adjust a two-digit year by adding the current, previous, or next
+! **   century depending on the context.
+  **   Pattern element return value always zero
+  **/
+  
+***************
+*** 678,684 ****
+  #endif
+    if (yr < 100) {			/* two-digit year given? */
+      dtnow(&curdt);			/* get current date */
+!     yr += (curdt._dtyr/100)*100;	/* add in current century */
+    }
+    *val = 0;				/* set return value */
+    return(TRUE);				/* and succeed */
+--- 679,690 ----
+  #endif
+    if (yr < 100) {			/* two-digit year given? */
+      dtnow(&curdt);			/* get current date */
+!     if (yr < 50 && (curdt._dtyr % 100 > 85))
+! 	yr += (curdt._dtyr/100+1)*100;	/* add in next century */
+!     else if (yr > 70 && curdt._dtyr % 100 < 20)
+! 	yr += (curdt._dtyr/100-1)*100;	/* add in previous century */
+!     else
+! 	yr += (curdt._dtyr/100)*100;	/* add in current century */
+    }
+    *val = 0;				/* set return value */
+    return(TRUE);				/* and succeed */
+*** /tmp/mm/mm/dates.c	Fri Nov 21 09:42:47 1997
+--- mm/dates.c	Mon Jan  3 08:06:09 2000
+***************
+*** 34,39 ****
+--- 34,49 ----
+  #define dysize(y) \
+      ((((y) % 4) == 0 && ((y) % 100) != 0 || ((y) % 400) == 0) ? 366 : 365)
+  
++ int
++ curyr() {
++     time_t t;
++     struct tm *tm;
++ 
++     t = time(0);
++     tm = localtime(&t);
++     return tm->tm_year+1900;
++ }
++ 
+  time_t
+  itime(t)
+  struct tm *t;				/* as returned by localtime(3) */
+***************
+*** 52,58 ****
+  	x += dayspermonth[i-1];
+  
+      /* include Feb 29th if it has occurred this year */
+!     if ((dysize(t->tm_year) == 366) && (t->tm_mon >= 2))
+  	x++;
+  
+      x += t->tm_mday - 1;		/* add days this month */
+--- 62,68 ----
+  	x += dayspermonth[i-1];
+  
+      /* include Feb 29th if it has occurred this year */
+!     if ((dysize(1900+t->tm_year) == 366) && (t->tm_mon >= 2))
+  	x++;
+  
+      x += t->tm_mday - 1;		/* add days this month */
+***************
+*** 74,81 ****
+      static char str[16];
+  
+      t = localtime(&it);
+!     sprintf(str, "%d %3.3s %d", t->tm_mday, month_names[t->tm_mon],
+! 	    (t->tm_year < 100) ? t->tm_year : t->tm_year + 1900);
+      return (char *) str;
+  }
+  
+--- 84,91 ----
+      static char str[16];
+  
+      t = localtime(&it);
+!     sprintf(str, "%d %3.3s %d", t->tm_mday, month_names[t->tm_mon], 
+! 	    t->tm_year + 1900);
+      return (char *) str;
+  }
+  
+***************
+*** 99,105 ****
+      t = localtime(&it);
+      sprintf(str,"%d %3.3s %d %d:%02d%s",
+  	    t->tm_mday, month_names[t->tm_mon],
+! 	    (t->tm_year < 100) ? t->tm_year : t->tm_year + 1900,
+  	    (((t->tm_hour % 12) == 0) ? 12 : (t->tm_hour % 12)),
+  	    t->tm_min, ((t->tm_hour < 12) ? "am" : "pm"));
+      return (char *) str;
+--- 109,115 ----
+      t = localtime(&it);
+      sprintf(str,"%d %3.3s %d %d:%02d%s",
+  	    t->tm_mday, month_names[t->tm_mon],
+! 	    (t->tm_year + 1900),
+  	    (((t->tm_hour % 12) == 0) ? 12 : (t->tm_hour % 12)),
+  	    t->tm_min, ((t->tm_hour < 12) ? "am" : "pm"));
+      return (char *) str;
+***************
+*** 121,129 ****
+  
+      t = gmtime (&it);
+      sprintf (str, "%2d-%3.3s-%d %2d:%02d:%02d-GMT",
+! 		 t->tm_mday, month_names[t->tm_mon],
+! 		 (t->tm_year < 100) ? t->tm_year : t->tm_year + 1900,
+! 		 t->tm_hour, t->tm_min, t->tm_sec);
+      return (char *) str;
+  }
+  
+--- 131,139 ----
+  
+      t = gmtime (&it);
+      sprintf (str, "%2d-%3.3s-%d %2d:%02d:%02d-GMT",
+! 	     t->tm_mday, month_names[t->tm_mon],
+! 	     (t->tm_year + 1900),
+! 	     t->tm_hour, t->tm_min, t->tm_sec);
+      return (char *) str;
+  }
+  
+***************
+*** 204,217 ****
+  #endif    
+      sprintf(str,"%3.3s, %d %3.3s %d %d:%02d:%02d %s",
+  	    day_names[t->tm_wday],
+! 	    t->tm_mday, month_names[t->tm_mon], t->tm_year /*+ 1900*/,
+  	    t->tm_hour, t->tm_min, t->tm_sec,
+! #if BSD
+  	    timezone(tb.timezone, t->tm_isdst)
+  #endif
+- #if SYSV
+- 	    tzname[t->tm_isdst ? 1 : 0]
+- #endif
+  	    );
+      return (char *) str;
+  }
+--- 214,226 ----
+  #endif    
+      sprintf(str,"%3.3s, %d %3.3s %d %d:%02d:%02d %s",
+  	    day_names[t->tm_wday],
+! 	    t->tm_mday, month_names[t->tm_mon], t->tm_year + 1900,
+  	    t->tm_hour, t->tm_min, t->tm_sec,
+! #if defined(SYSV) || defined(SOLARIS)
+! 	    tzname[t->tm_isdst ? 1 : 0]
+! #elif defined(BSD)
+  	    timezone(tb.timezone, t->tm_isdst)
+  #endif
+  	    );
+      return (char *) str;
+  }
+*** /tmp/mm/mm/dt.c	Fri Nov 21 09:42:47 1997
+--- mm/dt.c	Wed Dec 29 19:36:36 1999
+***************
+*** 85,91 ****
+  	return(stringtotime(str));
+      if ((month = whatmonth(mon)) == -1)
+  	return(stringtotime(str));
+!     if (year < 100) year += 1900;
+      t = mkdate(year,month,day,hr,min,sec,tz);
+      return(t);
+  }
+--- 85,92 ----
+  	return(stringtotime(str));
+      if ((month = whatmonth(mon)) == -1)
+  	return(stringtotime(str));
+!     if (year < 70) year += 2000;
+!     else if (year < 100) year += 1900;
+      t = mkdate(year,month,day,hr,min,sec,tz);
+      return(t);
+  }
+***************
+*** 104,110 ****
+      if (n == 8) {
+  	if ((month = whatmonth(mon)) == -1)
+  	    return(stringtotime(str));
+! 	if (year < 100) year += 1900;
+  	return(mkdate(year,month,day,hr,min,sec,tz));
+      }
+      n = sscanf(str, "%3s, %2d %3s %d, %2d:%2d:%2d %3s\n",
+--- 105,112 ----
+      if (n == 8) {
+  	if ((month = whatmonth(mon)) == -1)
+  	    return(stringtotime(str));
+! 	if (year < 70) year += 2000;
+! 	else if (year < 100) year += 1900;
+  	return(mkdate(year,month,day,hr,min,sec,tz));
+      }
+      n = sscanf(str, "%3s, %2d %3s %d, %2d:%2d:%2d %3s\n",
+***************
+*** 112,118 ****
+      if (n == 8) {
+  	if ((month = whatmonth(mon)) == -1)
+  	    return(stringtotime(str));
+! 	if (year < 100) year += 1900;
+  	return(mkdate(year,month,day,hr,min,sec,tz));
+      }
+      n = sscanf(str, "%3s %2d %3s %d %2d:%2d:%2d %3s\n",
+--- 114,121 ----
+      if (n == 8) {
+  	if ((month = whatmonth(mon)) == -1)
+  	    return(stringtotime(str));
+! 	if (year < 70) year += 2000;
+! 	else if (year < 100) year += 1900;
+  	return(mkdate(year,month,day,hr,min,sec,tz));
+      }
+      n = sscanf(str, "%3s %2d %3s %d %2d:%2d:%2d %3s\n",
+***************
+*** 120,126 ****
+      if (n == 8)  {
+  	if ((month = whatmonth(mon)) == -1)
+  	    return(stringtotime(str));
+! 	if (year < 100) year += 1900;
+  	return(mkdate(year,month,day,hr,min,sec,tz));
+      }
+      n = sscanf(str, "%3s, %2d %3s %d %2d:%2d %3s\n",
+--- 123,130 ----
+      if (n == 8)  {
+  	if ((month = whatmonth(mon)) == -1)
+  	    return(stringtotime(str));
+! 	if (year < 70) year += 2000;
+! 	else if (year < 100) year += 1900;
+  	return(mkdate(year,month,day,hr,min,sec,tz));
+      }
+      n = sscanf(str, "%3s, %2d %3s %d %2d:%2d %3s\n",
+***************
+*** 128,134 ****
+      if (n == 7) {
+  	if ((month = whatmonth(mon)) == -1)
+  	    return(stringtotime(str));
+! 	if (year < 100) year += 1900;
+  	return(mkdate(year,month,day,hr,min,0,tz));
+      }
+      n = sscanf(str, "%3s %2d %3s %d %2d:%2d %3s\n",
+--- 132,139 ----
+      if (n == 7) {
+  	if ((month = whatmonth(mon)) == -1)
+  	    return(stringtotime(str));
+! 	if (year < 70) year += 2000;
+! 	else if (year < 100) year += 1900;
+  	return(mkdate(year,month,day,hr,min,0,tz));
+      }
+      n = sscanf(str, "%3s %2d %3s %d %2d:%2d %3s\n",
+***************
+*** 136,142 ****
+      if (n == 7) {
+  	if ((month = whatmonth(mon)) == -1)
+  	    return(stringtotime(str));
+! 	if (year < 100) year += 1900;
+  	return(mkdate(year,month,day,hr,min,0,tz));
+      }
+      return(stringtotime(str));
+--- 141,148 ----
+      if (n == 7) {
+  	if ((month = whatmonth(mon)) == -1)
+  	    return(stringtotime(str));
+! 	if (year < 70) year += 2000;
+! 	else if (year < 100) year += 1900;
+  	return(mkdate(year,month,day,hr,min,0,tz));
+      }
+      return(stringtotime(str));
+
+--------------BD6A10902129B0DCD6BE69F6--
+

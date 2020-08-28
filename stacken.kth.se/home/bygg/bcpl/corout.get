@@ -1,0 +1,50 @@
+$LIBRARY "BCL:COROUT"
+
+//	COROUTINE PACKAGE HEADER
+
+EXTERNAL $( COROUTINE; RESUME $)
+
+MANIFEST
+$( C.P:		SELECTOR 18:18:0
+   C.K:		SELECTOR 18:0:0
+   C.NAME:	SELECTOR 18:18:1
+   C.PC:	SELECTOR 36:0:2
+   C.STBASE:	SELECTOR 18:18:3
+   C.STLIM:	SELECTOR 18:0:3
+   C.PARENT:	SELECTOR 18:18:4
+   C.END:	SELECTOR 36:0:5
+   C.LINK:	SELECTOR 36:0:6
+   C.STACKBASE:	6
+   C.ARGBASE:	6+2 // STACKBASE OF FUNCTION+SAVESPACESIZE
+   C.SIZE:	7
+$)
+
+           //////////////////////////////////////////
+           //                                      //
+           //                                      //
+           //    COROUTINE   RECORD   LAYOUT       //
+           //                                      //
+           //                                      //
+           //////////////////////////////////////////
+
+           //////////////////////////////////////////
+           //    stack P      //    stack K        //
+           //////////////////////////////////////////
+           //    "name"       //    spare 1/2 wd   //
+           //////////////////////////////////////////
+           //      PC word (when not running)      //
+           //////////////////////////////////////////
+           //    stack base   //    stack limit    //
+           //////////////////////////////////////////
+           //    parent c'tne //    spare 1/2 wd   //
+           //////////////////////////////////////////
+           //    end LABEL word (for return)       //
+           //////////////////////////////////////////
+           //    start of first stack frame        //
+           //////////////////////////////////////////
+
+
+
+
+
+

@@ -1,0 +1,7 @@
+v0.7.2 - 3/20/2001 - by Timothy Stark <sword7@speakeasy.org>
+------------------------------------------------------------
+* A bug in console_Prompt had been fixed.  When you just press
+  return, TS10 emulator crashed with segmentation violation.
+* Patches had been applied to tape.c for big-endian machines.
+* Socket routines initially had been implemented for CTY,
+  DZ11, and others.

@@ -1,0 +1,162 @@
+Script started on Thu Nov 27 20:20:05 2008
+mhobile$/tmp/dissass>cd cm omnd
+mhobile$/tmp/dissass/comnd>make libmond[4hc[4lmom
+gcc -O -Wall -g -I/usr/X11R6/include -c comnd.c
+comnd.c: In function `try_number':
+comnd.c:1311: warning: cast from pointer to integer of different size
+comnd.c: In function `cm_pnum':
+comnd.c:2664: warning: cast to pointer from integer of different size
+gcc -O -Wall -g -I/usr/X11R6/include -c cmsys.c
+ar cru libcomnd.a comnd.o cmsys.o
+mhobile$/tmp/dissass/comnd>make
+gcc -O -Wall -g -I/usr/X11R6/include -c test.c
+gcc -o test test.o -L. -l comnd
+./libcomnd.a(comnd.o)(.text+0x2237): In function `copystring':
+/tmp/dissass/comnd/comnd.c:2113: warning: strcpy() is almost always misused, please use strlcpy()
+./libcomnd.a(comnd.o)(.text+0x1851): In function `help_number':
+/tmp/dissass/comnd/comnd.c:1285: warning: sprintf() is often misused, please use snprintf()
+mhobile$/tmp/dissass/comnd>cd ../disass
+mhobile$/tmp/dissass/disass>m ln-  -s ../comnd/libcomnd.a 
+mhobile$/tmp/dissass/disass>make
+gcc -O -g -I/usr/X11R6/include -c disass.c
+gcc -O -g -I/usr/X11R6/include -c sysdep.c
+gcc -O -g -I/usr/X11R6/include -c parser.c
+parser.c: In function `parse_radix':
+parser.c:563: warning: cast from pointer to integer of different size
+parser.c: In function `parse_pattern':
+parser.c:816: warning: cast from pointer to integer of different size
+parser.c: In function `def_register':
+parser.c:1281: warning: cast from pointer to integer of different size
+parser.c: In function `cmd_disassemble':
+parser.c:1684: warning: cast from pointer to integer of different size
+parser.c: In function `do_parseaddr':
+parser.c:1847: warning: cast from pointer to integer of different size
+parser.c: In function `help_processor':
+parser.c:2124: warning: cast from pointer to integer of different size
+parser.c: In function `help_status':
+parser.c:2151: warning: cast from pointer to integer of different size
+parser.c: In function `cmd_peek':
+parser.c:2872: warning: cast from pointer to integer of different size
+parser.c: In function `cmd_ld_bin':
+parser.c:2943: warning: cast from pointer to integer of different size
+parser.c: In function `cmd_read':
+parser.c:3016: warning: cast from pointer to integer of different size
+parser.c: In function `set_field':
+parser.c:3448: warning: cast from pointer to integer of different size
+parser.c:3459: warning: cast from pointer to integer of different size
+parser.c: In function `set_endian':
+parser.c:3794: warning: cast from pointer to integer of different size
+parser.c: In function `set_objtype':
+parser.c:3841: warning: cast from pointer to integer of different size
+parser.c: In function `set_standout':
+parser.c:4041: warning: cast from pointer to integer of different size
+parser.c: In function `wnxt_status':
+parser.c:5362: warning: cast from pointer to integer of different size
+parser.c: In function `win_open':
+parser.c:5457: warning: cast from pointer to integer of different size
+parser.c: In function `cmd_write':
+parser.c:5573: warning: cast from pointer to integer of different size
+gcc -O -g -I/usr/X11R6/include -c addr.c
+gcc -O -g -I/usr/X11R6/include -c buffer.c
+gcc -O -g -I/usr/X11R6/include -c filio.c
+gcc -O -g -I/usr/X11R6/include -c memory.c
+gcc -O -g -I/usr/X11R6/include -c loader.c
+loader.c:6:17: elf.h: No such file or directory
+loader.c: In function `sym32':
+loader.c:88: error: syntax error before "sym"
+loader.c:96: error: `sym' undeclared (first use in this function)
+loader.c:96: error: (Each undeclared identifier is reported only once
+loader.c:96: error: for each function it appears in.)
+loader.c:103: error: `STT_OBJECT' undeclared (first use in this function)
+loader.c:103: error: `STT_FUNC' undeclared (first use in this function)
+loader.c:104: error: `STB_GLOBAL' undeclared (first use in this function)
+loader.c:104: error: `STB_LOCAL' undeclared (first use in this function)
+loader.c:104: error: `STB_WEAK' undeclared (first use in this function)
+loader.c: In function `sym64':
+loader.c:121: error: syntax error before "sym"
+loader.c:129: error: `sym' undeclared (first use in this function)
+loader.c:136: error: `STT_OBJECT' undeclared (first use in this function)
+loader.c:136: error: `STT_FUNC' undeclared (first use in this function)
+loader.c:137: error: `STB_GLOBAL' undeclared (first use in this function)
+loader.c:137: error: `STB_LOCAL' undeclared (first use in this function)
+loader.c:137: error: `STB_WEAK' undeclared (first use in this function)
+loader.c: In function `load_elf':
+loader.c:186: error: `EI_NIDENT' undeclared (first use in this function)
+loader.c:198: error: syntax error before "e32h"
+loader.c:201: error: `Elf32_Phdr' undeclared (first use in this function)
+loader.c:201: error: `e32p' undeclared (first use in this function)
+loader.c:202: error: `Elf32_Shdr' undeclared (first use in this function)
+loader.c:202: error: `e32s' undeclared (first use in this function)
+loader.c:204: error: `Elf64_Phdr' undeclared (first use in this function)
+loader.c:204: error: `e64p' undeclared (first use in this function)
+loader.c:205: error: `Elf64_Shdr' undeclared (first use in this function)
+loader.c:205: error: `e64s' undeclared (first use in this function)
+loader.c:219: error: `EI_MAG0' undeclared (first use in this function)
+loader.c:219: error: `ELFMAG0' undeclared (first use in this function)
+loader.c:220: error: `EI_MAG1' undeclared (first use in this function)
+loader.c:220: error: `ELFMAG1' undeclared (first use in this function)
+loader.c:221: error: `EI_MAG2' undeclared (first use in this function)
+loader.c:221: error: `ELFMAG2' undeclared (first use in this function)
+loader.c:222: error: `EI_MAG3' undeclared (first use in this function)
+loader.c:222: error: `ELFMAG3' undeclared (first use in this function)
+loader.c:225: error: `EI_DATA' undeclared (first use in this function)
+loader.c:226: error: `ELFDATA2LSB' undeclared (first use in this function)
+loader.c:229: error: `ELFDATA2MSB' undeclared (first use in this function)
+loader.c:236: error: `EI_CLASS' undeclared (first use in this function)
+loader.c:239: error: `ELFCLASS32' undeclared (first use in this function)
+loader.c:240: error: `e32h' undeclared (first use in this function)
+loader.c:241: error: `Elf32_Ehdr' undeclared (first use in this function)
+loader.c:256: error: `ELFCLASS64' undeclared (first use in this function)
+loader.c:258: error: `e64h' undeclared (first use in this function)
+loader.c:258: error: `Elf64_Ehdr' undeclared (first use in this function)
+loader.c:326: error: syntax error before ')' token
+loader.c:336: error: `PT_LOAD' undeclared (first use in this function)
+loader.c:347: error: syntax error before ')' token
+loader.c:387: error: syntax error before ')' token
+loader.c:390: error: `SHT_STRTAB' undeclared (first use in this function)
+loader.c:418: error: syntax error before ')' token
+loader.c:456: error: syntax error before ')' token
+loader.c:460: error: `SHT_SYMTAB' undeclared (first use in this function)
+loader.c:461: error: `SHT_DYNSYM' undeclared (first use in this function)
+loader.c:488: error: syntax error before ')' token
+*** Error code 1
+
+Stop in /tmp/dissass/disass (line 92 of /usr/share/mk/sys.mk).
+mhobile$/tmp/dissass/disass>cp -i     ln -s /usr/include/elf_abi.h elf.h
+mhobile$/tmp/dissass/disass>less    mg Makefile 
+7[?47h[?1h=[1;1H[J[31;1H[7m-----Mg: *init*                           (fundamental)--L1--C0-----------------[m[1;1H[32;1H(Read 19 lines)[K[1;1HDISASS= disass.o sysdep.o parser.o addr.o buffer.o filio.o memory.o \[2;9Hloader.o rpn.o xwin.o\[3;9Hcommon.o\[4;9Hexample.o i8051.o i8086.o\[5;9Hm6800.o m6805.o m6809.o m68k.o mips.o\[6;9Hz8.o\[7;9Hpdp10.o pdp11.o ppc.o vax.o z80.o[9;1HCC_XJUNK=-I/usr/X11R6/include[10;1HLD_XJUNK=-L/usr/X11R6/lib -lXext -lX11[12;1H.c.o:[13;9Hgcc -O -g $(CC_XJUNK) -c $*.c[15;1Hdisass: $(DISASS)[16;9Hgcc -o disass $(DISASS) -L. -l comnd $(LD_XJUNK)[18;1H$(DISASS): disass.h[31;10H[7mMakefile[1;1H[m[32;1H[K[31;63H[7m1[1;2H[31;63H2[1;3H[31;63H3[1;4H[31;63H4[1;5H[31;63H5[1;6H[31;63H6[1;7H[31;63H7[1;8H[31;63H8[1;9H[31;63H9[1;10H[31;59H2[2;10H[31;59H3[3;10H[31;59H4[4;10H[31;59H5[5;10H[31;59H6[6;10H[31;59H7[7;10H[31;59H8--C0[8;1H[31;59H9--C9[9;10H[31;59H10--C9[10;10H[31;60H1--C0[11;1H[31;60H2--C5[12;6H[31;60H3--C9[13;10H[31;64H10[13;11H[31;65H1[13;12H[31;65H2[13;13H[31;65H3[13;14H[31;65H4[13;15H[31;65H5[13;16H[31;65H6[13;17H[31;65H7[13;18H[31;65H8[13;19H[m-$(CC_XJUNK) -c $*.c[31;3H[7m**-Mg: Makefile                         (fundamental)--L13--C19[13;20H[mI$(CC_XJUNK) -c $*.c[31;64H[7m20[13;21H[m.$(CC_XJUNK) -c $*.c[31;65H[7m1[13;22H[m $(CC_XJUNK) -c $*.c[31;65H[7m2[13;23H[m[32;1HWrote /tmp/dissass/disass/Makefile[K[31;3H[7m--[13;23H[m[32;1H(No files need saving)[K[1;32r[32;1H[K[?1l>[2J[?47l8mhobile$/tmp/dissass/disass>make
+gcc -O -g -I. -I/usr/X11R6/include -c loader.c
+gcc -O -g -I. -I/usr/X11R6/include -c rpn.c
+rpn.c: In function `rpn_pstack':
+rpn.c:229: warning: cast from pointer to integer of different size
+rpn.c: In function `rpn':
+rpn.c:234: warning: cast to pointer from integer of different size
+rpn.c:253: warning: cast from pointer to integer of different size
+rpn.c:257: warning: cast from pointer to integer of different size
+gcc -O -g -I. -I/usr/X11R6/include -c xwin.c
+gcc -O -g -I. -I/usr/X11R6/include -c common.c
+common.c: In function `finddh':
+common.c:1101: warning: cast from pointer to integer of different size
+gcc -O -g -I. -I/usr/X11R6/include -c example.c
+gcc -O -g -I. -I/usr/X11R6/include -c i8051.c
+gcc -O -g -I. -I/usr/X11R6/include -c i8086.c
+gcc -O -g -I. -I/usr/X11R6/include -c m6800.c
+gcc -O -g -I. -I/usr/X11R6/include -c m6805.c
+gcc -O -g -I. -I/usr/X11R6/include -c m6809.c
+gcc -O -g -I. -I/usr/X11R6/include -c m68k.c
+gcc -O -g -I. -I/usr/X11R6/include -c mips.c
+gcc -O -g -I. -I/usr/X11R6/include -c z8.c
+gcc -O -g -I. -I/usr/X11R6/include -c pdp10.c
+gcc -O -g -I. -I/usr/X11R6/include -c pdp11.c
+gcc -O -g -I. -I/usr/X11R6/include -c ppc.c
+gcc -O -g -I. -I/usr/X11R6/include -c vax.c
+gcc -O -g -I. -I/usr/X11R6/include -c z80.c
+gcc -o disass disass.o sysdep.o parser.o addr.o buffer.o filio.o memory.o  loader.o rpn.o xwin.o common.o example.o i8051.o i8086.o m6800.o m6805.o m6809.o m68k.o mips.o z8.o pdp10.o pdp11.o ppc.o vax.o z80.o -L. -l comnd -L/usr/X11R6/lib -lXext -lX11
+memory.o(.text+0x83d): In function `copystring':
+/tmp/dissass/disass/memory.c:639: warning: strcpy() is almost always misused, please use strlcpy()
+/usr/X11R6/lib/libX11.so.11.1: warning: strcat() is almost always misused, please use strlcat()
+parser.o(.text+0x313): In function `l2s':
+/tmp/dissass/disass/parser.c:525: warning: sprintf() is often misused, please use snprintf()
+mhobile$/tmp/dissass/disass>exit
+
+Script done on Thu Nov 27 20:21:53 2008

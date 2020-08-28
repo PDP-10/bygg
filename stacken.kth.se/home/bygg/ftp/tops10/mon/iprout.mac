@@ -1,0 +1,192 @@
+title	iprout -- IP routing and fragmentation.
+search	f, s
+search	ip4sym
+
+	$reloc
+	$low
+
+repeat 0,<
+
+We should implement one entry point here, IPROUTE::, and this should be
+used every time someone has an IP packet to move.  It does not matter if
+it is the local IP stack or one of the network interfaces, all packets
+should go the same way.
+
+Routing table:
+
+	130.237.234.7	/32	self0			A
+	130.237.234.10	/32	slip0			A
+	130.237.234.255	/32	una0			  B S
+	255.255.255.255 /32	una0			  B S
+	130.237.234.0	/24	una0
+	0.0.0.0		/0	una0	130.237.234.1
+
+	This means that what we keep is the IP address/mask, the interface
+	index (and type from that) and the gateway field.  Nothing more
+	should be needed.
+
+	Note that the routing code does not in any way know about the
+	interface addresses unless they are in the routing table itself.
+	(They should be there, installed by some init code, but...)
+
+>;repeat 0
+
+; Layout of the routing block:
+
+$phase 0
+
+rt.nxt:!block	1	;Next entry.
+rt.prv:!block	1	;Prev entry.
+rt.ipa:!block	1	;IPv4 addr, left justified.
+rt.len:!block	1	;Prefix length.
+rt.flg:!block	1	;Flags:
+  rtf.ar==1B0		;  ARP flag, we answer arp for this.
+  rtf.bc==1B1		;  Broadcast, this is a broadcast addr.
+  rtf.sl==1B2		;  Self, this can only be used from me.
+  rtf.dl==1B3		;  Deleted, ignore this route.
+rt.ifx:!block	1	;Outgoing interface.
+rt.via:!block	1	;Next-hop gateway.
+rtsize:!block	0	;Size of block.
+
+$dephase
+
+self0::	block	ifsize		;Interface block for the local IP stack.
+rtable:	exp	0		;Initial routing table, empty.
+
+ouripa::byte (8) ^D192, ^D168, ^D111, ^D60
+	byte (8) ^D130, ^D237, ^D234, ^D7 ;For testing.
+
+	$high
+
+;*
+;* Routines to manipulate the routing (forwarding) table:
+;*
+
+rtiadd:				;Add a new routing entry.
+rtidel:				;Delete an existring entry.
+rtichk:				;Check if there is an entry.
+
+ipruuo::popj	p,
+
+;*
+;* Come here with pointer to packet descriptor in p1.
+;*
+
+iprout::skipn	p2,pd.ptr(p1)	;Get data pointer.
+	 jrst	givpd##		; None, silently drop descriptor.
+	skipn	pd.ifn(p1)	;From our own IP stack?
+	 jrst	bypass		; Yes, bypass all the tests.
+	load.	t1,ih.ihl,(p2)	;Get header length in 32-bit words.
+	lsh	t1,2		;Convert length to bytes.
+	cail	t1,^D20		;Check sizes: at least a minimum IP header, -
+	 camle	t1,pd.len(p1)	; and all bytes really there?
+	  jrst	givpd##		;  No, toss.
+
+	;* XXX Save lenght for option processing.
+
+;* Verify the IP header checksum:
+
+	movei	p4,0		;Initial checksum.
+	movei	t2,(p2)		;IP header address. (t1 already has length)
+	pushj	p,csmbts##	;Checksum the header.
+	pushj	p,csmdon##	;Done checksumming.
+	caie	p4,177777	;Correct checksum?
+	 jrst	givpd##		; No, silently toss packet.
+
+;* Decrement TTL, check for too old packet:
+	
+	load.	t1,ih.ttl,(p2)	;Get TTL.
+	sojle	t1,[		;If one or lower, toss packet, -
+		movei	t1,^D11	; with an ICMP message.
+		movei	t2,0
+		jrst	icmp.e##]
+	stor.	t1,ih.ttl,(p2)	;Store decremented value back.
+	load.	t1,ih.csm,(p2)	;Get checksum.
+	addi	t1,^D256	;Adjust for changed TTL.
+	caile	t1,177777	;Overflow?
+	 subi	t1,177777	; Please dont.
+	stor.	t1,ih.csm,(p2)	;Restore updated checksum.
+
+bypass:
+	;* Lookup routing table entry.
+
+	move	w,ift.un##	;Get default interface block, ethernet.
+	load.	t1,ih.da,(p2)	;Get IP destination.
+	camn	t1,ouripa	;To us?
+	 move	w,ift.me##	; Yes, use our local interface.
+
+	;* XXX check MTU, we might have to fragment.
+
+	jrst	@if.snd(w)	;Go deliver packet.
+
+;*
+;* Come here from ARPSER to check if we should accept packets to (answer
+;* arp for) a given address.  Query IP address in T1.
+;*
+
+ansarp::came	t1,ouripa	;[temp] Is this us?
+	 popj	p,		;[temp]  No, fail.
+	jrst	cpopj1##	;[temp] Yes, accept.
+
+;*
+;* Here to check that an IP address in T1 is really one of ours.
+;*
+
+ipisme::came	t1,ouripa	;[temp] Is this us?
+	 popj	p,		;[temp]  No, fail.
+	jrst	cpopj1##	;[temp] Yes, accept.
+
+;*
+;* Here to get a suitable local address for a given remote.
+;*
+
+ipgtla::move	t1,ouripa	;[temp] Use the one we have.
+	popj	p,		;[temp] Just return.
+
+;*
+;* Once/second routine.  (Not IP security!)
+;*
+
+ipsec::	pushj	p,arpsec##	;Call ARP once/second handler.
+	pushj	p,unasec##	;Call DEUNA once/second handler.
+
+	; We should do our own things here.
+
+	popj	p,		;All done.
+;*
+;* This routine inits the IP routing and interface blocks.
+;*
+
+repeat 0,<
+
+iprini::push	p,w		;Save w, as usual.
+	move	w,ip4lst	;Get list of device drivers.
+	jumpe	w,ipri.2	;None?
+ipri.1:	pushj	p,@ipiini(w)	;Init one driver.
+	skipe	w,inilnk(w)	;Get next, if any.
+	 jrst	ipri.1		; Loop.
+ipri.2:	movei	t1,^D576	;MTU.
+	movei	t2,ift.me##	;Local interface block pointer.
+	xmovei	t3,ipin##	;Packet handler. ("transmitter")
+	movei	t4,1		;Only one interface, thank you.
+	pushj	p,ifinit##	;Init the interface block.
+
+	movsi	t1,-iftabl##	;Load length of interface table.
+	movei	t2,^D576	;Load a useful MTU.
+ipri.3:	move	w,iftab##(t1)	;Get interface block address.
+	camge	t2,if.mtu(w)	;Find out the largest interface MTU, -
+	 move	t2,if.mtu(w)	; and remember for later.
+	hrrzm	t1,if.num(w)	;Set up global interface number.
+	setzm	if.ipa(w)	;No IP address.
+	setzm	if.tqh(w)	;No transmit queue.
+	setzm	if.tqt(w)	; ... and no queue tail.
+	setzm	if.tql(w)	; ... and no length.
+	setzm	if.ldb(w)	;No linked LDB.
+	aobjn	t1,ipri.3	;Loop over all blocks.
+	move	w,ift.me##	;Load address of the "self" interface block.
+	movem	t2,if.mtu(w)	;Prevent stupid fragmentation.
+	jrst	wpopj##		;Restore w and return.
+
+>; end repeat 0
+
+	end

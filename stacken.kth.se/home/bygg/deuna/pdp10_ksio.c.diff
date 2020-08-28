@@ -1,0 +1,10 @@
+100,101d99
+< extern t_stat una_rd (int32 *data, int32 addr, int32 access);
+< extern t_stat una_wr (int32 *data, int32 addr, int32 access);
+171,172d168
+<       { IO_UBA3+IO_DEUNABASE, IO_UBA3+IO_DEUNABASE+7, 0,
+<                       &una_rd, &una_wr },             /* DEUNA */
+207c203
+<       VEC_DZ0RX, VEC_DZ0TX, VEC_DEUNA, 0, 0, 0, 0, 0, 
+---
+>       VEC_DZ0RX, VEC_DZ0TX, 0, 0, 0, 0, 0, 0, 

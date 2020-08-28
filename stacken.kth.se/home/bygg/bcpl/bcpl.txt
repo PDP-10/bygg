@@ -1,0 +1,161 @@
+This file will carry updates and ammendments to the BCPL reference
+manual, which is available from the Data Control Section.
+
+This file will also carry details of  any bugs in the compiler and
+library until they are fixed.
+
+Documentation.
+==============
+
+A BCPL User guide is now available, also from the Data Control Section.
+It contains details of the BCPL Debugger, Coroutine package, Filespec
+handler, Command String parser, Dictionary package and Array package.
+It also contains further details of the main BCPL library.
+
+New features in version 3H.
+===========================
+
+#B, #O and #X introduce binary, octal and hexadecimal constants, the
+last also with #H.
+Lower case *c etc. are now equivalent to upper case *C etc.
+If no explicit device in GET, then BCL: searched if GETfile not on DSK:.
+$6 is equivalent to $SIXBIT.
+$UNIVERSAL "filespec" or $SEARCH "filespec" hauls in all EXTERNAL
+or MANIFEST type definitions from a MACRO universal file.
+New interpretation of /K switch, by default all symbols are translated
+to upper case. The previous interpretation (upper and lower case differ)
+is retained by use of /K:1.
+WARNING: BCPL now generates the correct code for the examples in section
+2.18 of the reference manual.  As a result there is the possibility
+that programs relying on the incorrect code will no longer work.
+
+New features in version 3G.
+===========================
+
+? is now a synonym for NIL.
+. (point) as the first symbol on a line terminates the input file.
+The MOVEI to reset the stack limit register is not planted automatically
+after a subroutine or TRACE call. It can be forced by the /J switch. The
+previous meaning of the /J switch (Just syntax check) is now implemented
+via a special case of the /G switch, i.e. /G:n where n > 0.
+
+New features in version 3F.
+===========================
+
+For virtual memory systems (on KI and KL processors) the /S switch is no
+longer required.  The compiler acquires pages from high memory for the
+tree when needed.  It will only fail when the equivalent of /S:126 space
+has been used!
+Note: The monitor may well enforce restrictions before this limit is
+reached by the compiler.
+
+For VM systems the % tree space figure is not normally printed out.
+Users intending to transport to other sites, who wish to know how many
+/S switches would be required on a non-VM system, use of the /S switch
+will cause the compiler to print out the % figure.
+Note: The default value of /S normally assumed by the compiler is /S:3.
+
+New features in version 3E (also 3D).
+=====================================
+
+Listing file is now headed by the name, creation time and date of the
+main input file, version number of the compiler and date and time of
+compilation. GET file line numbers are indented one space for each
+level of GETfile nesting. $LIST and $NOLIST compiler instuctions
+turn the listing on and off, the /L compiler switch inhibits all
+$NOLIST instructions in the code. (See BCPL reference manual section
+5.5).
+
+Cross reference listings can be obtained by the /C compiler switch
+(/CREF to COMPIL), names declared in GETfiles but not referenced
+elsewhere are not listed unless /Q compiler switch is also used.
+
+Multiple input files are now permitted, the last is taken as the main
+input file, the previous ones are treated as GETfiles. The /N switch
+supresses all GET requests in the program.
+
+A line feed character may no longer be represented by itself in a
+string. It may now only be represented by *L. Strings spreading over
+more than one line may still be used by the *nonprintingcharacters
+convention. (See BCPL reference manual Appendix C).
+
+User debugging statements may now be selectively included by putting
+them in comment lines of the form:
+
+     //? statements
+
+the /U compiler switch will cause the compiler to ignore the //?, and
+hence compile the statements.
+
+The default input file extension is now .BCL, failing that .BCP. The
+default GETfile extension is .GET, failing that .BCL.
+
+Labels are now traced (unless /F or /O compiler switches are used),
+the label name appears in post-mortem printouts followed by a :.
+
+$TRACE escapecode can be used for conditional compilation according to
+whether the program is being compiled with trace code included or not.
+
+$SYMBOL "string", will cause the string to be put into the end of the
+symbol file (if one is being created), a newline is inserted after the
+string. This is useful for including TRACE commands to the debugger.
+
+$AZ "string", gives a literal multiword ASCIZ string.
+
+There is now a TRACE command, syntax:
+
+    TRACE name(expressionlist)
+
+this is only compiled when the the program is being compiled with
+trace code enabled, (i.e. neither /F nor /O compiler switches are
+in use). The trace package (or debugger) is called with the given
+expressions on the stack, the first parameter is normally expected to
+be a valid format string for use with WRITE or OUT, which is used
+to print the rest of the parameters. The default library trace
+package expects only the :C, :8, :N and :S format items to be used.
+The name is used to tag the particular trace call.
+
+Switches:
+
+When entered at the CCL entry point (usually via COMPIL), the compiler
+now resets all the switches before each compilation. I.e. switches are
+no longer sticky for COMPIL-entered BCPL compilations.
+
+The following switches have changed their meaning since BCPL 3C.
+/C	Cross reference listing.
+/H	Help text printed on TTY.
+/H:n	Helpful BCPL news printed on TTY.
+/J	Just syntax check.
+/N	No real GETfiles, ignore all GET commands.
+/Q	Include GETfile declarations in cross reference listing.
+/U	User debugging code enabled.
+
+Incompatibilities between BCPL versions 2 and 3.
+================================================
+
+1. Get files have the default extension .GET instead of .BCL.
+
+2. Character constants enclosed by character quotes ' can now
+   be more than one character in length. EG. 'FOO' becomes #4243717.
+
+3. A string in a context where a compile time constant is required
+   is now an error. The previous interpretation af it as the value
+   of the first word of the string can be obtained by using the
+   $STRING "string" form.
+
+4. Monadic operators are now very binding, EG. "@A!B" is now
+   interpreted as "(@A)!B" whereas it used to be "@(A!B)".
+
+5. The trace code planted by BCPL version 3 is totally incompatible
+   with version 2. Code that is compatible with the old library
+   (BC2:RUNLIB) can be obtained by removing the trace code via the
+   /O compiler switch.
+
+Help to run the compiler can be obtained by
+.HELP BCPL ; in monitor command mode
+or /H switch to BCPL.
+
+Known bugs (version 3H)
+=======================
+
+None. (And this time I'm not lying through my teeth!).

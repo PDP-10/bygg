@@ -1,0 +1,55 @@
+_
+_ Copyright (c) 1986, 1990 by The Trustees of Columbia University in
+_ the City of New York.  Permission is granted to any individual or
+_ institution to use, copy, or redistribute this software so long as it
+_ is not sold for profit, provided this copyright notice is retained.
+_
+_ Author: Howie Kaye
+
+/*
+ * para_actions:
+ * a structure to hold an action character, and an associated function
+ * to call for that action
+ */
+
+typedef struct {
+  char actionchar;
+  char * (* actionfunc)();
+} para_actions;
+
+/*
+ * para_data:
+ * input data to paragraph parser.
+ * holds text to install at the beginning of the buffer, and
+ * a NULL terminated vector of para_actions.
+ */
+
+typedef struct {
+  char *buf;
+  para_actions *actions;
+} para_data;
+
+fnerror(NM,`Out of memory')
+
+/*
+ * the PARA_DEF flag is used to specify that the default actions should be
+ * set, and then the user specified actions should be installed.
+ * Used to make additions to the default actions
+ */
+fnflag(DEF)
+
+#ifndef DEF_EDITOR
+#if unix
+#define DEF_EDITOR "emacs"
+#endif
+
+#ifdef MSDOS
+#ifdef RAINBOW
+#define DEF_EDITOR "mince"
+#else
+#define DEF_EDITOR "epsilon"
+#endif /*  RAINBOW */
+#endif /*  MSDOS */
+#endif
+pvtype(char *);
+

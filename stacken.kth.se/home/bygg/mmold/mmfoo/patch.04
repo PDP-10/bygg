@@ -1,0 +1,87 @@
+Patch number: 4
+MM Version: 0.90
+Date: Fri Sep 18 01:38:50 1992
+File: file.c
+
+
+Description:
+
+Security hole involving <filename>.rc (mailfile-specific rc file).
+
+Fix:
+
+Only take the rc file if it is owned by the user (or root) and the file 
+is not group or world writable.
+
+Patch:
+
+*** 2.20	1991/01/03 10:04:50
+--- file.c	1992/09/18 05:30:24
+***************
+*** 121,128 ****
+  
+      cf = nf;				/* make new file current */
+   
+!     /* "take" filename.rc */
+!     (void) take_file(filename, top_level_parser, FALSE);
+  
+      if (cf) do_flagged();
+  
+--- 121,129 ----
+  
+      cf = nf;				/* make new file current */
+   
+!     /* "take" filename.rc if it is "safe" */
+!     if (safe_rc_file(filename))
+! 	(void) take_file(filename, top_level_parser, FALSE);
+  
+      if (cf) do_flagged();
+  
+***************
+*** 1120,1123 ****
+--- 1121,1148 ----
+      if ((stat(file, &statb) == 0) && (statb.st_size == 0))
+  	return (TRUE);			/* it's empty */
+      return (FALSE);
++ }
++ 
++ 
++ /*
++  * safe_rc_file:
++  * filename.rc is "safe" if it is owned either by the user running MM or
++  * if the file is owned by root AND the file is not group or world writable.
++  */
++ 
++ int
++ safe_rc_file(fname)
++ char *fname;
++ {
++     struct stat sbuf;
++ 
++     if (stat(fname, &sbuf) != 0) {
++ 	return(FALSE);
++     }
++     if (!(sbuf.st_uid == UID || sbuf.st_uid == 0) || 
++ 	sbuf.st_mode & 022) {
++ 	fprintf (stderr, "%s not safe, ignoring\n", fname);
++ 	return(FALSE);
++     }
++     return(TRUE);
+  }
+
+*** 1.5	1991/01/04 17:17:39
+--- mm-patchlevel.h	1992/09/18 05:36:09
+***************
+*** 10,13 ****
+   * release.  Don't forget to send diffs for this file in the patch file.
+   */
+  
+! #define MM_PATCH 2
+--- 10,13 ----
+   * release.  Don't forget to send diffs for this file in the patch file.
+   */
+  
+! #define MM_PATCH 4
+
+
+Note: Patchlevel increased from 2 to 4 (patch 3 involved no diffs).

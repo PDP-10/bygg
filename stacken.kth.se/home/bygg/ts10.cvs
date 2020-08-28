@@ -1,0 +1,2 @@
+cvs -d:pserver:anonymous@cvs.ts10.sourceforge.net:/cvsroot/ts10 login
+cvs -z3 -d:pserver:anonymous@cvs.ts10.sourceforge.net:/cvsroot/ts10 co ts10

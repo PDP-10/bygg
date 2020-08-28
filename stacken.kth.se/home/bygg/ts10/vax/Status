@@ -1,0 +1,11 @@
+Version 0.0 - Timothy Stark - 2/16/2001
+---------------------------------------
+
+Core Emulator                Status: Under Construction.
+KA630 CPU                    Status: Under Construction.
+Instruction Emulation        Status: Being Developed Soon.
+Instruction Table            Status: Partial Completed.
+	Vector Instructions - Not completed yet.
+Basic Disassembler           Status: Partial Completed.
+	Symbols - Not completed yet.
+Memory Dump Utility          Status: Completed.

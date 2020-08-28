@@ -1,0 +1,678 @@
+title	unaser - Service for DEUNA/DELUA.
+
+search	f, s, netprm
+search	ip4sym
+
+; eHpli  mrtpadei sndi e adp1p.1
+
+opdef	bltbu	[716B8]		;Fast (?) byte to UNIBUS
+opdef	bltub	[717B8]		;Fast (?) UNIBUS to byte
+
+	$reloc
+	$high
+
+unaser::entry	unaser
+
+	$low
+;
+;The DEUNA/DELUA is fixed at BR5, as far as I can see.
+;
+;Variables:
+
+ifndef una0ba,<una0ba==3,,774510> ;Default address of DEUNA/DELUA.
+ifndef una0iv,<una0iv==120>	;Default interrupt vector.
+
+unacsr:	exp	una0ba		;Unibus addres of our CSR.
+unavec:	exp	una0iv		;Interrupt vector.
+unamap:	block	1		;I/O address of first mapping register.
+unatad:	exp	unapgs##	;10 address of comm region.
+unaead:	block	1		;11 address of comm region.
+unaict:	exp	0		;Count of interrupts.
+unacmq:	exp	0		;Queue of commands to execute.
+unacip:	exp	0		;Points to command in progress.
+unaxmq:	exp	0		;Queue of datagrams to transmit.
+unaxip:	exp	0		;Transmit in progress.
+unarxn:	block	1		;Next receive ring entry to check.
+unapol:	block	1		;Non-zero if polling wanted.
+unapip:	block	1		;Non-zero if polling in progress.
+unahwa::exp	0,0		;Hardware address.
+
+define u$(arg),<arg + unapgs##>	;Generate offset into shared memory.
+
+	$high
+
+pcsr0==:0
+    p0seri==100000		; <15> Status Error Interrupt
+    p0pcei==040000		; <14> Port Command Error Interrupt
+    p0rxi== 020000		; <13> Receive Interrupt
+    p0txi== 010000		; <12> Transmit Interrupt
+    p0dni== 004000		; <11> Done Interrupt
+    p0rcbi==002000		; <10> Receive Buffer Unavailable Int.
+    p0fatl==001000		; <09> [DELUA] Fatal Internal Error
+    p0usci==000400		; <08> Unsolicited State Change Int.    
+    p0int== 000200		; <07> Interrupt Summary
+    p0inte==000100		; <06> Interrupt Enable
+    p0rset==000040		; <05> Reset
+    p0zero==000020		; <04> ZERO
+    p0pcmd==000017		; <03:00> Port Command
+	c$noop==:0		;    No Op.
+	c$getpcb==:1		;    Get PCB base addr.
+	c$getcmd==:2		;    Get command from PCB[0]
+	c$slftst==:3		;    Initate Self-test.
+	c$start==:4		;    Start transmit & receive.
+	c$boot==:5		;    Boot. 
+	unused==:6
+	unused==:7
+	c$poll==:10		;    Polling Demand
+	unused==:11
+	unused==:12
+	unused==:13
+	unused==:14
+	unused==:15
+	c$halt==:16		;    [DELUA] Enter HALTED state.
+	c$stop==:17		;    Stop transmit & receive.
+pcsr1==:2
+    p1xpwr==100000		; <15> Transceiver Power Failure
+    p1icab==040000		; <14> Port/Link Cable Failure
+    p1ecod==037400		; <13:08> Self-test error code
+    p1pcto==000200		; <07> Port Command Timeout
+    p1type==000160		; <06:04> Type of interface:
+	deuna==:0
+	delua==:1
+    p1stat==000017		; <03:00> State:
+	; 00 - Reset
+	; 01 - Primary Load
+	; 02 - Ready
+	; 03 - Running
+	; 04 - Unused
+	; 05 - UNIBUS halted
+	; 06 - NI halted
+	; 07 - NI and UNIBUS halted
+	; 10 - [DELUA] Port halted
+	; 1x - Unused
+	; 17 - [DELUA] Secondary load
+pcsr2==:4			; Low order 16 bits of PCB address.
+pcsr3==:6			; High order 2 bits of PCB address.
+;
+; Layout of the comm region:
+;
+define	.blkb(name, len, extra<0>),<
+	size== len + extra		;; Include extra bytes.
+	wsize== <size + 3> / 4		;; Compute size in '10 words.
+	name== offset			;; Generate '10 offset.
+	e'name== <offset * 4> + extra	;; Generate '11 offset.
+	offset== offset + wsize		;; Update offsets.
+>
+
+nrxbuf==^D4		;Number of receive buffers.
+
+txbsiz==^D1514		;Transmit buffer size.
+rxbsiz==^D1518		;Receive buffer size.
+
+udbsiz==^D68		;UDB size.
+
+offset==0
+
+	.blkb	pcb, ^D8, 2		;Port Command Block
+	.blkb	udb, udbsiz		;Unibus Data Block
+	.blkb	tdr, ^D8, 2		;Transmit Descriptor Ring.
+	.blkb	rdr, ^D16 * nrxbuf, 2	;Receive Descriptor Ring.
+
+; See q1wfm routine for a description of the receive ring.
+
+	.blkb	txb, txbsiz, 2		;One transmit buffer.
+
+; Receive buffers are special, we need a label for just the first one.
+
+	rxbsiz==<<rxbsiz + 3> / 4> * 4	;Round up to full '10 word.
+
+	.blkb	rxb, nrxbuf * rxbsiz, 2	;Space for receive buffers.
+
+ifg <offset - <unappl * pagsiz>>,<
+	printx	?UNA comm region overflow.
+	printx	(This means that unappl (from NETPRM.MAC) is too small.)
+	pass2
+	end
+>
+
+; ----------------------------------------------------------------------
+; Things that need to be in a queue block:
+;
+;	pointer to next block			qb.nxt
+;	function code (internal)		qb.fnc
+;		* write PCB base addr.
+;		* START
+;		* STOP
+;		* POLL
+;		+ read HW address.
+;		+ write HW address.
+;		+ write ring format.
+;		+ read counters.
+;		+ read and clear counters.
+;	JCH of caller, or 0 if internal call.	qb.jch
+;	data block length and pointer.		qb.dat
+
+$phase	0
+qb.nxt:!block	1
+qb.fnc:!block	1
+qb.jch:!block	1
+qb.dat:!block	1
+qbsize:!
+$dephase
+
+define funcs,<
+	x qf.pcb,  1,  0, q1pcb, 0	;; Load PCB base address:
+	x qf.sta,  4,  0, 0,     0	;; Do START command:
+	x qf.sto, 17,  0, 0,     0	;; Do STOP command:
+	x qf.rha,  2,  4, 0,     q2rha	;; Read hardware address:
+	x qf.wha,  2,  5, q1wha, q2wha	;; Write hardware address:
+	x qf.wfm,  2, 11, q1wfm, 0	;; Write ring formats:
+	x qf.rct,  2, 12, q1rct, q2rct	;; Read counters:
+	x qf.rcc,  2, 13, q1rct, q2rct	;; Read and clear counters:
+>
+
+define x(offset, darg, parg, disp1, disp2),<offset:! xwd darg, parg>
+fnargs:	phase 0
+	funcs
+	dephase
+
+define x(offset, darg, parg, disp1, disp2),<exp disp1>
+fndsp1:	funcs
+
+define x(offset, darg, parg, disp1, disp2),<exp disp2>
+fndsp2:	funcs
+
+; ----------------------------------------------------------------------
+; Table of known ethernet protocol types and handlers.
+
+define protocols(type, handler),<
+	x 0800, unaipi
+	x 0806, arpinp##
+;;	x 86dd, ip6inp##
+>
+
+define x(type, handler),< hex(type) >
+protyp:	protocols
+pronum==.-protyp
+
+define x(type, handler),< exp handler >
+prodsp:	protocols
+
+;***********************************************************************
+;*
+;* Here when we have received a packet with ethernet type 0800.
+;* Set up the interface number in the packet descriptor, and ship
+;* the datagram to the IP routing layer.
+
+unaipi:	move	t1,ift.un##	;Get address of our interface block.
+	move	t1,if.num(t1)	;Get interface index.
+	movem	t1,pd.ifn(p1)	;Save in descriptor.
+	jrst	iproute##	;Go route this packet.
+
+;***********************************************************************
+;*
+;* Once-only code, from SYSINI
+
+unaonc::pushj	p,save4##	;Save Pn.
+	move	t1,unacsr	;Load CSR address.
+	pushj	p,ubgood##	;See if there is something there.
+	 jrst	unanxp		; No device -- sorry.
+	hlrz	t1,unacsr	;Get UBA number.
+	movei	t2,unappl	;Size of comm region.
+	pushj	p,autamr##	;Allocate the mapping registers.
+	 jrst	unanxp		; None left -- sorry.
+	movem	t1,unamap	;Save Initial Mapping Register.
+	movem	t3,unaead	;Save Initial Eleven Address.
+;
+; Start configuring:
+;
+	move	u,unacsr	;We do I/O.
+	hlrz	t1,unacsr	;UBA number
+	move	t2,unavec	;Vector index.
+	pushj	p,autvia##	;Get addr of interrupt instruction.
+	movsi	t2,(xpcw)	;The instrucion to use.
+	hrri	t2,unaivc##	;The address of the interrupt handler.
+	movem	t2,(t1)		;Set up dispatch.
+;
+; Set up UNIBUS mapping:
+;
+	movei	t2,unappl	;Get #pages/line.
+	move	t3,unamap	;Get first mapping register.
+	move	t4,unatad	;Get '10 address of comm region.
+maplop:	map	t1,(t4)		;Get physical address of this page.
+	tlz	t1,^-17		;Wipe junk bits.
+	lsh	t1,w2plsh	;Convert to page #.
+	iori	t1,unbvbt!unbd18;Valid 16 bit mapping.
+	wrio	t1,(t3)		;Write mapping register.
+	addi	t4,pagsiz	;Increment '10 address.
+	addi	t3,1		;Increment mapping reg.
+	sojg	t2,maplop	;Loop over all pages.
+
+; Queue up initial commands:
+
+	movei	f,qf.pcb	;Get PCB base addr.
+	pushj	p,qifunc
+	movei	f,qf.rha	;Read hardware addr.
+	pushj	p,qifunc
+	movei	f,qf.wfm	;Write ring formats.
+	pushj	p,qifunc
+	movei	f,qf.sta	;Start device.
+	pushj	p,qifunc
+	setom	unapol		;Ask for a poll later.
+	movei	t1,p0inte	;Turn on the interrupt enable bit.
+	wrio	t1,pcsr0(u)
+	popj	p,		;All done.
+;
+; Here when the device can't be found or we have no memory or ...  Just
+; forget that it exists, let the card sit there on the bus and sulk.
+;
+unanxp:	;* mark device somehow.
+	popj	p,		;Done.
+;
+; Helper routines:
+;
+unaddr:	add	t1,unaead	;Add base '11 addr.
+	movei	t2,(t1)		;Copy 18 bits.
+	andi	t1,177777	;Low order 16 bits...
+	lsh	t2,-^D16	;High order 2 bits...
+	popj	p,		;Done!
+
+setudb:	movei	t1,eudb		;Get offset to UDB
+	pushj	p,unaddr	;Split.
+	hrlm	t1,u$(pcb+1)	;Store low order bits.
+	hrrm	t2,u$(pcb+1)	;Store high order bits.
+	popj	p,		;Wait for interrupt.
+;
+; qifunc queues up an internal function.
+; Call with f (!) holding function code.
+;
+qifunc:	pushj	p,getqb		;Get queue block.
+	 popj	p,		; No memory, just forget for now. 
+	setzm	qb.jch(t1)	;This is internal.
+	skipn	t4,unacmq	;Get head of command queue.
+	 jrst	qifnc2		; Empty, this is easy.
+qifnc1:	skipn	qb.nxt(t4)	;More blocks?
+	 jrst	qifnc3		; No, go link us in.
+	move	t4,qb.nxt(t4)	;Yes, get next, -
+	jrst	qifnc1		; and loop.
+
+qifnc2:	movem	t1,unacmq	;We are the list.
+	popj	p,
+
+qifnc3:	movem	t1,qb.nxt(t4)	;Put us last in list.
+	popj	p,
+;
+; Allocate a control block for a transmit or a function.
+; Call with f (!) holding function code to set up.  Skip returns with
+; pointer to block in t1.  Non-skip return on failure.
+;
+getqb:	movei	t2,qbsize	;Amount to get.
+	pushj	p,getwds##	;Allocate.
+	 popj	p,		; Can't, huh?
+	movem	f,qb.fnc(t1)	;Save function code.
+	setzm	qb.nxt(t1)	;No next block yet.
+	setzm	qb.jch(t1)	;No JCH here.
+	setzm	qb.dat(t1)	;No data block.
+	jrst	cpopj1##	;Good return.
+;
+; Return a control block to the free core pool.  Call with t4/ address.
+;
+retqb:	movei	t1,qbsize	;Number of words.
+	move	t2,t4		;Address.
+	pjrst	givwds##	;Go do the job.
+
+; ----------------------------------------------------------------------
+; Once/second code
+
+unasec::popj	p,		;Nothing yet.
+
+; ----------------------------------------------------------------------
+; Support for DEUNA. system call.
+
+unauuo::popj	p,		;Give non-skip return for now.
+
+; ----------------------------------------------------------------------
+; Come here to transmit data.  Call with packet descriptor in p1.
+
+unasnd::pushj	p,savu##	;Save U over this.
+	move	u,unacsr	;Set up our unibus address.
+	move	t1,pd.len(p1)	;Get packet length.
+	caile	t1,^D1500	;Too big?
+	 movei	t1,^D1500	; Not anymore.
+	movem	t1,pd.len(p1)
+	unaoff			;Quiet, please!
+	skipn	t1,unaxmq	;$ Any transmit queue?
+	 jrst	snd.2		;$  No, go start now.
+	movem	p1,pd.nxt(t1)	;$ Store new packet at end.
+	movem	p1,unaxmq	;$ Set up new end of queue.
+	unaon			;Allow interrupts again.
+	popj	p,		;Done.
+
+snd.2:	movem	p1,unaxmq	;$ We have a transmit queue now...
+	unaon			;Allow interrupts, since xmq is set.
+	movem	p1,unaxip	;Set up transmit in progress.
+
+sndmsg:	movei	t1,u$(txb+4)	;Address of transmit buffer, data part.
+	move	t2,pd.len(p1)	;Length of message.
+	addi	t2,3		;Round up, -
+	lsh	t2,-2		; and convert to words.
+	add	t2,t1		;Compute last word + 1.
+	hrl	t1,pd.ptr(p1)	;Source of data.
+	bltbu	t1,-1(t2)	;Convert bulk of datagram.
+	hrli	t3,pd.dst(p1)	;Address of destination address.
+	hrri	t3,t1		;Address of destination.
+	bltbu	t3,t2		;Convert ethernet address.
+	lshc	t1,-^D18	;Shift into place.
+	dmovem	t1,u$(txb+0)	;Store.
+	move	t1,pd.typ(p1)	;Get type code, -
+	pushj	p,swab##	; byte swap, -
+	hrrm	t1,u$(txb+3)	; and store in transmit buffer.
+	move	t1,pd.len(p1)	;Get message length again.
+	caige	t1,^D46		;Less than minimum length?
+	 movei	t1,^D46		; Yes, make hardware happy.
+	addi	t1,^D14		;Count HW addresses and type code.
+	hrrm	t1,u$(tdr+0)	;Store in ring entry.
+	movei	t1,etxb		;Load '11 offset to xmit buffer.
+	pushj	p,unaddr	;Split it up.
+	hrlm	t1,u$(tdr+1)	;Save low order bits.
+	tro	t2,101400	;Turn on OWN, STF and ENF bits.
+	hrrm	t2,u$(tdr+1)	;Save.
+	setzm	u$(tdr+2)	;Wipe error bits.
+	setom	unapol		;Say we need a poll.
+	skipn	unacip		;Any command in progress?
+	 skipe	unapip		; No, is a poll in progress?
+	  popj	p,		;  Yes to one of them, the flag is enough.
+	jrst	sndpol		;No to both.  Go send a poll.
+
+; ----------------------------------------------------------------------
+; Interrupt from hardware
+;
+; Come here from common, with registers saved.
+;
+; We set up and use:
+;
+;	U/  UNIBUS address.
+;	P1/ packet descriptor pointer.
+;	P4/ interrupt bits from pcsr0.
+;
+unaint::aos	unaict		;Count the interrupt.
+	move	u,unacsr	;Set up base unibus address.
+	rdio	p4,pcsr0(u)	;Get status bits.
+	trz	p4,p0pcmd	;Clear old port command.
+	wrio	p4,pcsr0(u)	;Clear bits we got now.
+
+; Check bits: seri, pcei, rxi, txi, dni, rcbi, fatl, usci.
+
+	trne	p4,p0rcbi	;Receive buffer missing?
+	 pushj	p,i.rcbi	; Yes.
+	trne	p4,p0rxi	;Receive interrupt?
+	 pushj	p,i.rxi		; Yes.
+	trne	p4,p0txi	;Transmit interrupt?
+	 pushj	p,i.txi		; Yes.
+	trne	p4,p0dni	;Port command done?
+	 pushj	p,i.dni		; Yes.
+	popj	p,		;Return from interrupt.
+
+; ----------------------------------------------------------------------
+; Dispatch here on reception of a receive interrupt.
+
+i.rxi:	pushj	p,save4##	;Keep some registers.
+	move	p2,unarxn	;Get ring entry to check.
+rxilup:	hrrz	t1,1(p2)	;Get flags.
+	trne	t1,100000	;Check ownership.
+	 popj	p,		; DEUNA owns this buffer, done.
+	trne	t1,040000	;Check error summary.
+	 jrst	rxi.2		; Some error, bad.
+	trc	t1,001400	;Complement STF & ENF bits.
+	trne	t1,001400	;Check STF & ENF bits.
+	 jrst	rxi.2		; Both not on, ignore packet.
+	hlrz	p3,3(p2)	;Get '10 address of this buffer.
+	hrrz	t1,3(p3)	;Get protocol type.
+	pushj	p,swab##	;Swap bytes.
+	movei	p4,pronum-1	;Get number of protocols.
+	came	t1,protyp(p4)	;Look for this one in the table.
+	 sojge	p4,.-1
+	jumpl	p4,rxi.2	;Not found, just ignore packet.
+	hlrz	t1,2(p2)	;Get received message length and flags.
+	andi	t1,007777	;Mask out length.
+	subi	t1,^D14		;Don't count HW addresses and type code.
+	pushj	p,getpd##	;Get a packet descriptor.
+	 jrst	rxi.2		; Can't, ignore packet.
+	hrli	t1,4(p3)	;Source = word four of rx buffer.
+	hrr	t1,pd.ptr(p1)	;Dest = packet buffer.
+	move	t2,pd.ptr(p1)	;Get dest again, -
+	add	t2,pd.all(p1)	; find last word +1.
+	bltub	t1,-1(t2)	;Move and convert data.
+	move	t1,protyp(p4)	;Get type code.
+	movem	t1,pd.typ(p1)	;Save in descriptor.
+	hllzs	3(p3)		;Remove type code from address.
+
+	hrl	t1,0(p3)
+	hlr	t1,1(p3)
+	hrlz	t2,1(p3)
+	hrli	t3,t1		;From.
+	hrri	t3,pd.dst(p1)	;To.
+	bltub	t3,pd.dst+1(p1)	;Copy destination.
+
+	hrli	t3,2(p3)	;From.
+	hrri	t3,pd.src(p1)	;To.
+	bltub	t3,pd.src+1(p1)	;Copy source.
+	
+	setom	pd.llb(p1)	;Assume broadcast.
+	hlrz	t1,1(p3)	;Get second half of dest. addr, -
+	and	t1,0(p3)	; and first half, -
+	orcb	t1,1(p3)	; nand third half.
+	trne	t1,177777	;Broadcast?
+	 setzm	pd.llb(p1)	; No, clear flag.
+
+	pushj	p,@prodsp(p4)	;Call our handler.
+
+rxi.2:	move	p2,unarxn	;Get current entry.
+	hrrz	t1,1(p2)	;Get flags and two address bits.
+	andi	t1,3		;Keep the address bits.
+	tro	t1,100000	;Turn on OWN for DEUNA.
+	hrrm	t1,1(p2)	;Store in ring.
+	setzm	2(p2)		;Wipe more flags and msg len.
+	hrrz	p2,3(p2)	;Get pointer to next ring entry.
+	movem	p2,unarxn	;Store for next interrupt.
+	jrst	rxilup		;Loop back and check for more.
+
+; ----------------------------------------------------------------------
+; Dispatch here on reception of a transmit interrupt.
+
+i.txi:	skipn	p1,unaxip	;Get transmit in progress.
+	 popj	p,		; None?
+	skipn	t1,pd.nxt(p1)	;Get next transmit block.
+	 setzm	unaxmq		; None, clear transmit queue.
+	movem	t1,unaxip	;Set up next transmit.
+	pushj	p,givpd##	;Return old packet descriptor.
+	skipn	p1,unaxip	;Got a new message to start?
+	 popj	p,		; No, all done.
+	jrst	sndmsg		;Yes, go start transmission.
+
+; ----------------------------------------------------------------------
+; Dispatch here on interrupt on receive buffer unavail.
+
+i.rcbi:
+
+;
+; We should make sure that there is at least one buffer free for the
+; interface, then issue a polling demand.
+;
+
+	popj	p,
+
+	block	10		;Patching space.
+
+; ----------------------------------------------------------------------
+; Dispatch here on reception of a done interrupt.
+
+i.dni:	setzb	t4,unapip	;Polling not in progress, clear t4.
+	exch	t4,unacip	;Get and clear command-in-progress.
+	jumpe	t4,nxtcmd	;None, but go check for next command.
+
+	move	t1,qb.fnc(t4)	;Get queued function code.
+	skipe	fndsp2(t1)	;Any post-dispatch?
+	 pushj	p,@fndsp2(t1)	; Yes, call routine.
+	pushj	p,retqb		;Return this queue block to free pool.
+;
+; Here to check for next command to do.
+;
+nxtcmd: skipn	t4,unacmq	;Get next request from command queue.
+	 jrst	chkpol		; No more commands.  Need a poll?
+	move	t1,qb.nxt(t4)	;Get next after this.
+	movem	t1,unacmq	;Update queue.
+	movem	t4,unacip	;Save for postprocessing.
+	move	t1,qb.fnc(t4)	;Load function code.
+	push	p,t1		;** Save function code **
+	skipe	fndsp1(t1)	;Do we have a pre-dispatch?
+	 pushj	p,@fndsp1(t1)	; Yes, call routine.
+	pop	p,t1		;** Restore function code **
+	hrrz	t2,fnargs(t1)	;Get auxillary function code, -
+	movem	t2,u$(pcb+0)	; and move it to the PCB.
+	hlrz	t2,fnargs(t1)	;Get direct function code.
+	tro	t2,p0inte	;Keep the interrupt bit on.
+	wrio	t2,pcsr0(u)	;Do the command, port or aux.
+	popj	p,		;Wait for next interrupt.
+;
+; Here when the command queue is empty, check if we need to send
+; a polling demand to the hardware.
+;
+chkpol:	skipn	unapol		;Anyone want a poll?
+	 popj	p,		; Not now.
+sndpol:	movei	t2,p0inte+c$poll;Yes, ask for a poll and keep ints on.
+	wrio	t2,pcsr0(u)
+	setom	unapip		;Polling in progress now.
+	setzm	unapol		;No need for extra ones.
+	popj	p,		;Done!
+
+;----------------------------------------------------------------------
+
+; pre/postprocessing for queued functions:
+
+; Read HW address, postprocessing:
+
+q2rha:	hllzs	u$(pcb+2)	;Clear possible junk in last halfword.
+	hrli	t1,u$(pcb+1)	;Source.
+	hrri	t1,unahwa	;Destination.
+	bltub	t1,unahwa+1	;Move & convert six bytes.
+	popj	p,		;Done.
+
+; Write HW address, preprocessing:
+
+q1wha:	hrl	t1,qb.dat(t4)	;Source.
+	hrri	t1,u$(pcb+1)	;Destination.
+	bltbu	t1,u$(pcb+2)	;Move and convert address.
+	popj	p,		;Done.
+
+; Write HW address, postprocessing:
+
+q2wha:	; Tell ARP code that we got a new address.
+	jrst	q2rha		;Go fix up our local information.
+
+; Write ring format, preprocessing:
+
+comment	/*
+
+Format of a receive ring entry:
+
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |             unused                |0 0|    buffer size (bytes)        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |0 0| buffer address (15:0)         |0 0|      flags    |  MBZ      |a16|
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |0 0| flags |    message length     |              J U N K              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |    buffer address (10)            |   address of next header (10)     |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |             unused                |0 0|    buffer size (next entry)   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |0 0| buffer address (next entry)   | . . . .
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+Note that the entry starts in the middle of the '10 word.  The reason for
+this is that the interaction between the unibus adapter and the interface
+card together with the way the UBA performs writes on the KS10 bus means
+that any "random" write to a left halfword location will make garbage of
+the corresponding right HW.  Therefore, the two HW's that are written by
+the interface (the flagword (HW 3) and message length (HW 4)) are located
+either in the right half of the '10 word, or in such a way that the junked
+HW is unused.  Following the junk HW is the '10 address of the buffer, and
+last is a pointer to the next header entry.  If a third HW is needed for
+some '10 information, the first one (labeled "unused") is sort of free.
+
+The same reasoning holds for the transmit entry, except that the '10 words
+are missing, since we only have one buffer in that direction.
+
+*/
+
+q1wfm:	pushj	p,save4##	;Save some regs.
+	movei	p1,nrxbuf	;Load number of receive buffers.
+	movei	p2,u$(rxb)	;Load '10 address of first buffer.
+	movei	p3,erxb		;Load '11 address of first buffer.
+	movei	p4,u$(rdr)	;Load '10 address of receive ring.
+	movem	p4,unarxn	;Set up pointer for interrupt handler.
+wfm.1:	movei	t1,rxbsiz	;Load '11 buffer size.
+	movem	t1,0(p4)	;Save buffer size.
+	move	t1,p3		;Get '11 buffer address, -
+	pushj	p,unaddr	; split it.
+	hrlm	t1,1(p4)	;Store addr <15:0>.
+	tro	t2,100000	;Turn on OWN bit.
+	hrrm	t2,1(p4)	;Store OWN and addr <17:16>.
+	setzm	2(p4)		;No message length, no junk.
+	hrlm	p2,3(p4)	;Save '10 buffer address.
+	movei	t1,4(p4)	;Load address of next buffer.
+	cain	p1,1		;Last round?
+	 movei	t1,u$(rdr)	; Yes, last entry points to first.
+wfm.2:	hrrm	t1,3(p4)	;Store address of next header.
+	addi	p2,rxbsiz/4	;Increment '10 buffer address.
+	addi	p3,rxbsiz	;Increment '11 buffer address.
+	addi	p4,4		;Increment entry pointer.
+	sojg	p1,wfm.1	;Loop over all entrys.
+
+	setzm	u$(tdr+1)	;Wipe the OWN bit in xmit entry.
+;
+; Now the buffer rings are set up.
+;
+	movei	t1,etdr		;Get offset to TDR.
+	pushj	p,unaddr	;Split.
+	hrlm	t1,u$(udb)	;Store udb+0
+	addi	t2,^D4*400	;Include length of entry.
+	hrrm	t2,u$(udb)	;Store udb+2
+	movei	t1,1		;One transmit buffer.
+	hrlm	t1,u$(udb+1)	;Store udb+4
+	movei	t1,erdr		;Get offset to RDR.
+	pushj	p,unaddr	;Split.
+	hrrm	t1,u$(udb+1)	;Store udb+6
+	addi	t2,^D8*400	;Include length of entry.
+	hrlm	t2,u$(udb+2)	;Store udb+10
+	movei	t2,nrxbuf	;Get # recv buffers.
+	hrrm	t2,u$(udb+2)	;Store udb+12
+	jrst	setudb		;Set up UDB address in PCB.
+
+; Read counters, preprocessing:
+	
+q1rct:	pushj	p,setudb	;Set up UDB address in PCB.
+	movei	t1,udbsiz	;Load length of UDB, in bytes.
+	hrlm	t1,u$(pcb+2)	;Save in PCB.
+	popj	p,		;Wait for interrupt.
+
+; Read counters, postprocessing:
+
+q2rct:	; Copy data from UDB to user block.
+
+	popj	p,		;Nothing needed here.
+
+; Write PCB base addr, preprocessing:
+
+q1pcb:	movei	t1,epcb		;Get '11 offset to pcb.
+	pushj	p,unaddr	;Convert to 2+16 bit unibus addr.
+	wrio	t1,pcsr2(u)	;Set up low-order bits.
+	wrio	t2,pcsr3(u)	;Set up high-order bits.
+	popj	p,		;Wait for interrupt.
+
+unaend::end

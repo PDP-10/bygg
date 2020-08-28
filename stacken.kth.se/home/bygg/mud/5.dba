@@ -1,0 +1,25 @@
+COMMANDS (abbreviation in upper case):
+General format = <verb> <subject> WITH <object>
+<item> means an object eg wand
+<name> means a person eg Polly
+<message> means an unquoted string eg clear off or I'll break your arms
+<direction> means a direction ie n ne e se s sw w nw in out u d jump swamp
+<bag> means a container eg sack
+	AutoWho, <seconds>	Back			BERSERK
+	BRIEF			BUG			BYE
+	COMMANDS		DRop <item>		DRop ALL
+	EMPTY <bag>		EXITS			Flee <direction>
+	FOLLOW <name>		Get <item>		Get ALL
+	GIve <item> TO <name>	go <direction>		Help
+	HELP <name>		HINTS			HouRS
+	INFO			Inventory		KEEP <item>
+	Kill <name>		LEVEL			<level>, <message>
+	LOG			Look around		Look <bag>
+	Look <direction>	LOSE <name>		MEDITATE
+	NoPassWord		PassWord		PERSONA
+	ProNouns		QuickWho		Quit
+	"<message>		REFUSE <name>		SAVE
+	SCore			SHout, <message>	SLEEP
+	SPELLS			STeal <item>From<name>	tell <name>, <message>
+	UNKEEP			VERBOSE			WEIGH
+	WHO			WRITE <object>, <message>

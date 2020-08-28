@@ -1,0 +1,67 @@
+SUBFIL HELP: Created B. Sufrin 31 October 75, Review 31 October 1976
+
+Commands are:
+OUTSPEC_INSPEC
+DEFAULTSPEC-INSPEC
+INSPEC
+
+The extension of INSPEC determines SUBFIL's action, as follows:
+.MAS
+	Explode the input file into its component files.  The  device
+        and  ppn  fields  of DEFAULTSPEC determine the destination of
+        the component files. Default for these fields (if DEFAULTSPEC
+        is not specified) is DSK:[SELF].
+	If OUTSPEC appears, then only the file which it specifies  is
+        actually  extracted  from  the  .MAS file. This is the way to
+        extract individual files from MASter files.
+
+Appropriate switches are:
+/C	explode  in  'chatty' mode. Type file details as each file is
+        written.
+/N	Don't  bother  to  check whether a file already exists before
+        writing it.
+/L	Type the directory of the .MAS file.
+
+
+.SUB
+	INSPEC  specifies  a  file which contains a list of filespecs
+        separated by either commas or <return>s.  A  MASter  file  is
+        created,  containing  all  of the files specified in the .SUB
+        file (don't forget to specify the .SUB file itself!). Default
+        device  and  ppn  fields are filled in from DEFAULTSPEC if it
+        appears (DSK:[SELF] otherwise). If the character "-"  appears
+        after a filespec in the .SUB file, then that filespec becomes
+        the 'sticky' default (the file which it specifies is also put
+        into the .MASter file).
+	Comments may appear in the .SUB file. They are introduced  by
+        the character ";", and extend to the next <return>.
+	If OUTSPEC doesn't appear, the file  created  will  have  the
+        same name as the .SUB file, and an extension of .MAS.
+
+Appropriate switches are:
+/D	delete the files specified in the .SUB file when the  .MASter
+        has  been  created.  (If  any  of the specified files weren't
+        found, SUBFIL will ask whether to close the .MAS file, delete
+        the component files, both or neither).
+/Z	delete the component files without creating a .MASter file.
+/N	don't  enforce presence of all component files before closing
+        .MAS file and/or deleting component files.
+/P<NNN>	specify protection of .MAS file.
+
+.CMD
+	Special mode for Essex ADPS. Not recommended for general use.
+
+Notes
+-----
+1-SUBFIL  is intended to handle text files only. Don't try to SUBfile
+a binary file -- it MAY work, but it MAY not.
+
+2-SUBFIL is quite happy to handle files with line-numbers in them.
+
+3-SUBFIL will recognise old-format .MAS files, and warn the  user  to
+expand them with SYS:SUBOLD if necessary.
+
+4-The file-archiving system occasionally adds some spurious words  to
+the end of MASterfiles. If this happens, then SUBFIL will report that
+it has seen a snag on the MASterfile. The user should check that  her
+files have been expanded correctly if this ever happens.

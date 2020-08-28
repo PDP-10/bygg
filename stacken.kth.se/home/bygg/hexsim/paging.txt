@@ -1,0 +1,95 @@
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   !   XXX   ! Hyper-sect. map ! Super-sect. map !   Section map   !
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+    3               4                   5                   6
+    2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   !   Super-Page map  !     Page map      !         Page          !
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+
+*  Each page is 4096 octets.
+
+*  Page maps are two pages in size, mapping 10 bits per map.
+
+*  Section maps are one page in size, mapping 9 bits per map.
+
+*  The section border of an address is exactly in the middle of
+   an address.  This is *very* intentional.
+
+
+Cpu Context Control Page:
+
+      * The bypass pointers are used when all "higher" bits are zero,
+        this will bypass the full tree descent when a program has all
+        zeroes in the leftmost 14, 23, 32 or 42 bits of the address.
+        This will save both on page maps, and on TLB refill time.
+
+   The page is 4096 octets, i.e. 512 64-bit words.
+
+   Page layout (64-bit words):
+
+         We need to have interrupt pointers and stuff like that,
+         page fault information, syscall dispatch etc.
+	 Funny space map pointers?
+
+   0x000-0x0bf  work in progress...
+                
+   0x0c0-0x0cf  16 registers for CPU level 0 (user).
+         0x0d0  Saved PC for CPU level 0 (user).
+         0x0d1  Saved PSW for CPU level 0 (user).
+   0x0d2-0x0d3  Saved AC for CPU level 0 (user).
+
+   0x0d4-0x0df  Unused for now.
+
+   0x0e0-0x0e7  Hyper-section 0 bypass pointers for CPU levels 0-7.
+   0x0e8-0x0ef  Super-section 0 bypass pointers for CPU levels 0-7.
+   0x0f0-0x0f7  Section 0 bypass pointers for CPU levels 0-7.
+   0x0f8-0x0ff  Super-page 0 bypass pointers for CPU levels 0-7.
+   
+   0x100-0x11f  32 Hyper section pointers for CPU level 0 (user).
+   0x120-0x13f  32 Hyper section pointers for CPU level 1 (exec).
+   0x140-0x15f  32 Hyper section pointers for CPU level 2 (page fault). 
+   0x160-0x17f  32 Hyper section pointers for CPU level 3 (int0).
+   0x180-0x19f  32 Hyper section pointers for CPU level 4 (int1).
+   0x1a0-0x1bf  32 Hyper section pointers for CPU level 5 (int2).
+   0x1c0-0x1df  32 Hyper section pointers for CPU level 6 (int3).
+   0x1e0-0x1ff  32 Hyper section pointers for CPU level 7 (nmi/trap).
+
+Paging pointers:
+
+     All of them start with:
+
+     0                                
+     0   1   2   3   4   5   6
+   +---+---+---+---+---+---+---+
+   !  code ! P ! W ! X ! C ! A !
+   +---+---+---+---+---+---+---+
+
+
+     code = 0, 1, 2 or 3, see below.
+     P = Public.
+     W = Writeable.
+     X = Executeable.
+     C = Cacheable.
+     A = Address break set.
+     
+   code 0:  No Access.  The rest of the word is ununsed.
+
+   code 1:  Immediate.  Depending on bits 7-11:
+           if all zero, bits 12-63 contain number of next page.
+           if non-zero, page is not in memory, and bits 7-63 are
+                        available for software use.
+
+   code 2:  Shared.     bits 7-31 unused (reserved).
+                        bits 32-63 SPT offset.
+
+   code 3:  Indirect.   bits 8-17 index.
+                        bits 18-31 unused (reserved).
+                        bits 32-63 SPT offset.
+

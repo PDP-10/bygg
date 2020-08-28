@@ -1,0 +1,22 @@
+File 1)	DSKB:S.MAC[10,10,SYSTEM,KS,TOPSY,IPTEST]	created: 1359 13-May-101
+File 2)	DSKB:S.MAC[10,7,MON]                    	created: 0359 27-Jul-88
+
+1)17		 XP .TYUDP,41		;UDP
+1)		 XP .TYTCP,42		;TCP
+1)		XP TYPMAX,42		;New highest device type.
+1)18		 XP DEPRAS,40000	;BIT 3=1 IF DEVICE HAS RESTRICTED ASSIGNMENT
+****
+2)18		 XP DEPRAS,40000	;BIT 3=1 IF DEVICE HAS RESTRICTED ASSIGNMENT
+**************
+1)65		x	ev.udp,sj	;UDP: I/O wait.
+1)		x	ev.tcp,sj	;TCP: I/O wait.
+1)		x	ev.cmd,sj	;Command editor wait.
+1)	>	;END DEFINE EWCODE
+****
+2)65	>	;END DEFINE EWCODE
+**************
+1)158		xp	.lkip4,5	;Link for linking IPv4 device drivers.
+1)		SUBTTL	KLINIK DEFINITIONS
+****
+2)158		SUBTTL	KLINIK DEFINITIONS
+**************

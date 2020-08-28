@@ -1,0 +1,212 @@
+title	slip -- serial line IP driver.
+search	f, s
+search	ip4sym
+
+slip::	entry slip
+
+;* Register usage in this module:
+;*
+;*	u/  LDB pointer.
+;*	w/  IFB pointer.
+;*	p1/ points to packet being sent/received.
+;*	p2/ coroutine linkage.
+;*
+;***********************************************************************
+;*
+;* Slip attach/detach UUO's.
+
+sliok:	pushj	p,dvcnsg##	;Find DDB.
+	 popj	p,		; Fail.
+	ldb	t1,pdvtyp##	;Get device type.
+	caie	t1,.tytty	;Terminal?
+	 popj	p,		; No, can't do SLIP.
+	move	u,ddbldb##(f)	;Get LDB.
+	movsi	t1,jp.pok
+	pushj	p,prvbit##	;User good for this?
+	 jrst	cpopj1##	; Yes, seems so.
+	popj	p,		;No.
+
+slatt::	pushj	p,sliok		;Check args and privs.
+	 popj	p,		; Bad args or privs.
+	pushj	p,save2##	;Save P1 & P2.
+	push	p,w		;Save W.
+	movsi	t1,-M.SLIP##	;Number of slip interfaces.
+slat.0:	skipe	w,ift.sl##(t1)	;Get interface block, if any.
+	 skipe	if.ldb(w)	; Is this one free?
+	  aobjn	t1,slat.0	;  No, loop looking for a free slot.
+	jumpge	t1,wpopj##	;Fail if none free.
+	scnoff			;Prevent races:
+ifn ftmp,<
+	skipe	if.ldb(w)	;$ Check again:
+	 jrst[	scnon		;$  Someone stole the interface, fsck!
+		jrst slat.0]	;$  Reenable ints and check the rest.
+>;End ifn ftmp
+	movem	w,ldbslp##(u)	;$ Link interface to line.
+	movem	u,if.ldb(w)	;$ Link line to interface.
+	movei	p1,0		;$ Start without packet buffer.
+	xmovei	p2,in.nxt	;$ ... dry run until first end-of-packet.
+	dmovem	p1,if.ist(w)	;$ Save rcv state.
+	xmovei	p2,ou.idl	;$ Load pointer to idle state.
+	dmovem	p1,if.ost(w)	;$ Initial xmit state is idle.
+	scnon			;Allow interrupts again.
+	move	t1,if.num(w)	;Tell user what interface number he got.
+	pushj	p,stotac##
+	jrst	wpopj1##	;Restore W and return.
+	
+sldet::	pushj	p,sliok		;Check args and privs.
+	 popj	p,		; Bad args or privs.
+	push	p,w		;Save W.
+	scnoff			;Prevent races.
+	skipe	w,ldbslp##(u)	;$ Get interface pointer.
+	 setzm	if.ldb(w)	;$  Clear link from interface.
+	setzm	ldbslp##(u)	;$ Clear link from LDB.
+	scnon			;Races OK again.
+	jumpe	w,wpopj1##	;If no interface (not slip?), just return.
+
+	;* Remove transmit queue, as well as current input and
+	;* output packets, if any.
+
+	jrst	wpopj1##	;Restore W and skip return.
+
+;***********************************************************************
+;*
+;* Here when a char is received in slip mode, called from SCNSER.
+
+sliprx::push	p,w		;Save W.
+	skipn	w,ldbslp##(u)	;Get interface block pointer.
+	 jrst	wpopj##		; None (how did we come here?), skip.
+	push	p,p1		;Save P1 & P2.
+	push	p,p2
+	dmove	p1,if.ist(w)	;Get current state.
+	jsp	p2,(p2)		;Call state machine to construct packet.
+	dmovem	p1,if.ist(w)	;Save state.
+	pop	p,p2		;Restore P2 & P1.
+	pop	p,p1
+	jrst	wpopj##		;Done.
+
+;* state machine for input:
+
+in.new:	move	t1,if.mtu(w)	;Load MTU.
+	pushj	p,getpd##	;Get a packet descriptor.
+	 movei	p1,0		; Do this without one then.
+in.set:	jumpe	p1,in.nxt	;If dry run, nothing to set up.
+	move	t1,pd.ptr(p1)	;Get data address, -
+	hrli	t1,(point 8)	; make a byte pointer, -
+	movem	t1,pd.ptr(p1)	; and set up pointer and counter -
+	setzm	pd.ctr(p1)	; for message assembly.
+in.nxt:	jsp	p2,(p2)		;Get next byte.
+	cain	t3,^D192	;End byte?
+	 jrst	in.end		; Yes, dispatch.
+	cain	t3,^D219	;Escape byte?
+	 jrst	in.esc		; Yes, dispatch.
+in.chr:	jumpe	p1,in.nxt	;Just skip ahead if no packet buffer.
+	aos	t1,pd.ctr(p1)	;Count this byte.
+	camg	t1,if.mtu(w)	;Still in range?
+	 idpb	t3,pd.ptr(p1)	; Yes, store byte.
+	jrst	in.nxt		;Loop for more.
+
+in.esc:	jsp	p2,(p2)		;Get escaped byte.
+	cain	t3,^D220	;Escaped end?
+	 movei	t3,^D192	; Yes, load correct char.
+	cain	t3,^D221	;Escaped escape?
+	 movei	t3,^D219	; Yes, load correct char.
+	jrst	in.chr		;Join common code.
+
+in.end:	jumpe	p1,in.new	;If dry run, try for a new descriptor.
+	move	t1,pd.ctr(p1)	;Get length we received.
+	camg	t1,if.mtu(w)	;Packet size within reason?
+	 caige	t1,^D20		; Yes, at least a minimum IP header?
+	  jrst	in.set		;  No, junk this and go back for next.
+	movem	t1,pd.siz(p1)	;Set up as total size.
+	move	t1,pd.alp(p1)
+	movem	t1,pd.ptr(p1)	;Set up pointer.
+	move	t1,if.num(w)
+	movem	t1,pd.ifn(p1)	;Set up incoming interface number.
+	pushj	p,iproute##	;Route packet.
+	jrst	in.new		;Get a new packet, and loop.
+
+;***********************************************************************
+;*
+;* Here to put a new packet on the transmit queue.  Call with:
+;*	w/  pointer to interface control block.
+;*	p1/ packet descriptor.
+
+slisnd::scnoff			;No interrupts while we fiddle here.
+	skipn	t1,if.tqt(w)	;$ Get last packet in queue.
+	 jrst	snd.1		;$  None, just set up queue.
+	movem	p1,pd.nxt(t1)	;$ Link us in.
+	movem	p1,if.tqt(w)	;$ Set up new tail.
+	jrst	sonppj##	;Restore interrupts and return.
+
+snd.1:	movem	p1,if.tqt(w)	;$ Set up new tail.
+	movem	p1,if.tqh(w)	;$ Set up as current.
+	scnon			;Allow interrupts again.
+	push	p,p2		;Save P2.
+	movei	p2,ou.new	;Start output.
+	dmovem	p1,if.ost(w)	;Save state.
+	pop	p,p2		;Restore P2.
+	push	p,u		;Save U.
+	move	u,if.ldb(w)	;Get LDB pointer.
+	pushj	p,topoke##	;Queue line for service.
+	jrst	upopj##		;Restore U and return.
+
+;***********************************************************************
+;*
+;* Come here from transmit interrupt routine, to get next char to send.
+;* Skip return with char in T3, or non-skip return if no more at the moment.
+
+sliptx::push	p,w		;Save W.
+	skipn	w,ldbslp##(u)	;Get slb, if any.
+	 jrst	wpopj##		; No slb, we are idle.
+	push	p,p1		;Save P1 & P2.
+	push	p,p2
+	dmove	p1,if.ost(w)	;Get current output state.
+	jsp	p2,(p2)		;Call state machine to get next char.
+	 aos	-3(p)		; Got a char, return success.
+	dmovem	p1,if.ost(w)	;Save current output state.
+	pop	p,p2		;Restore P2 & P1.
+	pop	p,p1
+	jrst	wpopj##		;Restore W, and return.
+
+;* state machine for output:
+
+ou.new:	movei	t3,^D192	;Start packet with end byte.
+	jsp	p2,(p2)
+ou.nxp:	move	t1,pd.siz(p1)	;Set up counter and pointer for -
+	movem	t1,pd.ctr(p1)	; sending this message.
+	move	t1,pd.ptr(p1)
+	hrli	t1,(point 8)
+	movem	t1,pd.ptr(p1)
+ou.nxt:	sosge	pd.ctr(p1)	;Count down and check for end.
+	 jrst	ou.end		; End of this msg.  Go handle.
+	ildb	t3,pd.ptr(p1)	;Get next byte.
+	cain	t3,^D192	;End byte in data?
+	 jrst	ou.192		; Yes, go handle.
+	cain	t3,^D219	;Escape byte in data?
+	 jrst	ou.219		; Yes, go handle.
+	jsp	p2,(p2)		;Go transmit byte.
+	jrst	ou.nxt		;Loop for more.
+
+ou.192:	movei	t3,^D219
+	jsp	p2,(p2)
+	movei	t3,^D220
+	jsp	p2,(p2)
+	jrst	ou.nxt
+
+ou.219:	movei	t3,^D219
+	jsp	p2,(p2)
+	movei	t3,^D221
+	jsp	p2,(p2)
+	jrst	ou.nxt
+
+ou.end:	movei	t3,^D192	;Signal end of this datagram.
+	jsp	p2,(p2)
+	push	p,pd.nxt(p1)	;Save next ptr.
+	pushj	p,givpd##	;Return current packet descriptor.
+	pop	p,p1		;Restore as new packet.
+	jumpn	p1,ou.nxp	;If any, go transmit.
+	setzm	if.tqt(w)	;No more, clear tail pointer.
+ou.idl:	jsp	p2,1(p2)	;Indicate end of data.
+	jrst	ou.idl		;Loop.  (Next transmit will get us out).
+
+	end

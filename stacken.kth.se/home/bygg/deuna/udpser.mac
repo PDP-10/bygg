@@ -1,0 +1,683 @@
+title	udpser -- UDP device handler.
+
+search	f, s, devprm
+search	ip4sym
+
+udpser::entry udpser
+
+	$reloc
+	$high
+
+;* UDP header:
+
+repeat 0,<
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        Source port            |       Destination port        |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |      Length (incl. header)    |          Checksum             |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+>;end repeat 0
+
+    defstr ud.src, 0,  0, 16
+    defstr ud.dst, 0, 16, 16
+    defstr ud.len, 1,  0, 16
+    defstr ud.csm, 1, 16, 16
+
+; Autoconfigure data:
+;
+; driver chararcteristics:
+;
+;	udp	= udpcnf
+;	udp	= udp channel
+;	0	= maximum devices in system
+;	0	= kontroller type
+;	0	= maximum drives per kontroller
+;	0	= highest drive number on kontroller
+;	mdsec0	= section for kdb/udb
+;	mdsec0	= section for ddb
+
+drvchr	(udp,udp,0,0,0,0,mdsec0,mdsec0,<dr.sft>)
+
+$phase	devlen
+
+udpiqh:	block	1		;Input queue, head.
+udpiqt:	block	1		;Input queue, tail.
+udpiql:	block	1		;Input queue length. (datagrams)
+udplad:	block	1		;Local address, or 0 if not set yet.
+udplpr:	block	1		;Local port #, or 0 if not set yet.
+udprad:	block	1		;Remote address.
+udprpr:	block	1		;Remote port #.
+udpoql:	block	1		;Output queue length. (datagrams)
+udplen:!			;length of UDP ddb
+
+$dephase
+
+	$low
+
+udpbfz==<^D576+3>/4		;Size of UDP buffers in normal I/O mode.
+
+udpddb:	ddbbeg	(udp,udplen)
+	 setwrd	(devchr,<udpbfz+1>)		;devchr
+	 setwrd	(devser,<mcsec0+udpdsp>)	;devser
+	 setwrd	(devmod,<dvin!dvout,,1_bytmod>)	;devmod
+	 setwrd	(devtyp,<<.tyudp*.tyest>,,depevm>) ;devtyp
+	 setwrd	(devcpu,<707b8>)		;devcpu
+
+	 setwrd (udpiqh, 0)
+	 setwrd (udpiqt, 0)
+	 setwrd (udpiql, 0)
+	 setwrd (udpoql, 0)
+	ddbend
+
+nxtudp:	exp	0		;Next free UDP port number.
+
+	$high
+
+equate	(LOCAL,0,<udpckt,udpkdb,udpkln,udpudb,udpuln>)
+equate	(LOCAL,0,<udpicd,udpicl,udpint,udpulb,udpulp>)
+
+udddsp:	drvdsp	(udp,,udpddb,udplen,0)
+
+	$high
+
+udpcfg:	skipn	udptab##	;Done this already?
+	 skpcpu	(0)		; On policy CPU?
+	  popj	p,		;  No, ignore.
+	jrst	udpcf1		;Go do init code.
+
+	$init
+
+udpcf1:	pushj	p,save1##	;Preserve P1.
+	movsi	p1,-M.UDPN##	;Number of DDBs.
+
+udpcf2:	movsi	t1,'UDP'	;Generic name.
+	hrr	t1,p1		;Unit number.
+	setz	t2,		;Local device, in a way.
+	pushj	p,autddb##	;Construct the DDB.
+	 popj	p,		; No core?
+	movem	f,udptab##(p1)	;Save pointer.
+
+	setzm	udpiqh(f)	;Clear input queue.
+	setzm	udpiqt(f)
+	setzm	udpiql(f)
+	setzm	udpoql(f)	;Clear output counter.
+
+	aobjn	p1,udpcf2	;Loop over them all.
+	popj	p,		;Done, return.
+
+	$high
+
+;Dispatch table for UDP: I/O calls.
+
+	jrst	cpopj1##	;(-5) udp is always on-line
+	popj	p,0		;(-4) DEVOP. call:
+	jrst	regsiz##	;(-3) size can be gotten from ddb
+	popj	p,0		;(-2) sysini call
+	popj	p,0		;(-1) hung device
+udpdsp:	jrst	u.rel		;( 0) release
+	jrst	u.cls		;( 1) close
+	jrst	u.out		;( 2) output
+	jrst	u.in		;( 3) input
+;
+; Here on release:
+;
+u.rel:	pushj	p,save1##	;Save a register.
+	setzm	udplpr(f)	;Zap local port number, stop accepting data.
+	setzm	udplad(f)
+	setzm	udprpr(f)
+	setzm	udprad(f)
+	ip4off			;Quiet, please:
+	move	p1,udpiqh(f)	;$ Get queue head pointer.
+	setzm	udpiqh(f)	;$ Clear out queue pointers.
+	setzm	udpiqt(f)	;$
+	setzm	udpiql(f)	;$
+	ip4on			;Done with the DDB.
+rel.2:	jumpe	p1,cpopj##	;When no more, done.
+	push	p,pd.nxt(p1)	;Save pointer to next.
+	pushj	p,givpd##	;Return datagram buffer.
+	pop	p,p1		;Recover next.
+	jrst	rel.2		;Loop.
+;
+; Here on output close:
+;
+u.cls:	jrst	u.out		;Quite easy.
+;
+; Here on an input UUO:
+;
+u.in:	pushj	p,save4##	;p1 = packet pointer, ...
+	movsi	s,iobeg!io
+	andcab	s,devios(f)
+
+i.loop:	hrrz	p4,deviad(f)	;Get (user) address of input buffer.
+	skipe	t1,p4		;Check that there is one, -
+	 exctux <skipge (t1)>	; and that it is empty.
+	  popj	p,		;  No empty buffer, return.
+	pushj	p,brnge##	;Make buffer addressable.
+	move	p1,udpiqh(f)	;Get head of input queue.
+	jumpe	p1,i.wait	;No data, go check if we should wait.
+
+	;* XXX Code below is wrong. Compare data part with user length.
+
+	exctux <hlrz t4,(p4)>	;Get size of buffer.
+	lsh	t4,2		;Make byte count.
+	camge	t4,pd.siz(p1)	;Does the data fit?
+	 jrst	u.bktl		; No, "block too large".
+
+	;* XXX Copy data to users buffer.
+
+	ip4off			;Hands off:
+	skipn	t1,pd.nxt(p1)	;$ Get next pointer, if any.
+	 setzm	udpiqt(f)	;$  None, clear tail.
+	movem	t1,udpiqh(f)	;$ Set new head.
+	sos	udpiql(f)	;$ Decrement count.
+	ip4on			;Hands on again.
+	pushj	p,givpd##	;Deallocate packet.
+	pushj	p,advbff##	;Advance user buffer.
+	 popj	p,		; Stop now.
+	jrst	i.loop		;Try for more input.
+;
+; Here to wait for input:
+;
+i.wait:	move	t2,devaio(f)	;Get asynch bits.
+	hrrz	t1,devbuf(f)	;Get buffer control block address.
+	jumpe	t1,cpopj##	;No buffers, can't do I/O.
+	exctux	<hrrz t1,(t1)>	;Get address of next (user) buffer.
+	exctux	<skipl (t1)>	;Is it still users?
+	 trne	t2,depaio	; Is this asynch I/O?
+	  popj	p,		;  Return to user.
+	movei	t1,ev.udp	;Have to wait.
+	pushj	p,esleep##
+	jrst	i.loop		;Go back and try for more.
+;
+; Here on an output UUO:
+;
+u.out:	pushj	p,save4##	;p1 = packet ptr, ...
+	movsi	s,iobeg
+	andcam	s,devios(f)	;Clear iobeg.
+	movsi	s,io
+	iorb	s,devios(f)	;Set "output".
+
+	skipe	udprpr(f)	;Got remote port?
+	 skipn	udprad(f)	; Got remote address?
+	  jrst	u.derr		;  No.  Return "device error".
+
+o.loop:	hrrz	p4,devoad(f)	;Get address of output buffer.
+	skipe	t1,p4		;Make sure there is one, -
+	 exctux <skipl (t1)>	; and that is has data.
+	  popj	p,		;  No data, just exit.
+	pushj	p,brnge##	;Make buffer addressable.
+	move	t1,udpoql(f)	;Get number of queued output datagrams.
+	cail	t1,2		;Within reason?
+	 jrst	o.wait		; Too many waiting, we wait.
+	exctux <hrrz t1,1(p4)>	;Get number of user bytes.
+	caile	t1,^D576	;Reasonable?
+	 jrst	u.bktl		; No, "block too large".
+	movei	t2,2(p4)	;Load (user) address of data.
+	pushj	p,makudp	;Construct datagram, and send it.
+	 jrst	o.wait		; No memory, wait.
+	pushj	p,advbfe##	;Advance buffer.
+	jrst	o.loop		;Loop.
+
+;*
+;* Here to wait if we can't send data right away.
+;*
+
+o.wait:	move	t1,devaio(f)	;Get async I/O bits.
+	trne	t1,depaio	;Is this async?
+	 popj	p,		; Yes, just return.
+	movei	t1,ev.udp	;Have to wait.
+	pushj	p,esleep##
+	jrst	o.loop		;Try for more.
+
+;*
+;* Callback routine, "output done" from IP layer.
+;*
+
+u.cbk:	push	p,f		;Save F here.
+	move	f,pd.tag(p1)	;Get DDB this is for.
+	sos	udpoql(f)	;One more left the building.
+	pushj	p,wakeo		;Wakeup job, "output done".
+	jrst	fpopj##		;Restore F and return.
+
+;*
+;* Here to queue up a datagram to a DDB.
+;*
+
+u.stor:	move	t1,udpiql(f)	;Get datagram count.
+	cail	t1,5		;Must have at most five at a time.
+	 jrst	givpd##		; More, toss this one.
+	ip4off			;Prevent races:
+	skipn	t1,udpiqt(f)	;$ Get tail pointer.
+	 jrst	stor.2		;$  None.
+	movem	p1,pd.nxt(t1)	;$ Just stuck this one on end.
+	jrst	stor.4		;$ Join common code.
+
+stor.2:	movem	p1,udpiqh(f)	;$ Set us up as head.
+	setzm	udpiql(f)	;$ Make sure that the count becomes right.
+stor.4:	movem	p1,udpiqt(f)	;$ Make this the new tail.
+	aos	udpiql(f)	;$ Count us.
+	ip4on			;Allow interrupts again.
+	; jrst	wakei		;Fall into wakeup input.
+
+;*
+;* Wake up someone waiting for input or output.
+;*
+
+wakei:	tdza	t2,t2		;Signal "input".
+wakeo:	movei	t2,1		;Signal "output".
+	move	t1,devaio(f)	;Get async I/O bits.
+	trnn	t1,depaio	;Is this async?
+	 jrst[	ldb t1,pjobn##	; No, try wake someone if sleeping.
+		jrst ewake##]
+	push	p,devios(f)	;Save devious state.
+	movsi	s,io		;Set "input" or "output".
+	xct[	andcab	s,devios(f)
+		iorb	s,devios(f)](t2)
+	pushj	p,setiod##	;Gen an input/output done interrupt.
+	pop	p,devios(f)	;Restore state.
+	popj	p,		;Done.
+
+;*
+;* Here to set error bits:
+;*
+
+u.derr:	movei	s,ioderr	;Set "Device Error".
+	jrst 	u.serr		;Go set the bit.
+
+u.bktl:	movei	s,iobktl	;Set "block too large".
+u.serr:	iorb	s,devios(f)
+	popj	p,
+
+;*
+;* Compute the checksum of an UDP datagram.  Call with the length setup
+;* in t1.
+;*
+
+udpcsm:	movei	p4,^D17(t1)	;Initial checksum = length + protocol (17).
+	move	t2,p3		;Address of bulk data:
+	pushj	p,csmbts##	;Checksum the byte string.
+	load.	t1,ih.sa,(p2)
+	pushj	p,csmfwd##	;Include source address.
+	load.	t1,ih.da,(p2)
+	pushj	p,csmfwd##	;Include destination address.
+	jrst	csmdon##	;Done checksumming.
+
+;*
+;* This routine constructs an udp datagram.  Call with count of user bytes
+;* in t1, pointer (user space) to data in t2, and f set up.
+;*
+
+makudp:	push	p,t1		;Save T1 & T2.
+	push	p,t2
+	addi	t1,^D8		;Include space for UDP header.
+	pushj	p,makipd##	;Get IP packet descriptor.
+	 jrst	ttpopj##	; None, we wait.
+	
+	;* set up IP header:
+
+	move	t1,udplad(f)	;Store local address in datagram.
+	stor.	t1,ih.src,(p2)
+	move	t1,udprad(f)	;Store remote address in datagram.
+	stor.	t1,ih.dst,(p2)
+	movei	t1,^D17		;Store protocol (UDP).
+	stor.	t1,ih.pro,(p2)
+	move	t1,udplpr(f)	;Store local port # in datagram.
+	stor.	t1,ud.src,(p3)
+	move	t1,udprpr(f)	;Store remote port # in datagram.
+	stor.	t1,ud.dst,(p3)
+	
+	;* copy one buffer worth of data to packet:
+
+	pop	p,t2		;Restore address.
+	pop	p,t1		;Restore count.
+	hrl	t2,t2		;Source = user address.
+	hrri	t2,2(p3)	;Destination = packet, after UDP header.
+	movei	t3,3(t1)	;Compute last word of transfer:
+	lsh	t3,-2		;  Make word count.
+	addi	t3,(t2)		;  Add in first word.
+	exctux <blt t2,-1(t3)>	;Copy data to packet.
+
+	addi	t1,^D8		;Number of UDP data bytes, incl. header.
+	stor.	t1,ud.len,(p3)	;Store in datagram.
+	
+	movei	p4,0		;Load a zero.
+	stor.	p4,ud.csm,(p3)	;Wipe checksum.
+
+	pushj	p,udpcsm	;Compute checksum. (t1 still holds length)
+	stor.	p4,ud.csm,(p3)	;Store checksum.
+	
+	movei	t1,u.cbk	;Load address of callback routine.
+	movem	t1,pd.cbk(p1)	;Set up in descriptor.
+	movem	f,pd.tag(p1)	;Set up DDB pointer as tag.
+
+	aos	udpoql(f)	;Count one more in transit for us.
+	push	p,f		;[temp] Save F.
+	pushj	p,ipout##	;Send it on its merry way.
+	pop	p,f		;[temp] Restore F.
+
+	jrst	cpopj1##	;Good return.
+
+;***********************************************************************
+;*
+;* Here for UDP. uuo.  Calling sequence:
+;*
+;*		movei	ac,argblk
+;*		call	ac,[sixbit "udp."]
+;*		 <error>
+;*		<success>
+;*
+;* Argument block:
+
+$phase 0
+.udfnc:	block	1	;Function code.
+.uddev:	block	1	;Device/channel.
+.udflg:	block	1	;Flags/mode bits.
+	ud.raw==1b0	;    Raw IP packets in/out
+	ud.icm==1b1	;    Read all ICMP, as raw packets.
+.udlad:	block	1	;local address.
+.udrad:	block	1	;remote address.
+.udlpr:	block	1	;local port.
+.udrpr:	block	1	;remote port.
+.udbuf:	block	1	;data block pointer.
+.udcnt:	block	1	;data byte count.
+.udlen:	block	0	;length of data block.
+$dephase
+
+;* Error codes:
+
+udilf%==ecod1##		;Illegal function.
+udadc%==ecod2##		;Address check.
+udrqe%==ecod3##		;Receive queue empty.
+udnpv%==ecod4##		;Need privs for that.
+udtqf%==ecod5##		;Transmit queue full. (please wait)
+udilp%==ecod6##		;Illegal local port.
+udila%==ecod7##		;Illegal local address.
+udirp%==ecod10##	;Illegal (zero?) remote port.
+udira%==ecod11##	;Illegal (zero?) remote address.
+udnec%==ecod12##	;Not enough core.
+udnsd%==ecod13##	;No such device.
+
+;* Function codes:
+
+.udget==0		;Get parameters (local/remote port/address, flags)
+.udset==1		;Set parapeters
+.udwri==2		;Write data
+.udrea==3		;Read data
+.udchk==4		;Check input queue
+
+;* The actual code:
+
+udpuuo::pushj	p,save4##	;Save P1-P4.
+	move	u,t1		;Save user address.
+	movei	t2,.udlen-1(t1)	;Get last user address.	
+	pushj	p,trnge##	;Check accessability.
+	umove	t1,.uddev(u)	;Get device.
+	pushj	p,dvcnsg##	;Lookup DDB.
+	 jrst	udnsd%		; No such device.
+	ldb	t1,pdvtyp##	;Get device type.
+	caie	t1,.tyudp	;Make sure this is a UDP: device.
+	 jrst	udnsd%		; No, naughty user.
+
+;** XXX Check that device belongs to us.
+
+	umove	t1,.udfnc(u)	;Get function code.
+	cail	t1,0		;Range check the code.
+	 caile	t1,maxfnc	; In range?
+	  jrst	udilf%		;  No, return error.
+	jrst	@disp(t1)	;Dispatch.
+
+disp:	exp	udfget		; 0 = get parameters.
+	exp	udfset		; 1 = set parameters.
+	exp	udfwri		; 2 = write datagram.
+	exp	udfrea		; 3 = read datagram.
+	exp	udfchk		; 4 = check input queue.
+maxfnc=.-disp
+
+define copyout(doffset, uoffset),<
+	move	t1,doffset(f)	;;Get data from DDB.
+	umovem	t1,uoffset(u)	;;Give data to user.
+	 erjmp	udadc%		;; "address check".
+>;End of copyout macro.
+
+udfget:	copyout(udplad, .udlad)
+	copyout(udprad, .udrad)
+	copyout(udplpr, .udlpr)
+	copyout(udprpr, .udrpr)
+	jrst	cpopj1##	;Return updated block to user.
+
+;**** set addresses and port numbers.
+
+udfset:	umove	p1,.udrad(u)	;Get desired remote address.
+	trz	p1,17		;Left-justified, 32 bits.
+	umove	p2,.udrpr(u)	;Get desired remote port.
+	andi	p2,177777	;Right-justified, 16 bits.
+
+	umove	p3,.udlad(u)	;Get desired local address.
+	trz	p3,17		;Left-justified, 32 bits.
+	umove	p4,.udlpr(u)	;Get desired local port.
+	andi	p4,177777	;Right-justified, 16 bits.
+
+	jumpe	p1,udira%	;Must be non-zero.
+	jumpe	p2,udirp%	;Must be non-zero.
+
+	jumpe	p3,udfs.4	;Unspecified local address?
+	camn	p3,udplad(f)	;No, same as previous?
+	 jrst	udfs.5		; Same, this is OK.
+	move	t1,p3		;Check that this is one of ours.
+	pushj	p,ipisme##	; ...
+	 jrst	udila%		; Nope, complain.
+	jrst	udfs.5		;Yep, OK.
+
+udfs.4:	skipe	p3,udplad(f)	;Unspecified local address, did we have one?
+	 jrst	udfs.a		; Yes, move on.
+	move	t1,p1		;Get remote.
+	pushj	p,ipgtla##	;Get suitable local address.
+	move	p3,t1		; ... into p3.
+udfs.a:	umovem	p3,.udlad(u)	;Tell user new local address.
+	 erjmp	udadc%		; Address check.
+udfs.5:	jumpe	p4,udfs.6	;Unspecified local port?
+	camn	p4,udplpr(f)	;No, same as we have?
+	 jrst	udfs.7		; Same, still OK.
+	move	t1,p4		;New port.
+	pushj	p,isfree	;Is it free?
+	 jrst	udirp%		; No, complain.
+	movsi	t1,jp.pok
+	caige	p4,^D1024	;Restricted port?
+	 pushj	p,prvbit##	; Yes, Is there priviliges?
+	  jrst	udfs.7		;  Yes, all OK.
+	jrst	udnpv%		;Restricted, and no privs. Fail.
+
+udfs.6:	skipe	p4,udplpr(f)	;Unspecified local port, did we have one?
+	 jrst	udfs.p		; Yes, just use it.
+	pushj	p,fport		;No, get a free port.
+	move	p4,t1		;Into correct register.
+udfs.p:	umovem	p4,.udlpr(u)	;Tell user new local port.
+	 erjmp	udadc%		; Address check.
+udfs.7:	movem	p1,udprad(f)	;Set remote address.
+	movem	p2,udprpr(f)	;Set remote port.
+	movem	p3,udplad(f)	;Set local address.
+	movem	p4,udplpr(f)	;Set local port.
+	jrst	cpopj1##	;Done, return.
+
+;**** write datagram.
+
+udfwri:	skipn	udprpr(f)	;Got remote port?
+	 jrst	udirp%		; No, "illegal remote port".
+	skipn	udprad(f)	;Got remote address?
+	 jrst	udira%		; No, "illegal remote address".
+
+	move	t1,udpoql(f)	;Get number of queued output datagrams.
+	cail	t1,2		;Within reason?
+	 jrst	udtqf%		; Too many in transit, please wait.
+
+	umove	t1,.udcnt(u)	;Get user byte count.
+	caile	t1,^D576	;Within reason?
+	 movei	t1,^D576	; No, adjust it.
+	umove	t2,.udbuf(u)	;Get buffer address.
+	pushj	p,makudp	;Make a datagram, and send it.
+	 jrst	udnec%		; No core, please wait.
+	jrst	cpopj1##	;Done, return.
+
+;**** read datagram.
+
+udfrea:	skipn	p1,udpiqh(f)	;Get next datagram from queue.
+	 jrst	udrqe%		; Queue empty, return error.
+	pushj	p,getinf	;Set up things.
+	umove	t2,.udcnt(u)	;Get user buffer size.
+	cail	t1,(t2)		;Big enough?
+	 move	t1,t2		; No, truncate.
+	pushj	p,stoinf	;Store ports etc. for user.
+	 popj	p,		; Address check, error code stored.
+	jumple	t1,udfr.9	;No buffer, no data.
+	umove	t2,.udbuf(u)	;Get user buffer address.
+	hrli	t2,2(p3)	;Get source = datagram.
+	movei	t3,3(t1)	;Compute last word of transfer:
+	lsh	t3,-2		;  Make word count.
+	addi	t3,(t2)		;  Add in first word.
+	exctxu <blt t2,-1(t3)>	;Copy data from packet to user.
+	 erjmp	udadc%		; "address check".
+
+udfr.9:	ip4off			;Prevent races:
+	skipn	t1,pd.nxt(p1)	;$ Get next pointer, if any.
+	 setzm	udpiqt(f)	;$  None, clear tail.
+	movem	t1,udpiqh(f)	;$ Set new head.
+	sosge	udpiql(f)	;$ Decrement count.
+	 setzm	udpiql(f)	;$  If negative, fix up.
+	ip4on			;Hands on again.
+	pushj	p,givpd##	;Deallocate packet.
+	jrst	cpopj1##	;Give good return.
+
+;**** check input queue.
+
+udfchk:	skipn	p1,udpiqh(f)	;Get first datagram, if any.
+	 jrst	udrqe%		; Queue empty, return error.
+	pushj	p,getinf	;Load info from datagram.
+stoinf:	umovem	t1,.udcnt(u)	;Give byte count to user.
+	 erjmp	udadc%		; Address check.
+	load.	t1,ih.sa,(p2)	;Get source address.
+	umovem	t1,.udrad(u)	;Give to user.
+	 erjmp	udadc%		; Address check.
+	load.	t1,ih.da,(p2)	;Get destination addres.
+	umovem	t1,.udlad(u)	;Give to user.
+	 erjmp	udadc%		; Address check.
+	load.	t1,ud.src,(p3)	;Get source port.
+	umovem	t1,.udrpr(u)	;Give to user.
+	 erjmp	udadc%		; Address check.
+	load.	t1,ud.dst,(p3)	;Get destination port.
+	umovem	t1,.udlpr(u)	;Give to user.
+	 erjmp	udadc%		; Address check.
+	jrst	cpopj1##	;Skip return.
+
+;*
+;* This routine gets a free (unused) port.
+;*
+
+fport:	aos	t1,nxtudp	;Increment global var.
+	cail	t1,177000	;Over the edge?
+	 setzb	t1,nxtudp	; Yes, wrap around.
+	addi	t1,^D1024	;Adjust port number.
+	pushj	p,isfree	;Check if the port is in use.
+	 jrst	fport		; It is, try again.
+	popj	p,		;Return with port number in T1.
+
+;*
+;* Check if a port number is in use.
+;*
+
+isfree:	movsi	t2,-M.UDPN##	;Build AOBJN pointer.
+isf.2:	move	t3,udptab(t2)	;Get next DDB.
+	came	t1,udplpr(t3)	;Using this port?
+	 aobjn	t2,isf.2	; No, loop.
+	jumpge	t2,cpopj1##	;Not found, skip return.
+	popj	p,		;Used, fail.
+
+;*
+;* Get some information about a packet.
+;*
+;* set up p2/p3 as usual, and return data length in t1.
+
+getinf:	move	p2,pd.ptr(p1)	;Get data pointer.
+	load.	p3,ih.ihl,(p2)	;Get IP header length in 32-bit words.
+	add	p3,p2		; and make a pointer to next level data.
+	move	t1,p2		;IP header addres, -
+	sub	t1,p3		; minus UDP header address, -
+	lsh	t1,2		; times four = -IP header length.
+	add	t1,pd.siz(p1)	;Compute real payload length.
+	subi	t1,^D8		;Don't count UDP header.
+	popj	p,		;Return.
+
+;**********************************************************************
+
+; table of well-known UDP ports:
+
+define ports,<
+	x  7, u.echo		;;Echo incoming data.
+	x  9, givpd##		;;Discard incoming data.  Easy.
+	x 13, u.daytime		;;Return daytime string.
+>
+
+define x(port, handler),<exp ^D'port>
+udpwkp:	ports
+udpwkl==.-udpwkp
+
+define x(port, handler),<exp handler>
+udpwkh:	ports
+
+;
+; Dispatch here when we receive a UDP datagram.
+;
+;  p1/ packet descriptor.
+;  p2/ IP header.
+;  p3/ UDP header.
+;
+udpin::	move	t1,p2		;IP header address, -
+	sub	t1,p3		; minus UDP header address, -
+	lsh	t1,2		; times four = -IP header length.
+	add	t1,pd.siz(p1)	;Compute real UDP length. (don't trust ud.len)
+	load.	t2,ud.len,(p3)	;Get ud.len anyhow.
+	cail	t1,(t2)		;Shorter?
+	 move	t1,t2		; Yes, trust ud.len after all.
+	pushj	p,udpcsm	;Go compute UDP checksum.
+	caie	p4,177777	;Correct sum?
+	 jrst	givpd##		; No, toss packet.
+
+	movsi	t1,-M.UDPN##	;Get aobjn pointer.
+	load.	t2,ud.dst,(p3)	;Get destination port.
+udifnd:	move	f,udptab(t1)	;Get a DDB.
+	came	t2,udplpr(f)	;This our port?
+	 aobjn	t1,udifnd	; No, loop.
+	jumpl	t1,u.stor	;Yes, handle datagram.
+
+;*
+;* Here when no listening UDP: device is found.  Check if there is a
+;* well-known port.
+;*
+	load.	t1,ud.dst,(p3)	;Get destination port.
+	movsi	t2,-udpwkl	;Length of table with built-in ports.
+	came	t1,udpwkp(t2)	;We know this port?
+	 aobjn	t2,.-1		; No, loop.
+	jumpl	t2,@udpwkh(t2)	;Dispatch if found.
+	movei	t1,3		;Destination unreachable, -
+	movei	t2,3		; "port unreachable".
+	jrst	icmp.e##	;Go tell massa.
+
+; Handler for UDP echo funcion:
+
+u.echo:	pushj	p,swpipa##	;Swap IP addresses.
+	load.	t1,ud.src,(p3)	;Swap source/dest. port numbers.
+	load.	t2,ud.dst,(p3)
+	stor.	t2,ud.src,(p3)
+	stor.	t1,ud.dst,(p3)
+	jrst	ipout##		;Done, send packet back.
+
+; Handler for UDP daytime funcion:
+
+u.dayt:	movei	t1,3		;Return "port unreachable" for the time.
+	movei	t2,3
+	jrst	icmp.e##
+
+end

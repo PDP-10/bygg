@@ -1,0 +1,446 @@
+SUBTTL	KL10 INSTRUCTION SIMULATOR
+
+KLINST:	LDB	T1,[POINT 9,M,8];Extract the operation code.
+	CAIL	T1,102		;If not in range, don't try to simulate.
+	 CAILE	T1,133
+	  JRST	ILLIN2
+	XCT	KLIND-102(T1)	;Dispatch to KL10 simulation routine.
+	PJRST	USRXIT##	;Return to user.
+IFN FTPI,<
+	SIGNAL	C$IUUO		;Signal illegal UUO.
+	 SKIPA			;User doesn't want the trap.
+	JRST	ERRGOU		;Go to the user.
+>;IFN FTPI
+	JSP	T1,ERRPTU	;Simulation routine isn't ready yet.
+	ASCIZ	"Unable to handle "
+	MOVE	T2,P1		;Get the instruction name back.
+	PUSHJ	P,PRNAME	;Print it.
+	JRST	UUOPCP		;Print user PC and abort.
+	
+KLIND:	SKIPA	P1,[SIXBIT "GFAD"]
+	SKIPA	P1,[SIXBIT "GFSB"]
+;;;;;;	SKIPA	P1,[SIXBIT "JSYS"]
+	PUSHJ	P,SADJBP	;Gross kludge, missing hardware.
+	PUSHJ	P,SADJSP
+	SKIPA	P1,[SIXBIT "GFMP"]
+	SKIPA	P1,[SIXBIT "GFDV"]
+	JRST	ILLIN2		;DFAD -- KI10 instruction.
+	JRST	ILLIN2		;DFSB -- KI10 instruction.
+	JRST	ILLIN2		;DFMP -- KI10 instruction.
+	JRST	ILLIN2		;DFDV -- KI10 instruction.
+	PUSHJ	P,SDADD
+	PUSHJ	P,SDSUB
+	SKIPA	P1,[SIXBIT "DMUL"]
+	SKIPA	P1,[SIXBIT "DDIV"]
+	JRST	ILLIN2		;DMOVE -- KI10 instruction.
+	JRST	ILLIN2		;DMOVN -- KI10 instruction.
+	JRST	ILLIN2		;FIX -- KI10 instruction.
+	JRST	SEXTEND
+	JRST	ILLIN2		;DMOVEM -- KI10 instruction.
+	JRST	ILLIN2		;DMOVNM -- KI10 instruction.
+	JRST	ILLIN2		;FIXR -- KI10 instruction.
+	JRST	ILLIN2		;FLTR -- KI10 instruction.
+	JRST	ILLIN2		;UFA -- KI10 instruction.
+	JRST	ILLIN2		;DFN -- KI10 instruction.
+	JRST	ILLIN2		;FSC -- KI10 instruction.
+	PUSHJ	P,SADJBP
+
+SEXTEND:PUSHJ	P,GETWDU##	;Get the extended operation code.
+	LDB	T2,[POINT 9,T1,8];Extract the operation code.
+	CAIL	T2,1		;If not in range, don't try to simulate.
+	 CAILE	T2,31
+	  JRST	ILLIN2
+	XCT	EXIND-1(T2)	;Dispatch to EXTEND simulation routine.
+	JRST[	SETZ F,		;Clear trash to prevent IME.
+		PJRST USRXIT##]	;Return to user.
+IFN FTPI,<
+	SIGNAL	C$IUUO		;Signal illegal UUO.
+	 SKIPA			;User doesn't want the trap.
+	JRST	ERRGOU		;Go to the user.
+> ;End of IFN FTPI
+	JSP	T1,ERRPTU	;Simulation routine isn't ready yet.
+	ASCIZ	"Unable to handle EXTEND operation "
+	MOVE	T2,P1		;Get the instruction name back.
+	PUSHJ	P,PRNAME	;Print it.
+	JRST	UUOPCP		;Print user PC and abort.
+
+EXIND:	PUSHJ	P,SCMPS		;CMPSL
+	PUSHJ	P,SCMPS		;CMPSE
+	PUSHJ	P,SCMPS		;CMPSLE
+	SKIPA	P1,[SIXBIT "EDIT"]
+	PUSHJ	P,SCMPS		;CMPSGE
+	PUSHJ	P,SCMPS		;CMPSN
+	PUSHJ	P,SCMPS		;CMPSG
+	SKIPA	P1,[SIXBIT "CVTDBO"]
+	SKIPA	P1,[SIXBIT "CVTDBT"]
+	SKIPA	P1,[SIXBIT "CVTBDO"]
+	SKIPA	P1,[SIXBIT "CVTBDT"]
+	PUSHJ	P,SMVSO
+	PUSHJ	P,SMVST
+	PUSHJ	P,SMVSLJ
+	PUSHJ	P,SMVSRJ
+	SKIPA	P1,[SIXBIT "XBLT"]
+	SKIPA	P1,[SIXBIT "GSNGL"]
+	SKIPA	P1,[SIXBIT "GDBLE"]
+	SKIPA	P1,[SIXBIT "GDFIX"]
+	SKIPA	P1,[SIXBIT "GFIX"]
+	SKIPA	P1,[SIXBIT "GDFIXR"]
+	SKIPA	P1,[SIXBIT "GFIXR"]
+	SKIPA	P1,[SIXBIT "DGFLTR"]
+	SKIPA	P1,[SIXBIT "GFLTR"]
+	SKIPA	P1,[SIXBIT "GFSC"]
+
+;*******************************************************
+;
+;String instruction simulation -- overwiev.
+;
+;  Accumulator usage:
+;
+;	J/	Holds job number.
+;	P/	Stack pointer, as usual.
+;	R/	Currently not used.
+;	M/	Scratch, and argument to GETWDU.
+;
+;	U/	Left half:  various flags.
+;		Right half: Holds E of user instruction.
+;	W/	Watchdog counter.  This is to prevent user from
+;		hogging the CPU with bad arguments.
+;	F/	Holds "fill" byte for source string.
+;	S/	Holds "fill" byte for second source.  (CMPSxx).
+;
+;	T1-T4/	is general scratch.
+;
+;	P1/	Source counter.
+;	P2/	Source byte pointer.
+;	P3/	Destination (or second source) counter.
+;	P4/	Destination byte pointer.
+;
+;String instruction simulation -- common routines.
+;
+;  Subroutine to get contents of user ac's in string handling instructions.
+;  This sets up P1-P4, and F.
+
+GETACS:	PUSHJ	P,GETWD1##	;Get fill byte.
+	MOVE	F,T1
+	LDB	T2,PUUOAC##
+	UMOVE	P1,(T2)		;Get Source Byte Count.
+	ADDI	T2,1
+	ANDI	T2,17
+	UMOVE	P2,(T2)		;Get Source Byte Pointer.
+	ADDI	T2,2
+	ANDI	T2,17
+	UMOVE	P3,(T2)		;Get Destination Byte Count.
+	ADDI	T2,1
+	ANDI	T2,17
+	UMOVE	P4,(T2)		;Get Destination Byte Pointer.
+	POPJ	P,
+
+;Subroutine to store back user ac's after string instructions.
+
+PUTACS:	LDB	T2,PUUOAC##
+	UMOVEM	P1,(T2)		;Store Source Byte Count.
+	ADDI	T2,1
+	ANDI	T2,17
+	UMOVEM	P2,(T2)		;Store Source Byte Pointer.
+	ADDI	T2,2
+	ANDI	T2,17
+	UMOVEM	P3,(T2)		;Get Store Byte Count.
+	ADDI	T2,1
+	ANDI	T2,17
+	UMOVEM	P4,(T2)		;Store Destination Byte Pointer.
+	POPJ	P,
+
+;Subroutine to get next source byte.
+
+GETBYT:	MOVE	T3,F		;Preload fill byte.
+	JUMPLE	P1,CPOPJ1##	;More of source?
+	XCT	1,[ILDB T3,P2]	;Yes, get next source byte.
+	 ERJMP	P2BAD		; Check for errors.
+	SOJA	P1,CPOPJ1##	;Count it and skip return.
+
+P2BAD:	HRRI	M,(P2)		;Set up M to point to the offending location.
+PMBAD:	PUSHJ	P,GETWDU##	;Try get the whole word.
+	PJRST	PUTWDU##	;I don't expect to get here, but...
+
+;Subroutine to get bytes from string 2.  Used by CMPSxx simulators.
+
+GETDBY:	MOVE	T4,S		;Preload second fill byte.
+	JUMPLE	P3,CPOPJ1##	;More of this string?
+	XCT	1,[ILDB T4,P4]	;Yes, get next source byte.
+	 ERJMP	P4BAD		; Check for errors.
+	SOJA	P3,CPOPJ1##	;Count it and skip return.
+
+P4BAD:	HRRI	M,(P4)		;This time P4 is offending...
+	JRST	PMBAD		;Join common code.
+
+;Subroutine to store another byte in destination string.
+
+PUTBYT:	XCT	3,[IDPB T3,P4]	;Store destination byte.
+	 ERJMP	P4BAD		; Check for errors.
+	SOJA	P3,CPOPJ1##	;Count down and skip return.
+
+;Simulate CMPSxx instructions.
+
+SCMPS:	MOVEI	U,-1(T2)	;Save <opcode-1> for later.
+	PUSHJ	P,GETACS	;Get user string pointers.
+	PUSHJ	P,GETWD1##	;Get second fill byte.
+	MOVE	S,T1		;Keep this in S.
+	JRST	CMPS.2		;Join middle of loop.
+
+CMPS.0:	PUSHJ	P,GETBYT	;Get a byte from first string.
+	 JRST	CMPS.7		; Oops, can't read...
+	PUSHJ	P,GETDBY	;Get a byte from second string, into T4.
+	 JRST	CMPS.7		; Oops again...
+	SUB	T3,T4		;Get difference between these two bytes.
+	JUMPN	T3,CMPS.9	;They differ, return something to user.
+CMPS.2:	JUMPN	P1,CMPS.0	;Loop if either string contains more.
+	JUMPN	P3,CMPS.0
+CMPS.9:	PUSHJ	P,PUTACS	;Give user back his pointers.
+	XCT	TSTTAB(U)	;Test
+	POPJ	P,		;Non-skip return.
+
+CMPS.7:	PJRST	PUTACS		;Here on page fail -- ought to do better.
+
+TSTTAB:	JUMPL	T3,INCPD1##	;For CMPSL
+	JUMPE	T3,INCPD1##	;For CMPSE
+	JUMPLE	T3,INCPD1##	;For CMPSLE
+	JFCL			;Unused.  (EDIT instruction)
+	JUMPGE	T3,INCPD1##	;For CMPSGE
+	JUMPN	T3,INCPD1##	;For CMPSN
+	JUMPG	T3,INCPD1##	;For CMPSG
+
+;Simulate MOVSO instruction.
+
+SMVSO:	HRRE	T4,T1		;Get and sign extend offset byte.
+	PUSHJ	P,GETACS	;Get user pointers.
+MVSO.0:	JUMPE	P3,MVSO.9	;Return when destination is filled up.
+	MOVE	T1,P1		;Get source byte count.
+	PUSHJ	P,GETBYT	;More, get next source byte, or fill.
+	 JRST	MVSO.7		; Can't get at user memory...
+	CAIL	T1,1		;If we had any real bytes to move, -
+	 ADD	T3,T4		; add in offset byte.
+	PUSHJ	P,PUTBYT	;Store in destination string.
+	 JRST	MVSO.7		; Can't get at user memory...
+	JRST	MVSO.0		;Loop over whole string.
+
+MVSO.7:	PJRST	PUTACS		;Here on page fail -- ought to do better.
+
+MVSO.9:	PUSHJ	P,PUTACS	;Store user registers back.
+	JUMPG	P1,CPOPJ##	; Don't skip return if source bytes left.
+	PJRST	INCPD1##	;Propagate skip return.
+	
+;Simulate MOVST instruction.
+
+SMVST:	HRRZ	U,T1		;Make U point to translation table.
+	PUSHJ	P,GETACS	;Set up string pointers.
+	TLZE	P1,400000	;S bit on?
+	 TLO	U,400000	; Yes, propagate.
+	TLZ	P1,377000	;Fuck the rest of the bits.
+MVST.0:	JUMPLE	P3,MVST.9	;Exit when destination string is filled.
+	PUSHJ	P,GETBYT	;Get next source byte.
+	 JRST	MVST.7		; Oops...
+	PUSHJ	P,GETTRN	;Get translation table entry for this byte.
+	CAIE	T1,1		;Check code from table:  1 or 5 means
+	 CAIN	T1,5		; that we shall terminate now.
+	  JRST	MVST.T
+	CAIL	T1,4		;Code 4, 6 & 7 means set S.
+	 TLO	U,400000
+	JUMPGE	U,MVST.4	;Now if S is set, store byte.
+	PUSHJ	P,PUTBYT
+	 JRST	MVST.7
+MVST.4:	JRST	MVST.0		;Loop until source empty, or terminated.
+
+MVST.7:	PJRST	PUTACS		;Here on page fail -- ought to do better.
+
+MVST.9:	CAIG	P1,0		;Any source bytes left?
+	 PUSHJ	P,INCPD1##	; No, give skip return.
+MVST.T:	TLNE	U,400000	;Check local copy of S bit, and propagate -
+	 TLO	P1,400000	; it to user accumulator.
+	PJRST	PUTACS		;Restore user AC's, and return.
+
+GETTRN:	IDIVI	T3,2		;T3 := word #, T4 := even/odd flag.
+	MOVEI	M,(U)		;Compute user word adress.
+	ADDI	M,(T3)
+	PUSHJ	P,GETWDU##	;Get word from user.
+	CAIE	T4,0		;Even byte?
+	 SKIPA	T3,T1		; No, thats odd.
+	  MOVS	T3,T1		;  Yes, swap halfwords.
+	LDB	T1,[POINT 3,T3,20];Get opcode.
+	ANDI	T3,007777	;Only twelve bits of substitute.
+	POPJ	P,		;Return entry.
+
+;Simulate MOVSLJ instruction.
+
+SMVSLJ:	TRZ	T1,-1		;MOVSLJ is equivalent to a MOVSO
+	JRST	SMVSO		; instruction with a zero offset...
+
+;Simulate MOVSRJ instruction.
+
+SMVSRJ:	PUSHJ	P,GETACS	;Read user AC block.
+	MOVE	T1,P1		;Compute length difference.
+	SUB	T1,P3
+	JUMPE	T1,MVSR.L	;Equal length -- go copy string.
+	JUMPL	T1,MVSR.F	;Destination is longer -- place some fill.
+
+MVSR.0:	IBP	P2		;Increment source pointer.
+	SUBI	P1,1		;Decrement source counter.
+	SOJG	T1,MVSR.0	;Loop until enough bytes skipped.
+	JRST	MVSR.L		;Now join common copy loop.
+
+MVSR.F:	MOVE	T3,F		;Load fill byte.
+	PUSHJ	P,PUTBYTE	;Store in user string.
+	 JRST	MVSR.7		; Oops, can't write.
+	AOJL	T1,MVSR.F	;Loop until enough filled.
+
+MVSR.L:	JUMPE	P3,MVSR.9	;Return when destination is filled up.
+	PUSHJ	P,GETBYT	;More, get next source byte, or fill.
+	 JRST	MVSR.7		; Can't get at user memory...
+	PUSHJ	P,PUTBYT	;Store in destination string.
+	 JRST	MVSR.7		; Can't get at user memory...
+	JRST	MVSR.L		;Loop over whole string.
+
+MVSR.7:	PJRST	PUTACS		;Here on page fail -- ought to do better.
+
+MVSR.9:	PUSHJ	P,PUTACS	;Give back user AC block.
+	PJRST	INCPD1##	;Give user skip return.
+
+;Simulate ADJSP instruction.
+
+SADJSP:	LDB	T2,PUUOAC##	;ADJSP handler.
+	UMOVE	T1,(T2)		;Get value in user's AC.
+	HRRZ	T3,T1		;Increment or decrement the address.
+	ADD	T3,M
+	HRR	T1,T3
+	HLRZ	T3,T1		;Increment or decrement the counter.
+	ADD	T3,M
+	TRNN	M,400000	;Check for possible overflow.
+	 JRST	SADJS0
+	JUMPL	T1,SADJS1	;Can't overflow.
+	HRL	T1,T3
+	JUMPGE	T1,SADJS2
+	MOVSI	T3,000400	;Set trap 2 on overflow.
+	IORM	T3,.JDAT+JOBPD1##
+	JRST	SADJS2
+SADJS0:	JUMPGE	T1,SADJS1	;Can't overflow.
+	HRL	T1,T3
+	JUMPL	T1,SADJS2
+	MOVSI	T3,000400	;Set trap 2 on overflow.
+	IORM	T3,.JDAT+JOBPD1##
+	JRST	SADJS2
+SADJS1:	HRL	T1,T3
+SADJS2:	UMOVEM	T1,(T2)		;Save new value in user's AC.
+	POPJ	P,
+
+;Simulate DADD instruction.
+
+SDADD:	PUSHJ	P,GETWDU##	;Get value in E.
+	PUSH	P,T1		;Save it for a while.
+	PUSHJ	P,GETWD1##	;Get value in E+1.
+	MOVE	T4,T1		;Put it in the right accumulator.
+	LDB	T3,PUUOAC##	;Get the accumulator number.
+	UMOVE	T1,(T3)		;Get contents of AC.
+	ADDI	T3,1		;Increment the accumulator number,
+	ANDI	T3,17		; modulo 20.
+	UMOVE	T2,(T3)		;Get the contents of AC+1.
+	POP	P,T3		;Put contents of E where it should be.
+	JFCL	17,.+1		;Clear the flags.
+	ADD	T2,T4		;Add the low order parts.
+	JCRY1	SDADD1		;Handle carry from low order part.
+	JFCL	17,.+1		;Clear the flags, again.
+	ADD	T1,T3		;Add the high order parts.
+	JSP	T4,SDADD4	;Store flags and result.
+SDADD1:	JFCL	17,.+1		;Clear the flags, again.
+	ADDI	T1,1		;Add carry.
+	JOV	SDADD3		;Handle overflow.
+	ADD	T1,T3		;Add the high order parts.
+SDADD2:	JSP	T4,SDADD4	;Store flags and result.
+SDADD3:	ADD	T1,T3		;Add the high order parts.
+	JOV	SDADD2		;Overflow here is no overflow.
+	JSP	T4,.+1		;Get the flags.
+	TLO	T4,400000	;Set the overflow bit.
+SDADD4:	AND	T4,[7B2]	;Mask out overflow and carry flags.
+	SKIPGE	T4		;Set trap 1 if overflow occured.
+	 TLO	T4,000200
+	IORM	T4,.JDAT+JOBPD1##
+	SKIPGE	T1		;Normalize the result.
+	 TLOA	T2,400000
+	  TLZ	T2,400000
+	LDB	T3,PUUOAC##	;Get the accumulator number.
+	UMOVEM	T1,(T3)		;Save new value in AC.
+	ADDI	T3,1		;Increment the accumulator number,
+	ANDI	T3,17		; modulo 20.
+	UMOVEM	T2,(T3)		;Save new value in AC+1.
+	POPJ	P,
+
+;Simulate DSUB instruction.
+
+;** N.B. ** THE FLAGS ARE NOT HANDLED CORRECTLY BY SDSUB
+SDSUB:	PUSHJ	P,GETWDU##	;Get value in E.
+	PUSH	P,T1		;Save it for a while.
+	PUSHJ	P,GETWD1##	;Get value in E+1.
+	MOVE	T4,T1		;Put it in the right accumulator.
+	LDB	T3,PUUOAC##	;Get the accumulator number.
+	UMOVE	T1,(T3)		;Get contents of AC.
+	ADDI	T3,1		;Increment the accumulator number,
+	ANDI	T3,17		; modulo 20.
+	UMOVE	T2,(T3)		;Get the contents of AC+1.
+	POP	P,T3		;Put contents of E where it should be.
+	JFCL	17,.+1		;Clear the flags.
+	SUB	T2,T4		;Subtract the low order parts.
+	JCRY1	SDSUB1		;Handle borrow from low order part.
+	JFCL	17,.+1		;Clear the flags, again.
+	SUBI	T1,1		;Subtract the borrow.
+	SUB	T1,T3		;Subtract the high order parts.
+	JSP	T4,SDSUB4	;Store flags and result.
+SDSUB1:	JFCL	17,.+1		;Clear the flags, again.
+	SUB	T1,T3		;Subtract the high order parts.
+	JSP	T4,SDSUB4	;Store flags and result.
+SDSUB4:	AND	T4,[7B2]	;Mask out overflow and carry flags.
+	SETZ	T4,		;UNTIL WE GET IT RIGHT
+	SKIPGE	T4		;Set trap 1 if overflow occured.
+	 TLO	T4,000200
+	IORM	T4,.JDAT+JOBPD1##
+	SKIPGE	T1		;Normalize the result.
+	 TLOA	T2,400000
+	  TLZ	T2,400000
+	LDB	T3,PUUOAC##	;Get the accumulator number.
+	UMOVEM	T1,(T3)		;Save new value in AC.
+	ADDI	T3,1		;Increment the accumulator number,
+	ANDI	T3,17		; modulo 20.
+	UMOVEM	T2,(T3)		;Save new value in AC+1.
+	POPJ	P,
+
+;Simulate ADJBP instruction.
+
+SADJBP:	PUSHJ	P,GETWDU##	;Get byte pointer template, into T1.
+	LDB	P1,PUUOAC##	;Get user AC number.
+	UMOVE	T2,(P1)		;Get contents of user AC.
+	PUSHJ	P,.ADJBP	;Call simulator routine.
+	UMOVEM	T1,(P1)		;Give user back his pointer.
+	POPJ	P,		;Return from this mess.
+
+;Subroutine to increment or decrement a byte pointer.
+; Call with T1 holding the pointer, and T2 holding amount to
+; increment or decrement.  Return with updated pointer in T1.
+; Preserves all registers except T1/T2.
+
+.ADJBP::JUMPE	T2,CPOPJ##	;Just return if alignment is zero.
+	PUSH	P,T3		;Preserve all registers but T1/T2.
+	PUSH	P,T4
+	MOVEI	T3,^D36
+	LDB	T4,[POINT 6,T1,11]
+	JUMPE	T4,ADJBP2	;Return unmodified pointer if S=0.
+	IDIVI	T3,(T4)		;T3 := bytes/word.
+	MOVE	T4,T3		;Save bytes/word for later.
+	IDIVI	T2,(T3)		;T2 := words 2 move, T3 := bytes.
+	ADDI	T2,(T1)		;Adjust pointer some words, by doing 18-bit -
+	HRRM	T2,T1		; wide add.
+	JUMPE	T3,ADJBP2	;Return now if no excess bytes to handle.
+	JUMPG	T3,ADJBP1	;If we are going backwards, IDIVI gives us -
+	HRRI	T1,-1(T1)	; a negative remainder.  We have to correct -
+	ADDI	T3,(T4)		; this behavour by ourselves.
+ADJBP1:	IBP	T1		;Increment pointer the remaining bytes, -
+	SOJG	T3,.-1		; one by one.
+ADJBP2:	POP	P,T4		;Restore saved registers.
+	POP	P,T3
+	POPJ	P,		;Return to caller, with updated pointer in T1.

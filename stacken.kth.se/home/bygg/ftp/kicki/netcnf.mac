@@ -1,0 +1,107 @@
+SUBTTL	NETCNF - NETWORK CONFIGURATION DEFINITION FILE OUTPUT BY MONGEN DIALOG
+
+
+DEFINE XP(A,B),<A==:B>
+
+
+XP M.NET,53
+XP M.RSS,0
+XP M.DS10,0
+XP M.DP01,0
+
+;;	Network software(Y,N)[
+;;	Software to support remote computers: DECsystem-10's,
+;;	PDP-11's, PDP-8's (requires FTNET to be -1)]: Y			;Network software?
+XP M.NET,1
+
+;;	Cpu's(1,1-6)[Total number of cpu's in the system]: 2			;Number of CPUs
+
+;;	How many DC75NP's or DN87's on CPU0(1,0-8)[Network
+;;	front-ends connected to DL10's.]: 2			;Number of DN60/87 on CPU0:
+
+;;	To which DL10 port is the DC75 or DN87 connected (0,0-7)[]: 0			;  port 0
+
+;;	To which DL10 port is the DC75 or DN87 connected (0,0-7)[]: 1			;  port 1
+XP M00D85,1
+XP M01D85,1
+XP M02D85,0
+XP M03D85,0
+XP M04D85,0
+XP M05D85,0
+XP M06D85,0
+XP M07D85,0
+
+;;	How many DC75NP's or DN87's on CPU1(1,0-8)[Network
+;;	front-ends connected to DL10's.]: 0			;Number of DN60/87 on CPU1:
+XP M10D85,0
+XP M11D85,0
+XP M12D85,0
+XP M13D85,0
+XP M14D85,0
+XP M15D85,0
+XP M16D85,0
+XP M17D85,0
+XP M.DC75,2
+
+;;	ANF node number of central site(1,1-77)[
+;;	Unique octal number identifying system to ANF network.]: 20			;ANF10 node number (Name below)
+XP OURNNM,20
+
+;;	Name of central site[Six characters or less.]: KICKI
+
+DEFINE	SYSNDE
+	<SIXBIT	&KICKI&>
+
+;;	# of remote TTY's(1,1-512)[
+;;	Maximum number of teletypes on ANF network nodes to be
+;;	handled at any given time.]: 50			;Number of virtual terminals
+XP M.RMCR,62
+
+;;	ANF Network virtual terminals(Y,N)[
+;;	Code to allow local terminals to "SET HOST" to other systems.]: Y			;ANF terminals?
+XP M.RVTM,1
+
+;;	Remote card readers(Y,N)[
+;;	Code to allow access to card readers on ANF remote stations.]: N			;Remote card readers?
+XP M.RCDR,0
+
+;;	Remote line printers(Y,N)[
+;;	Code to allow access to line printers on ANF remote stations.]: N			;Remote line printers?
+XP M.RLPT,0
+
+;;	Remote DN8x DDCMP devices(Y,N)[
+;;	Code to allow access to DN8x LBLK-to-DDCMP devices on ANF remote stations.]: Y			;Remote DDCMP devices?
+XP M.RDDP,1
+XP M.RPTP,0
+XP M.RPTR,0
+XP M.RPLT,0
+
+;;	Remote data entry terminals(Y,N)[
+;;	Code to allow access to remote data entry terminals (RDX devices).]: N			;Remote data entry terminals?
+XP M.RDX,0
+
+;;	Remote task-to-task through ANF(Y,N)[
+;;	Code to allow access to remote jobs (TSKSER).]: Y			;TSK-links?
+XP M.RJOB,1
+
+;;	# of ANF connects(256,1-512)[
+;;	Maximum number of simultaneous connections.]: 32			;  # TSK connections. (anf10 conections)
+XP M.CONN,40
+
+;;	DECnet software(Y,N)[
+;;	Load monitor modules needed to communicate with other DECnet nodes]: Y			;DECnet, yes.
+XP M.DECN,1
+
+;;	DECnet area number of central site(1,1-63)[
+;;	Decimal area number for multi-area DECnet network configurations.]: 59			;DECnet area number.
+XP %RTHOM,73
+
+;;	DECnet node number of central site(1,1-1023)[
+;;	Unique decimal number identifying system to DECnet network.]: 20			;DECnet node number.
+XP %RTADR,24
+XP %RTRTY,4
+XP M.ENET,0
+XP M.LATN,0
+;;	
+;;	END OF NETCNF.MAC
+

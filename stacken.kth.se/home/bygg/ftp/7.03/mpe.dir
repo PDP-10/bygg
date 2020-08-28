@@ -1,0 +1,18 @@
+
+  Read Density:1600  Parity:Odd  9-Track  Write enabled  REELID:MPE
+
+  BACKUP reel number 1; start save set: 7.03 MPE
+    by version 4A(521) at 11:15:23 on 30-Jan-86
+    written on MTA262: on S/N 1026 at 1600 9-track
+    under TOPS-10 system 703(30744): RN255A DEC10 Development
+
+MPE	DIR     0  <055>   000000  30-Jan-86	DSKB:	[10,7,MPE]
+MPE	FIL     1  <055>   643374   4-Apr-85
+CPNSER	MAC   135  <055>   056133  27-Jan-86
+  Total of 136 blocks in 3 files Checksum = 213037
+
+  BACKUP reel number 1; end save set: 7.03 MPE
+    by version 4A(521) at 11:15:25 on 30-Jan-86
+    written on MTA262: on S/N 1026 at 1600 9-track
+    under TOPS-10 system 703(30744): RN255A DEC10 Development
+

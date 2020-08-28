@@ -1,0 +1,10 @@
+; Example program:
+
+foo:    .asciz "allan tar en kaka"
+	.align 4
+bar:	allan=42
+
+baz:	movei 1,20
+	.end
+
+junk here, should not be seen.

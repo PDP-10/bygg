@@ -1,0 +1,21 @@
+mtdump dumps the record structure of a tape image file in .tap format.
+
+.tap format tape images have the format
+
+	4 byte record length 1
+	record 1
+	repeat of 4 byte record length 1
+	4 byte record length 2
+	record 2
+	repeat of 4 byte record length 2
+	:
+	4 bytes = 00000000 for end of file
+
+and so on.  This is the tape format expected by simh, Tim Stark's TS10,
+and John Wilson's E11.
+
+mtdump is invoked by
+
+	mtdump file1 file2 file3...
+
+Output is to stdout, unless redirected.

@@ -1,0 +1,1113 @@
+10-Jan-2001 12:15:07-GMT,3380;000000000001
+Return-Path: <owner-ietf-itrace@research.att.com>
+Received: from mail-green.research.att.com (mail-green.research.att.com [135.207.30.103])
+	by nic.cafax.se (8.12.0.Beta13/8.12.0.Beta13) with ESMTP id f7FBF6f8000949
+	for <bygg@cafax.se>; Wed, 15 Aug 2001 13:15:06 +0200 (MEST)
+Received: from akalice.research.att.com (akalice.research.att.com [135.207.26.22])
+	by mail-green.research.att.com (Postfix) with ESMTP
+	id 7E7AD1E065; Wed, 15 Aug 2001 07:14:57 -0400 (EDT)
+Received: (from majordomo@localhost)
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) id HAA94853
+	for ietf-itrace-list; Wed, 15 Aug 2001 07:12:26 -0400 (EDT)
+Received: from mail-blue.research.att.com (mail-blue.research.att.com [135.207.30.102])
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) with ESMTP id HAA25872
+	for <ietf-itrace@akalice.research.att.com>; Wed, 15 Aug 2001 07:12:25 -0400 (EDT)
+Received: by mail-blue.research.att.com (Postfix)
+	id A64774CE57; Wed, 15 Aug 2001 07:11:46 -0400 (EDT)
+Delivered-To: ietf-itrace@research.att.com
+Received: from exc-sc1.yagosys.com (host3.riverstonenet.com [63.113.148.3])
+	by mail-blue.research.att.com (Postfix) with ESMTP id 44D2B4CE2B
+	for <ietf-itrace@research.att.com>; Wed, 15 Aug 2001 07:11:46 -0400 (EDT)
+Received: by exc-sc1 with Internet Mail Service (5.5.2653.19)
+	id <QZL3PA6P>; Wed, 15 Aug 2001 04:12:20 -0700
+Message-ID: <3820E2042B6ED5118DC200D0B78EDC470F1E17@exc-reo1>
+From: "Waters, Stephen" <Stephen.Waters@riverstonenet.com>
+To: "'ietf-itrace@research.att.com'" <ietf-itrace@research.att.com>
+Subject: ICMP traceback
+Date: Wed, 15 Aug 2001 04:05:46 -0700
+MIME-Version: 1.0
+X-Mailer: Internet Mail Service (5.5.2653.19)
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Sender: owner-ietf-itrace@research.att.com
+Precedence: bulk
+Keywords: itrace
+
+
+Hello,
+
+I have read the draft a few times, and have a few comments/questions:
+
+1) is the ICMP message sent hop-by-hop towards the destinations, i.e. is the
+IP addressed to each next-hop in turn for them to add data(link info)?
+
+If the answer to this is 'No, it is sent to the final destinations', then I
+have this question:
+
+1a) If each router on the path to the destination is selecting packets at
+random, the will select packets with different source addresses (if the DOS
+attack is doing the usual thing if using invalid and varying addresses), so
+would this actually be useful?
+
+If the answer to 1) is 'Yes', then I have this question:
+
+1b) This scheme would only be of any use if all routers implemented it...
+
+A suggestion (probably considered already):
+DOS attacks are best stopped at the 'customer edge', so could we just
+recommend that edge devices implement some sort of reverse-path-routing
+check, and take some configured action if the source address is 'wrong':
+
+1) local/remote log and forward/drop packet
+2) New 'Bad-Source' ICMP to monitor-node/final-destination and forward/drop
+packet
+
+Both of these actions could also be done infrequently as required, for
+example sampling on 'reverse-path-failures to a given destination' and
+limited that as a specific rate, as well as limiting the total number
+generated for all destinations.
+
+This would seem to get to straight to the problem and does not require all
+router to comply. This could also be implemented in border gateways (BPG AS
+boundaries) a given authority.
+
+Sorry if this digs up old bodies...
+Cheers, Steve. 
+
+10-Jan-2001 13:32:55-GMT,1730;000000000005
+Return-Path: <lars@aronsson.se>
+Received: from brev.stacken.kth.se (brev.stacken.kth.se [130.237.234.84])
+	by nic.cafax.se (8.12.0.Beta13/8.12.0.Beta13) with ESMTP id f7FCWtf8001466
+	for <bygg@cafax.se>; Wed, 15 Aug 2001 14:32:55 +0200 (MEST)
+Received: from levi.aronsson.se ([213.89.188.92])
+	by brev.stacken.kth.se (8.9.3/8.9.3) with ESMTP id OAA04504
+	for <bygg@stacken.kth.se>; Wed, 15 Aug 2001 14:32:55 +0200 (MET DST)
+Received: (from lars@localhost)
+	by levi.aronsson.se (8.11.0/8.9.3) id f7FEXcu05865;
+	Wed, 15 Aug 2001 16:33:38 +0200
+Date: Wed, 15 Aug 2001 16:33:38 +0200
+Message-Id: <200108151433.f7FEXcu05865@levi.aronsson.se>
+X-Authentication-Warning: levi.aronsson.se: lars set sender to lars@aronsson.se using -f
+From: Lars Aronsson <lars@aronsson.se>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+To: bygg@stacken.kth.se
+Subject: utbildare
+
+Hejsan Johnny,
+
+Ett företag i Stockholm som heter Antcolony (www.antcolony.net) och
+agerar konsultförmedling behöver någon som kan UNIX/Linux och kan
+utbilda om grundläggande nätverksadministration på Linux.
+
+Är det något du kan tänka dig?  Eller känner du någon som kan det?
+
+En liten varning: Det här är någon sorts kommunal vuxenutbildning, så
+det är rätt låga arvoden och stora grupper.  Passar förmodligen bäst
+för en rätt ung konsult som vill kunna sätta upp "utbildare" på sin
+meritförteckning.  Arbetet är 1 eller 2 dagar i veckan under ett antal
+veckor, så det kan vara ett lämpligt sidouppdrag till annat arbete.
+
+Jag har egentligen inget med detta att göra, men jag känner grundaren
+av Antcolony, och har lite kontakt med dem ibland.
+
+
+Lars Aronsson.
+-- 
+  lars@aronsson.se (California dreaming) tel: 070-789 1609
+
+11-Jan-2001 16:39:43-GMT,3854;000000000001
+Return-Path: <owner-ietf-itrace@research.att.com>
+Received: from mail-blue.research.att.com (mail-blue.research.att.com [135.207.30.102])
+	by nic.cafax.se (8.12.0.Beta13/8.12.0.Beta13) with ESMTP id f7FFdgf8002970
+	for <bygg@cafax.se>; Wed, 15 Aug 2001 17:39:42 +0200 (MEST)
+Received: from akalice.research.att.com (akalice.research.att.com [135.207.26.22])
+	by mail-blue.research.att.com (Postfix) with ESMTP
+	id 52CBB4CE98; Wed, 15 Aug 2001 11:39:32 -0400 (EDT)
+Received: (from majordomo@localhost)
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) id LAA76420
+	for ietf-itrace-list; Wed, 15 Aug 2001 11:38:29 -0400 (EDT)
+Received: from mail-green.research.att.com (mail-green.research.att.com [135.207.30.103])
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) with ESMTP id LAA29715
+	for <ietf-itrace@akalice.research.att.com>; Wed, 15 Aug 2001 11:38:28 -0400 (EDT)
+Received: by mail-green.research.att.com (Postfix)
+	id 7FBC51E061; Wed, 15 Aug 2001 11:37:48 -0400 (EDT)
+Delivered-To: ietf-itrace@research.att.com
+Received: from ivexgw1.intruvert.com (mx1.intruvert.com [65.198.15.197])
+	by mail-green.research.att.com (Postfix) with ESMTP id 165961E05A
+	for <ietf-itrace@research.att.com>; Wed, 15 Aug 2001 11:37:48 -0400 (EDT)
+Received: from cs.ucdavis.edu (WU-F [192.168.1.137]) by ivexgw1.intruvert.com with SMTP (Microsoft Exchange Internet Mail Service Version 5.5.2650.21)
+	id Q1ZQSGWZ; Wed, 15 Aug 2001 08:27:13 -0700
+Message-ID: <3B7A976F.95FF4D81@cs.ucdavis.edu>
+Date: Wed, 15 Aug 2001 08:38:23 -0700
+From: "S. Felix Wu" <wu@cs.ucdavis.edu>
+X-Mailer: Mozilla 4.76 [en] (Windows NT 5.0; U)
+X-Accept-Language: en
+MIME-Version: 1.0
+To: "Waters, Stephen" <Stephen.Waters@riverstonenet.com>
+Cc: "'ietf-itrace@research.att.com'" <ietf-itrace@research.att.com>
+Subject: Re: ICMP traceback
+References: <3820E2042B6ED5118DC200D0B78EDC470F1E17@exc-reo1>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Sender: owner-ietf-itrace@research.att.com
+Precedence: bulk
+Keywords: itrace
+
+
+> If the answer to this is 'No, it is sent to the final destinations', then I
+> have this question:
+> 
+> 1a) If each router on the path to the destination is selecting packets at
+> random, the will select packets with different source addresses (if the DOS
+> attack is doing the usual thing if using invalid and varying addresses), so
+> would this actually be useful?
+
+The answer is NO for your question #1. While the source addresses can
+be spoofed, the router ID (and other related information) for the
+router producing this iTrace packet is harder to spoof (see the
+authentication section).
+
+The problem left is whether you can distinguish the "traced" packet is
+normal or DDoS. This can be done, in a statistical or deterministic
+fashion,
+in different ways -- this is up to the "consumers" of iTrace
+information. For
+example, the source IP address does not exist. Or, if the attacker is
+using a
+fix 16 bit prefix source IP with randomized 16 bit suffix, then we can
+identify the attack packets based on the signture. Exactly how this step
+is
+done is out of the scope of iTrace though.
+
+> A suggestion (probably considered already):
+> DOS attacks are best stopped at the 'customer edge', so could we just
+> recommend that edge devices implement some sort of reverse-path-routing
+> check, and take some configured action if the source address is 'wrong':
+> 
+> 1) local/remote log and forward/drop packet
+> 2) New 'Bad-Source' ICMP to monitor-node/final-destination and forward/drop
+> packet
+
+There have been many schemes proposed to "detect/filter" "bad" source IP
+addresses in the research community (e.g., UCLA and Purdue). I think
+commercial routers allow us to do reverse-path lookup, at a cost of
+performance though.
+
+I personally believe that "ingress filtering" and "iTrace" can
+complement
+each other in the future.
+
+-Felix
+
+11-Jan-2001 16:57:15-GMT,4833;000000000001
+Return-Path: <owner-ietf-itrace@research.att.com>
+Received: from mail-green.research.att.com (H-135-207-30-103.research.att.com [135.207.30.103])
+	by nic.cafax.se (8.12.0.Beta13/8.12.0.Beta13) with ESMTP id f7FFvEf8003090
+	for <bygg@cafax.se>; Wed, 15 Aug 2001 17:57:15 +0200 (MEST)
+Received: from akalice.research.att.com (akalice.research.att.com [135.207.26.22])
+	by mail-green.research.att.com (Postfix) with ESMTP
+	id 436121E071; Wed, 15 Aug 2001 11:57:11 -0400 (EDT)
+Received: (from majordomo@localhost)
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) id LAA41193
+	for ietf-itrace-list; Wed, 15 Aug 2001 11:57:24 -0400 (EDT)
+Received: from mail-green.research.att.com (mail-green.research.att.com [135.207.30.103])
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) with ESMTP id LAA31435
+	for <ietf-itrace@akalice.research.att.com>; Wed, 15 Aug 2001 11:57:24 -0400 (EDT)
+Received: by mail-green.research.att.com (Postfix)
+	id 847F21E05A; Wed, 15 Aug 2001 11:56:43 -0400 (EDT)
+Delivered-To: ietf-itrace@research.att.com
+Received: from exc-sc1.yagosys.com (host3.riverstonenet.com [63.113.148.3])
+	by mail-green.research.att.com (Postfix) with ESMTP id 1EFF91E002
+	for <ietf-itrace@research.att.com>; Wed, 15 Aug 2001 11:56:43 -0400 (EDT)
+Received: by exc-sc1 with Internet Mail Service (5.5.2653.19)
+	id <QZL3PCH5>; Wed, 15 Aug 2001 08:57:17 -0700
+Message-ID: <3820E2042B6ED5118DC200D0B78EDC470F1E1A@exc-reo1>
+From: "Waters, Stephen" <Stephen.Waters@riverstonenet.com>
+To: "'S. Felix Wu'" <wu@cs.ucdavis.edu>
+Cc: "'ietf-itrace@research.att.com'" <ietf-itrace@research.att.com>
+Subject: RE: ICMP traceback
+Date: Wed, 15 Aug 2001 08:50:36 -0700
+MIME-Version: 1.0
+X-Mailer: Internet Mail Service (5.5.2653.19)
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Sender: owner-ietf-itrace@research.att.com
+Precedence: bulk
+Keywords: itrace
+
+Thanks for the reply.
+
+If the DOS attack is using 'random' 'valid' source addresses, then this may
+be difficult to put the itrace bits together. It seems to me that software
+would need to track 'hanging TCP sessions' to a given protected server, and
+see if any of the itrace message match src/dest-wise.
+
+I think there is room to extend the functionality of any reverse-path-check
+to invoke a 'could be bad' ICMP message (infrequently) and let the packet
+through (in the same way that itrace suggests). As I say, I think this would
+be a more selective/focused method of tracking DOS.
+
+For DDOS, I guess the reverse-path-check could be useless since it may be
+the case that there are innocent hosts involved and they are using their own
+IP source. But for this case, determining the actual source is not an issue
+anyway...
+
+Cheers, Steve.
+ 
+
+> -----Original Message-----
+> From: S. Felix Wu [mailto:wu@cs.ucdavis.edu]
+> Sent: Wednesday, August 15, 2001 4:38 PM
+> To: Waters, Stephen
+> Cc: ''
+> Subject: Re: ICMP traceback
+> 
+> 
+> 
+> > If the answer to this is 'No, it is sent to the final 
+> destinations', then I
+> > have this question:
+> > 
+> > 1a) If each router on the path to the destination is 
+> selecting packets at
+> > random, the will select packets with different source 
+> addresses (if the DOS
+> > attack is doing the usual thing if using invalid and 
+> varying addresses), so
+> > would this actually be useful?
+> 
+> The answer is NO for your question #1. While the source addresses can
+> be spoofed, the router ID (and other related information) for the
+> router producing this iTrace packet is harder to spoof (see the
+> authentication section).
+> 
+> The problem left is whether you can distinguish the "traced" packet is
+> normal or DDoS. This can be done, in a statistical or deterministic
+> fashion,
+> in different ways -- this is up to the "consumers" of iTrace
+> information. For
+> example, the source IP address does not exist. Or, if the attacker is
+> using a
+> fix 16 bit prefix source IP with randomized 16 bit suffix, then we can
+> identify the attack packets based on the signture. Exactly 
+> how this step
+> is
+> done is out of the scope of iTrace though.
+> 
+> > A suggestion (probably considered already):
+> > DOS attacks are best stopped at the 'customer edge', so 
+> could we just
+> > recommend that edge devices implement some sort of 
+> reverse-path-routing
+> > check, and take some configured action if the source 
+> address is 'wrong':
+> > 
+> > 1) local/remote log and forward/drop packet
+> > 2) New 'Bad-Source' ICMP to monitor-node/final-destination 
+> and forward/drop
+> > packet
+> 
+> There have been many schemes proposed to "detect/filter" 
+> "bad" source IP
+> addresses in the research community (e.g., UCLA and Purdue). I think
+> commercial routers allow us to do reverse-path lookup, at a cost of
+> performance though.
+> 
+> I personally believe that "ingress filtering" and "iTrace" can
+> complement
+> each other in the future.
+> 
+> -Felix
+> 
+
+12-Jan-2001  7:43:00-GMT,2734;000000000001
+Return-Path: <owner-ietf-itrace@research.att.com>
+Received: from mail-blue.research.att.com (H-135-207-30-102.research.att.com [135.207.30.102])
+	by nic.cafax.se (8.12.0.Beta13/8.12.0.Beta13) with ESMTP id f7G6gxf8012467
+	for <bygg@cafax.se>; Thu, 16 Aug 2001 08:43:00 +0200 (MEST)
+Received: from akalice.research.att.com (akalice.research.att.com [135.207.26.22])
+	by mail-blue.research.att.com (Postfix) with ESMTP
+	id 4B8094CEAA; Thu, 16 Aug 2001 02:42:54 -0400 (EDT)
+Received: (from majordomo@localhost)
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) id CAA77914
+	for ietf-itrace-list; Thu, 16 Aug 2001 02:38:45 -0400 (EDT)
+Received: from mail-blue.research.att.com (mail-blue.research.att.com [135.207.30.102])
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) with ESMTP id CAA99867
+	for <ietf-itrace@akalice.research.att.com>; Thu, 16 Aug 2001 02:38:44 -0400 (EDT)
+Received: by mail-blue.research.att.com (Postfix)
+	id 02B024CE23; Thu, 16 Aug 2001 02:38:02 -0400 (EDT)
+Delivered-To: ietf-itrace@research.att.com
+Received: from netcore.fi (netcore.fi [193.94.160.1])
+	by mail-blue.research.att.com (Postfix) with ESMTP id 1DF8B4CE21
+	for <ietf-itrace@research.att.com>; Thu, 16 Aug 2001 02:38:01 -0400 (EDT)
+Received: from localhost (pekkas@localhost)
+	by netcore.fi (8.11.1/8.11.1) with ESMTP id f7G6bJi21807;
+	Thu, 16 Aug 2001 09:37:19 +0300
+Date: Thu, 16 Aug 2001 09:37:19 +0300 (EEST)
+From: Pekka Savola <pekkas@netcore.fi>
+To: "S. Felix Wu" <wu@cs.ucdavis.edu>
+Cc: "Waters, Stephen" <Stephen.Waters@riverstonenet.com>,
+   "'ietf-itrace@research.att.com'" <ietf-itrace@research.att.com>
+Subject: Re: ICMP traceback
+In-Reply-To: <3B7A976F.95FF4D81@cs.ucdavis.edu>
+Message-ID: <Pine.LNX.4.33.0108160934450.21458-100000@netcore.fi>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+Sender: owner-ietf-itrace@research.att.com
+Precedence: bulk
+Keywords: itrace
+
+Tangential...
+
+On Wed, 15 Aug 2001, S. Felix Wu wrote:
+> There have been many schemes proposed to "detect/filter" "bad" source IP
+> addresses in the research community (e.g., UCLA and Purdue). I think
+> commercial routers allow us to do reverse-path lookup, at a cost of
+> performance though.
+
+.. and loss of legimate packets in the scenarios (e.g. failover) where
+there are asymmetric, or with some implementations perhaps even
+load-balancing routes.
+
+I think RPF is all that useful against the whole Internet only on systems
+which have full routing table BUT only one connection to Internet.  I
+think these are pretty rare by definition.
+
+-- 
+Pekka Savola                 "Tell me of difficulties surmounted,
+Netcore Oy                   not those you stumble over and fall"
+Systems. Networks. Security.  -- Robert Jordan: A Crown of Swords
+
+
+12-Jan-2001  9:55:21-GMT,3094;000000000001
+Return-Path: <owner-ietf-itrace@research.att.com>
+Received: from mail-green.research.att.com (mail-green.research.att.com [135.207.30.103])
+	by nic.cafax.se (8.12.0.Beta13/8.12.0.Beta13) with ESMTP id f7G8tKf8014104
+	for <bygg@cafax.se>; Thu, 16 Aug 2001 10:55:21 +0200 (MEST)
+Received: from akalice.research.att.com (akalice.research.att.com [135.207.26.22])
+	by mail-green.research.att.com (Postfix) with ESMTP
+	id C59A61E071; Thu, 16 Aug 2001 04:55:15 -0400 (EDT)
+Received: (from majordomo@localhost)
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) id EAA09381
+	for ietf-itrace-list; Thu, 16 Aug 2001 04:54:50 -0400 (EDT)
+Received: from mail-green.research.att.com (mail-green.research.att.com [135.207.30.103])
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) with ESMTP id EAA17796
+	for <ietf-itrace@akalice.research.att.com>; Thu, 16 Aug 2001 04:54:49 -0400 (EDT)
+Received: by mail-green.research.att.com (Postfix)
+	id 7DE071E043; Thu, 16 Aug 2001 04:54:06 -0400 (EDT)
+Delivered-To: ietf-itrace@research.att.com
+Received: from exc-sc1.yagosys.com (host3.riverstonenet.com [63.113.148.3])
+	by mail-green.research.att.com (Postfix) with ESMTP id E80DF1E013
+	for <ietf-itrace@research.att.com>; Thu, 16 Aug 2001 04:54:05 -0400 (EDT)
+Received: by exc-sc1 with Internet Mail Service (5.5.2653.19)
+	id <QZL3P2JJ>; Thu, 16 Aug 2001 01:54:39 -0700
+Message-ID: <3820E2042B6ED5118DC200D0B78EDC470F1E1E@exc-reo1>
+From: "Waters, Stephen" <Stephen.Waters@riverstonenet.com>
+To: "'Pekka Savola'" <pekkas@netcore.fi>
+Cc: "'ietf-itrace@research.att.com'" <ietf-itrace@research.att.com>
+Subject: RE: ICMP traceback
+Date: Thu, 16 Aug 2001 01:47:59 -0700
+MIME-Version: 1.0
+X-Mailer: Internet Mail Service (5.5.2653.19)
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Sender: owner-ietf-itrace@research.att.com
+Precedence: bulk
+Keywords: itrace
+
+
+ 
+> Tangential...
+> 
+> On Wed, 15 Aug 2001, S. Felix Wu wrote:
+> > There have been many schemes proposed to "detect/filter" 
+> "bad" source IP
+> > addresses in the research community (e.g., UCLA and Purdue). I think
+> > commercial routers allow us to do reverse-path lookup, at a cost of
+> > performance though.
+> 
+> .. and loss of legimate packets in the scenarios (e.g. failover) where
+> there are asymmetric, or with some implementations perhaps even
+> load-balancing routes.
+
+This would depend on the implementation of RP checking. A router could be
+configured
+to just check it and perform an configurable action (forward, forward/log,
+discard, discard/log). I was suggesting a 'forward and send new (infrequent)
+'secure' ICMP' option.
+
+> 
+> I think RPF is all that useful against the whole Internet 
+> only on systems
+> which have full routing table BUT only one connection to Internet.  I
+> think these are pretty rare by definition.
+>
+
+I'm not sure I understand your point here - could you tell it another way?
+Cheers, Steve.
+
+ 
+> -- 
+> Pekka Savola                 "Tell me of difficulties surmounted,
+> Netcore Oy                   not those you stumble over and fall"
+> Systems. Networks. Security.  -- Robert Jordan: A Crown of Swords
+> 
+
+12-Jan-2001 13:48:56-GMT,3471;000000000001
+Return-Path: <owner-ietf-itrace@research.att.com>
+Received: from mail-blue.research.att.com (H-135-207-30-102.research.att.com [135.207.30.102])
+	by nic.cafax.se (8.12.0.Beta13/8.12.0.Beta13) with ESMTP id f7GCmsf8017329
+	for <bygg@cafax.se>; Thu, 16 Aug 2001 14:48:55 +0200 (MEST)
+Received: from akalice.research.att.com (akalice.research.att.com [135.207.26.22])
+	by mail-blue.research.att.com (Postfix) with ESMTP
+	id BDBC94CE46; Thu, 16 Aug 2001 08:48:45 -0400 (EDT)
+Received: (from majordomo@localhost)
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) id IAA25271
+	for ietf-itrace-list; Thu, 16 Aug 2001 08:46:08 -0400 (EDT)
+Received: from mail-green.research.att.com (mail-green.research.att.com [135.207.30.103])
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) with ESMTP id IAA03563
+	for <ietf-itrace@akalice.research.att.com>; Thu, 16 Aug 2001 08:46:07 -0400 (EDT)
+Received: by mail-green.research.att.com (Postfix)
+	id E645B1E062; Thu, 16 Aug 2001 08:45:23 -0400 (EDT)
+Delivered-To: ietf-itrace@research.att.com
+Received: from netcore.fi (netcore.fi [193.94.160.1])
+	by mail-green.research.att.com (Postfix) with ESMTP id 33C3F1E021
+	for <ietf-itrace@research.att.com>; Thu, 16 Aug 2001 08:45:23 -0400 (EDT)
+Received: from localhost (pekkas@localhost)
+	by netcore.fi (8.11.1/8.11.1) with ESMTP id f7GCjHn23905;
+	Thu, 16 Aug 2001 15:45:18 +0300
+Date: Thu, 16 Aug 2001 15:45:17 +0300 (EEST)
+From: Pekka Savola <pekkas@netcore.fi>
+To: "Waters, Stephen" <Stephen.Waters@riverstonenet.com>
+Cc: "'ietf-itrace@research.att.com'" <ietf-itrace@research.att.com>
+Subject: RE: ICMP traceback
+In-Reply-To: <3820E2042B6ED5118DC200D0B78EDC470F1E1E@exc-reo1>
+Message-ID: <Pine.LNX.4.33.0108161533210.23420-100000@netcore.fi>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+Sender: owner-ietf-itrace@research.att.com
+Precedence: bulk
+Keywords: itrace
+
+On Thu, 16 Aug 2001, Waters, Stephen wrote:
+> > I think RPF is all that useful against the whole Internet
+> > only on systems
+> > which have full routing table BUT only one connection to Internet.  I
+> > think these are pretty rare by definition.
+> >
+> I'm not sure I understand your point here - could you tell it another way?
+
+Sure..
+
+A few scenarios (non-exhaustive, of course :):
+
+1) site border router, with default route to internet, basic routes to
+local LAN(s)
+2) ISP core router, default route(s) to the internet, with bgp/igp routes
+consisting of ISP networks providing redundancy and routing
+3.a) ISP edge router, with default route outside, only one exit point
+3.b) ISP edge router, with full internet routing table, only one exit
+point
+3.c) ISP edge router, with full internet routing table, two exit points to
+upstream for redundancy
+
+RPF check against Internet (and the local interfaces etc. can be handled
+by access lists)  in 1), 2), and 3.a) are pretty much useless because
+default route matches all.
+
+3.b) RPF check would drop spoofed, non-advertised routes, but there is no
+point in having full internet table if you could just do with default
+route instead.  This is what I meant with rare by definition.
+
+3.c) RPF check would be useful but it might work in unexpected ways under
+failover (and/or asymmetric routing)
+
+Hopefully this clarifies the point I was trying to make.
+
+-- 
+Pekka Savola                 "Tell me of difficulties surmounted,
+Netcore Oy                   not those you stumble over and fall"
+Systems. Networks. Security.  -- Robert Jordan: A Crown of Swords
+
+
+12-Jan-2001 16:26:16-GMT,3810;000000000001
+Return-Path: <owner-ietf-itrace@research.att.com>
+Received: from mail-green.research.att.com (H-135-207-30-103.research.att.com [135.207.30.103])
+	by nic.cafax.se (8.12.0.Beta13/8.12.0.Beta13) with ESMTP id f7GFQFf8018394
+	for <bygg@cafax.se>; Thu, 16 Aug 2001 17:26:16 +0200 (MEST)
+Received: from akalice.research.att.com (akalice.research.att.com [135.207.26.22])
+	by mail-green.research.att.com (Postfix) with ESMTP
+	id 6B2151E07A; Thu, 16 Aug 2001 11:26:08 -0400 (EDT)
+Received: (from majordomo@localhost)
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) id LAA29665
+	for ietf-itrace-list; Thu, 16 Aug 2001 11:25:22 -0400 (EDT)
+Received: from mail-blue.research.att.com (mail-blue.research.att.com [135.207.30.102])
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) with ESMTP id LAA27623
+	for <ietf-itrace@akalice.research.att.com>; Thu, 16 Aug 2001 11:25:21 -0400 (EDT)
+Received: by mail-blue.research.att.com (Postfix)
+	id 9505D4CE6D; Thu, 16 Aug 2001 11:24:37 -0400 (EDT)
+Delivered-To: ietf-itrace@research.att.com
+Received: from mail1.cisco.com (mail1.cisco.com [171.68.225.60])
+	by mail-blue.research.att.com (Postfix) with ESMTP id EEFB14CE3B
+	for <ietf-itrace@research.att.com>; Thu, 16 Aug 2001 11:24:36 -0400 (EDT)
+Received: from BGREENE2K2 ([64.104.78.86] (may be forged)) by mail1.cisco.com (8.8.6 (PHNE_14041)/CISCO.SERVER.1.2) with SMTP id IAA03452; Thu, 16 Aug 2001 08:23:46 -0700 (PDT)
+From: "Barry Raveendran Greene" <bgreene@cisco.com>
+To: "Pekka Savola" <pekkas@netcore.fi>, "S. Felix Wu" <wu@cs.ucdavis.edu>
+Cc: "Waters, Stephen" <Stephen.Waters@riverstonenet.com>,
+   <ietf-itrace@research.att.com>
+Subject: RE: ICMP traceback
+Date: Thu, 16 Aug 2001 08:23:42 -0700
+Message-ID: <NCBBLBFHCNNFFCBBHDEHOEENNKAA.bgreene@cisco.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook IMO, Build 9.0.2416 (9.0.2911.0)
+X-MimeOLE: Produced By Microsoft MimeOLE V5.50.4133.2400
+Importance: Normal
+In-Reply-To: <Pine.LNX.4.33.0108160934450.21458-100000@netcore.fi>
+Sender: owner-ietf-itrace@research.att.com
+Precedence: bulk
+Keywords: itrace
+
+
+Lets please keep uRPF in context. It is one tool and a deterrent. When used
+for BCP 38 filting, it works with asymmetrical routes, multihoming, and load
+balanced packets. But, it is tool built into the forwarding logic of the
+router (ASIC or software/CPU based). Punting or signaling packet drops from
+uRPF upstream is a little more difficult to do - especially if you want at
+"line speed" (which means ASIC forwarding at tomorrow's speeds).
+
+
+
+> -----Original Message-----
+> From: owner-ietf-itrace@research.att.com
+> [mailto:owner-ietf-itrace@research.att.com]On Behalf Of Pekka Savola
+> Sent: Wednesday, August 15, 2001 11:37 PM
+> To: S. Felix Wu
+> Cc: Waters, Stephen; 'ietf-itrace@research.att.com'
+> Subject: Re: ICMP traceback
+>
+>
+> Tangential...
+>
+> On Wed, 15 Aug 2001, S. Felix Wu wrote:
+> > There have been many schemes proposed to "detect/filter" "bad" source IP
+> > addresses in the research community (e.g., UCLA and Purdue). I think
+> > commercial routers allow us to do reverse-path lookup, at a cost of
+> > performance though.
+>
+> .. and loss of legimate packets in the scenarios (e.g. failover) where
+> there are asymmetric, or with some implementations perhaps even
+> load-balancing routes.
+>
+> I think RPF is all that useful against the whole Internet only on systems
+> which have full routing table BUT only one connection to Internet.  I
+> think these are pretty rare by definition.
+>
+> --
+> Pekka Savola                 "Tell me of difficulties surmounted,
+> Netcore Oy                   not those you stumble over and fall"
+> Systems. Networks. Security.  -- Robert Jordan: A Crown of Swords
+>
+>
+
+
+12-Jan-2001 19:14:05-GMT,2452;000000000001
+Return-Path: <owner-cryptography-outgoing@wasabisystems.com>
+Received: from mononoke.wasabisystems.com (mononoke.wasabisystems.com [64.52.37.20])
+	by nic.cafax.se (8.12.0.Beta13/8.12.0.Beta13) with ESMTP id f7GIE4f8019659
+	for <bygg@cafax.se>; Thu, 16 Aug 2001 20:14:04 +0200 (MEST)
+Received: by mononoke.wasabisystems.com (Postfix)
+	id A468836DEB; Thu, 16 Aug 2001 14:14:00 -0400 (EDT)
+Delivered-To: cryptography-outgoing@wasabisystems.com
+Received: by mononoke.wasabisystems.com (Postfix, from userid 96)
+	id 8CA0B36DCA; Thu, 16 Aug 2001 14:14:00 -0400 (EDT)
+Delivered-To: cryptography@wasabisystems.com
+Received: from snark.piermont.com (snark.piermont.com [166.84.151.72])
+	by mononoke.wasabisystems.com (Postfix) with ESMTP id 40E8836DB6
+	for <cryptography@wasabisystems.com>; Thu, 16 Aug 2001 14:14:00 -0400 (EDT)
+Received: by snark.piermont.com (Postfix, from userid 1000)
+	id 08A871E00B6; Thu, 16 Aug 2001 14:14:00 -0400 (EDT)
+Received: from mx.crypto.com (mx.crypto.com [207.140.168.138])
+	by mononoke.wasabisystems.com (Postfix) with ESMTP id 261D436DB6
+	for <cryptography@wasabisystems.com>; Thu, 16 Aug 2001 14:11:00 -0400 (EDT)
+Received: from fbi.crypto.com (localhost [127.0.0.1])
+	by MultiHostMXServer (8.9.3/8.9.x4) with ESMTP id OAA21854
+	for <cryptography@wasabisystems.com>; Thu, 16 Aug 2001 14:10:58 -0400 (EDT)
+Received: from fbi.crypto.com (mab@localhost)
+	by fbi.crypto.com (8.11.1/8.9.3) with ESMTP id f7GIB5A65027
+	for <cryptography@wasabisystems.com>; Thu, 16 Aug 2001 14:11:06 -0400 (EDT)
+Message-Id: <200108161811.f7GIB5A65027@fbi.crypto.com>
+X-Authentication-Warning: fbi.crypto.com: mab owned process doing -bs
+X-Mailer: exmh version 2.2 06/23/2000 with nmh-1.0
+To: cryptography@wasabisystems.com
+Subject: My declaration in Felten et al vs. RIAA et al
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Date: Thu, 16 Aug 2001 14:11:05 -0400
+From: Matt Blaze <mab@research.att.com>
+Sender: owner-cryptography@wasabisystems.com
+Precedence: bulk
+Keywords: crypto
+
+My declaration in the Felten case can be found (in plain ASCII) at
+	http://www.crypto.com/papers/mab-feltendecl.txt
+
+Note that the declaration purporting to be mine on the EFF's web site was
+*not* the one filed; it is an early draft, not the final version.
+
+-matt
+
+
+
+
+
+---------------------------------------------------------------------
+The Cryptography Mailing List
+Unsubscribe by sending "unsubscribe cryptography" to majordomo@wasabisystems.com
+
+14-Jan-2001  2:06:57-GMT,4856;000000000001
+Return-Path: <owner-ietf-itrace@research.att.com>
+Received: from mail-blue.research.att.com (H-135-207-30-102.research.att.com [135.207.30.102])
+	by nic.cafax.se (8.12.0.Beta13/8.12.0.Beta13) with ESMTP id f7H16uf8021908
+	for <bygg@cafax.se>; Fri, 17 Aug 2001 03:06:56 +0200 (MEST)
+Received: from akalice.research.att.com (akalice.research.att.com [135.207.26.22])
+	by mail-blue.research.att.com (Postfix) with ESMTP
+	id 51BD14CE77; Thu, 16 Aug 2001 21:06:43 -0400 (EDT)
+Received: (from majordomo@localhost)
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) id VAA77783
+	for ietf-itrace-list; Thu, 16 Aug 2001 21:03:03 -0400 (EDT)
+Received: from mail-green.research.att.com (mail-green.research.att.com [135.207.30.103])
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) with ESMTP id VAA81202
+	for <ietf-itrace@akalice.research.att.com>; Thu, 16 Aug 2001 21:02:57 -0400 (EDT)
+Received: by mail-green.research.att.com (Postfix)
+	id 5BCB91E061; Thu, 16 Aug 2001 21:02:12 -0400 (EDT)
+Delivered-To: ietf-itrace@research.att.com
+Received: from mail1.cisco.com (mail1.cisco.com [171.68.225.60])
+	by mail-green.research.att.com (Postfix) with ESMTP id DA69A1E043
+	for <ietf-itrace@research.att.com>; Thu, 16 Aug 2001 21:02:11 -0400 (EDT)
+Received: from BGREENE2K2 ([64.104.78.86] (may be forged)) by mail1.cisco.com (8.8.6 (PHNE_14041)/CISCO.SERVER.1.2) with SMTP id SAA18097; Thu, 16 Aug 2001 18:01:59 -0700 (PDT)
+From: "Barry Raveendran Greene" <bgreene@cisco.com>
+To: "Pekka Savola" <pekkas@netcore.fi>,
+   "Waters, Stephen" <Stephen.Waters@riverstonenet.com>
+Cc: <ietf-itrace@research.att.com>
+Subject: RE: ICMP traceback
+Date: Thu, 16 Aug 2001 18:01:59 -0700
+Message-ID: <NCBBLBFHCNNFFCBBHDEHAEIDNKAA.bgreene@cisco.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook IMO, Build 9.0.2416 (9.0.2911.0)
+X-MimeOLE: Produced By Microsoft MimeOLE V5.50.4133.2400
+Importance: Normal
+In-Reply-To: <Pine.LNX.4.33.0108161533210.23420-100000@netcore.fi>
+Sender: owner-ietf-itrace@research.att.com
+Precedence: bulk
+Keywords: itrace
+
+
+uRPF was designed for BCP 38 - for single homed and multihomed customers.
+Most of the situations below are not BCP 38. The object was how to scale BCP
+38. BCP 38 via ACLs is _not_ operationally scalable with today's deployment
+tools and skill levels in the NOCs (you need people to maintain them). When
+you talk to the ISPs and eliminate the "asymmetrical" and "multihoming"
+excuses for uRPF on the edge, you get to the core problem - BCP 38 adds
+complexity that factors into the resolution of any customer outage.
+
+Bottom line - added complexity adds to the operational cost of a network.
+Any ISP Security solution needs to be mindful that adding to the operational
+complexity (hence cost) of a network is a barrier for implementation.
+
+
+Barry
+
+
+> -----Original Message-----
+> From: owner-ietf-itrace@research.att.com
+> [mailto:owner-ietf-itrace@research.att.com]On Behalf Of Pekka Savola
+> Sent: Thursday, August 16, 2001 5:45 AM
+> To: Waters, Stephen
+> Cc: 'ietf-itrace@research.att.com'
+> Subject: RE: ICMP traceback
+>
+>
+> On Thu, 16 Aug 2001, Waters, Stephen wrote:
+> > > I think RPF is all that useful against the whole Internet
+> > > only on systems
+> > > which have full routing table BUT only one connection to Internet.  I
+> > > think these are pretty rare by definition.
+> > >
+> > I'm not sure I understand your point here - could you tell it
+> another way?
+>
+> Sure..
+>
+> A few scenarios (non-exhaustive, of course :):
+>
+> 1) site border router, with default route to internet, basic routes to
+> local LAN(s)
+> 2) ISP core router, default route(s) to the internet, with bgp/igp routes
+> consisting of ISP networks providing redundancy and routing
+> 3.a) ISP edge router, with default route outside, only one exit point
+> 3.b) ISP edge router, with full internet routing table, only one exit
+> point
+> 3.c) ISP edge router, with full internet routing table, two exit points to
+> upstream for redundancy
+>
+> RPF check against Internet (and the local interfaces etc. can be handled
+> by access lists)  in 1), 2), and 3.a) are pretty much useless because
+> default route matches all.
+>
+> 3.b) RPF check would drop spoofed, non-advertised routes, but there is no
+> point in having full internet table if you could just do with default
+> route instead.  This is what I meant with rare by definition.
+>
+> 3.c) RPF check would be useful but it might work in unexpected ways under
+> failover (and/or asymmetric routing)
+>
+> Hopefully this clarifies the point I was trying to make.
+>
+> --
+> Pekka Savola                 "Tell me of difficulties surmounted,
+> Netcore Oy                   not those you stumble over and fall"
+> Systems. Networks. Security.  -- Robert Jordan: A Crown of Swords
+>
+>
+
+
+14-Jan-2001 15:25:27-GMT,3580;000000000001
+Return-Path: <owner-ietf-itrace@research.att.com>
+Received: from mail-blue.research.att.com (mail-blue.research.att.com [135.207.30.102])
+	by nic.cafax.se (8.12.0.Beta13/8.12.0.Beta13) with ESMTP id f7HEPQf8026236
+	for <bygg@cafax.se>; Fri, 17 Aug 2001 16:25:27 +0200 (MEST)
+Received: from akalice.research.att.com (akalice.research.att.com [135.207.26.22])
+	by mail-blue.research.att.com (Postfix) with ESMTP
+	id 9682A4CEB7; Fri, 17 Aug 2001 10:25:18 -0400 (EDT)
+Received: (from majordomo@localhost)
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) id KAA51395
+	for ietf-itrace-list; Fri, 17 Aug 2001 10:20:17 -0400 (EDT)
+Received: from mail-blue.research.att.com (mail-blue.research.att.com [135.207.30.102])
+	by akalice.research.att.com (980427.SGI.8.8.8/8.8.7) with ESMTP id KAA48263
+	for <ietf-itrace@akalice.research.att.com>; Fri, 17 Aug 2001 10:20:16 -0400 (EDT)
+Received: by mail-blue.research.att.com (Postfix)
+	id A0E564CEA9; Fri, 17 Aug 2001 10:19:28 -0400 (EDT)
+Delivered-To: ietf-itrace@research.att.com
+Received: from garlic.amaranth.net (garlic.amaranth.net [216.235.243.195])
+	by mail-blue.research.att.com (Postfix) with ESMTP id 2B2E04CE6F
+	for <ietf-itrace@research.att.com>; Fri, 17 Aug 2001 10:19:28 -0400 (EDT)
+Received: from yarrow-wls.senie.com (h0040100ebb17.ne.mediaone.net [24.218.3.56])
+	(authenticated (0 bits))
+	by garlic.amaranth.net (8.11.3/8.11.3) with ESMTP id f7HEJJC09321
+	(using TLSv1/SSLv3 with cipher DES-CBC3-SHA (168 bits) verified NO)
+	for <ietf-itrace@research.att.com>; Fri, 17 Aug 2001 10:19:24 -0400
+Message-Id: <5.1.0.14.2.20010817101426.03506b80@mail.amaranth.net>
+X-Sender: dts@mail.amaranth.net
+X-Mailer: QUALCOMM Windows Eudora Version 5.1
+Date: Fri, 17 Aug 2001 10:19:19 -0400
+To: ietf-itrace@research.att.com
+From: Daniel Senie <dts@senie.com>
+Subject: RE: ICMP traceback
+In-Reply-To: <NCBBLBFHCNNFFCBBHDEHAEIDNKAA.bgreene@cisco.com>
+References: <Pine.LNX.4.33.0108161533210.23420-100000@netcore.fi>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Sender: owner-ietf-itrace@research.att.com
+Precedence: bulk
+Keywords: itrace
+
+At 09:01 PM 8/16/01, Barry Raveendran Greene wrote:
+
+>uRPF was designed for BCP 38 - for single homed and multihomed customers.
+>Most of the situations below are not BCP 38. The object was how to scale BCP
+>38. BCP 38 via ACLs is _not_ operationally scalable with today's deployment
+>tools and skill levels in the NOCs (you need people to maintain them). When
+>you talk to the ISPs and eliminate the "asymmetrical" and "multihoming"
+>excuses for uRPF on the edge, you get to the core problem - BCP 38 adds
+>complexity that factors into the resolution of any customer outage.
+>
+>Bottom line - added complexity adds to the operational cost of a network.
+>Any ISP Security solution needs to be mindful that adding to the operational
+>complexity (hence cost) of a network is a barrier for implementation.
+
+The cost of being the source of a DDoS, or having your customer me the 
+source of a DDoS doesn't factor in to this equation. It could be argued 
+that at present such costs are borne by the victim of the DDoS.
+
+I've resigned myself to the expectation that this mentality will prevail in 
+many areas until a victim successfully sues a network operator and end user 
+who fail to implement BCP 38, and thus through negligence contribute to the 
+damage to a victim.
+
+
+-----------------------------------------------------------------
+Daniel Senie                                        dts@senie.com
+Amaranth Networks Inc.                    http://www.amaranth.com
+
+
+14-Jan-2001 15:50:52-GMT,3074;000000000001
+Return-Path: <owner-iglk@nostalgi.dax.nu>
+Received: from nic.bag.org (www.bag.org [194.52.202.233])
+	by nic.cafax.se (8.12.0.Beta13/8.12.0.Beta13) with ESMTP id f7HEoqf8026480
+	for <bygg@cafax.se>; Fri, 17 Aug 2001 16:50:52 +0200 (MEST)
+Received: from localhost (daemon@localhost)
+	by nic.bag.org (8.8.8/8.8.8) with SMTP id QAA00791;
+	Fri, 17 Aug 2001 16:50:32 +0200 (CEST)
+Received: by nic.bag.org (bulk_mailer v1.11); Fri, 17 Aug 2001 16:50:32 +0200
+Received: (from daemon@localhost)
+	by nic.bag.org (8.8.8/8.8.8) id QAA00785
+	for nostalgi.dax.nu-iglk-l; Fri, 17 Aug 2001 16:50:32 +0200 (CEST)
+Received: from mailf.telia.com (mailf.telia.com [194.22.194.25])
+	by nic.bag.org (8.8.8/8.8.8) with ESMTP id QAA00767
+	for <iglk@nostalgi.dax.nu>; Fri, 17 Aug 2001 16:50:21 +0200 (CEST)
+Received: from d1o898.telia.com (d1o898.telia.com [213.66.116.241])
+	by mailf.telia.com (8.11.2/8.11.0) with ESMTP id f7HEoIY04976
+	for <iglk@nostalgi.dax.nu>; Fri, 17 Aug 2001 16:50:18 +0200 (CEST)
+Received: from [172.17.0.165] (h253n1fls32o898.telia.com [213.66.117.253])
+	by d1o898.telia.com (8.10.2/8.10.1) with ESMTP id f7HEoHG14653
+	for <iglk@nostalgi.dax.nu>; Fri, 17 Aug 2001 16:50:17 +0200 (CEST)
+Mime-Version: 1.0
+X-Sender: unicorn@brev.dax.nu
+Message-Id: <a05100301b7a2dcc4548e@[172.17.0.165]>
+Date: Fri, 17 Aug 2001 16:50:04 +0200
+To: <iglk@nostalgi.dax.nu>
+From: Vicki Schalin <unicorn@dax.nu>
+Subject: IGLK: =?iso-8859-1?Q?S=F6ndagen?= den 26/8 - =?iso-8859-1?Q?m=F6tesdax?=
+Content-Type: text/plain; charset="iso-8859-1" ; format="flowed"
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by nic.bag.org id QAA00767
+Sender: owner-iglk@nostalgi.dax.nu
+Reply-To: iglk@nostalgi.dax.nu
+Keywords: iglk
+
+Halloj Liftarvänner!
+
+I de tre stadgarna står (bl a) att möte hålls sista söndagen före 
+fullmåne. Nu råkar det vara så att just söndagen den 2/9 är det 
+fullmåne, alltså torde mötesdagen vara söndagen innan, dvs den 26/8.
+
+Själv kommer jag om några få dagar att åka på välbehövlig semester 
+österut, men jag är hemma igen på söndag förmiddag, så om någon har 
+lust att ha möte på söndag eftermiddag/kväll den 26:e i 
+Stockholmstrakten så kommer jag gärna. Däremot kan jag inte 
+organisera ihop något eftersom jag inte kommer att ha tillgång till 
+email ute i skärgården, alltså överlåter jag organiserandet till .... 
+ja, någon driftig person! Och med driftig menas vem som helst som gör 
+något...:-)
+
+Vi kan mötas på nån pub eller restaurang, vi kan ha picknick, vi kan 
+åka på utflykt, vi kan lifta (nåja, det blir väl med varandra), vi 
+kan gå på bio (jag har inte sett apornas planet), kolla på video 
+(var?), eller hundra andra saker. Eller bara slappa i nån trevlig 
+park.
+
+Hoppas vi ses!
+
+/ Vicki (inte särskilt medeltidig nuförtiden)
+-- 
+Vicki Schalin <unicorn@dax.nu>  *** Stolt Faster ***
+         >>> DNA 4VR <<<
+------------------------------------------------------------------------
+Info om IGLK-arkivet finns på http://nostalgi.dax.nu/iglk/list-info.html
+------------------------------------------------------------------------
+
+21-Jan-2001  9:24:33-GMT,1451;000000000001
+Return-Path: <paf@paf.se>
+Received: from oden.exponova.se ([195.149.178.46])
+	by nic.cafax.se (8.12.0.Beta13/8.12.0.Beta13) with SMTP id f7L8OCg3003057
+	for <inet2001-network@paf.se>; Tue, 21 Aug 2001 10:24:16 +0200 (MEST)
+Received: by ODEN with Internet Mail Service (5.5.2650.21)
+	id <PAWT9XP0>; Tue, 21 Aug 2001 08:37:35 +0200
+Message-ID: <CCA75A85D676D511A0FE0002A5871E290A9B23@ODEN>
+From: =?iso-8859-1?Q?Pia_Sandstr=F6m?= <pia.sandstrom@exponova.se>
+To: "'inet2001-network@paf.se'" <inet2001-network@paf.se>
+Subject: VB: Connecivity - INET 2001
+Date: Tue, 21 Aug 2001 08:37:34 +0200
+MIME-Version: 1.0
+X-Mailer: Internet Mail Service (5.5.2650.21)
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by nic.cafax.se id f7L8OVg3003065
+Keywords: inet2001
+
+Hi 
+Heard that Patrik is not in good shape and wonder if you guys can help
+with an financial status for INET connectivity.
+
+Thanks
+Pia
+
+> -----Ursprungligt meddelande-----
+> Från:	Pia Sandström 
+> Skickat:	den 20 augusti 2001 17:03
+> Till:	'paf@cisco.com'
+> Ämne:	Connecivity - INET 2001
+> 
+> Hi, hope you are fine.
+> can you please provide a financial status / report (incl receipts,
+> invoices etc) on the Connectivity for INET.
+> Thanks
+> Pia
+> 
+> Pia Sandström
+> Exponova Events & Exhibition
+> Eriksbergstorget 11
+> 417 64 Göteborg
+> Tel: +46 31 779 36 00 Direct: +46 31 779 36 39
+> Fax: +46 31 779 36 60
+> 
+
+21-Jan-2001  9:31:04-GMT,2221;000000000001
+Return-Path: <owner-iglk@nostalgi.dax.nu>
+Received: from nic.bag.org (www.bag.org [194.52.202.233])
+	by nic.cafax.se (8.12.0.Beta13/8.12.0.Beta13) with ESMTP id f7L8V3g3003511
+	for <bygg@cafax.se>; Tue, 21 Aug 2001 10:31:04 +0200 (MEST)
+Received: from localhost (daemon@localhost)
+	by nic.bag.org (8.8.8/8.8.8) with SMTP id JAA11807;
+	Mon, 20 Aug 2001 09:21:33 +0200 (CEST)
+Received: by nic.bag.org (bulk_mailer v1.11); Mon, 20 Aug 2001 09:21:33 +0200
+Received: (from daemon@localhost)
+	by nic.bag.org (8.8.8/8.8.8) id JAA11801
+	for nostalgi.dax.nu-iglk-l; Mon, 20 Aug 2001 09:21:33 +0200 (CEST)
+Received: from iso3.vistocorporation.com ([209.1.214.222])
+	by nic.bag.org (8.8.8/8.8.8) with ESMTP id JAA11796
+	for <iglk@nostalgi.dax.nu>; Mon, 20 Aug 2001 09:21:30 +0200 (CEST)
+Received: from mps3 (209.1.214.214) by iso3.vistocorporation.com (NPlex 4.0.058)
+        id 3B7171B2000748BE for iglk@nostalgi.dax.nu; Mon, 20 Aug 2001 00:21:24 -0700
+Message-ID: <3B7171B2000748BE@iso3.vistocorporation.com> (added by administrator@vistocorporation.com)
+From: "Eva A. Enblom" <eliann.sleepingcat@visto.com>
+Subject: Re: IGLK:Söndagenden 26/8 -mötesdax
+Date: Mon, 20 Aug 2001 00:18:01 -0700
+X-Mailer: Visto
+To: iglk@nostalgi.dax.nu
+MIME-Version: 1.0
+X-Mailer: Visto Server
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by nic.bag.org id JAA11796
+Sender: owner-iglk@nostalgi.dax.nu
+Reply-To: iglk@nostalgi.dax.nu
+Keywords: iglk
+
+
+<<Halloj Liftarvänner!
+
+I de tre stadgarna står (bl a) att möte hålls sista söndagen före 
+fullmåne. Nu råkar det vara så att just söndagen den 2/9 är det 
+fullmåne, alltså torde mötesdagen vara söndagen innan, dvs den 26/8.>>
+
+Hmm.. då är vi på väg till Dalarne. Nån gång ska man hinna med en semester oxo..
+
+EvA
+
+___________________________________________________________________________
+Visit http://www.visto.com.
+Find out  how companies are linking mobile users to the 
+enterprise with Visto.
+
+------------------------------------------------------------------------
+Info om IGLK-arkivet finns på http://nostalgi.dax.nu/iglk/list-info.html
+------------------------------------------------------------------------
+
+21-Jan-2001 11:55:22-GMT,1091;000000000001
+Return-Path: <pelle.keyser@telia.com>
+Received: from maila.telia.com (maila.telia.com [194.22.194.231])
+	by nic.cafax.se (8.12.0.Beta17/8.12.0.Beta13) with ESMTP id f7LArL8I001258
+	for <bygg@cafax.se>; Tue, 21 Aug 2001 12:55:21 +0200 (MEST)
+Received: from d1o902.telia.com (d1o902.telia.com [62.20.254.241])
+	by maila.telia.com (8.11.2/8.11.0) with ESMTP id f7L9udJ01328
+	for <bygg@cafax.se>; Tue, 21 Aug 2001 11:56:39 +0200 (CEST)
+Received: from telia.com (h205n2fls21o902.telia.com [213.65.215.205])
+	by d1o902.telia.com (8.8.8/8.8.8) with ESMTP id LAA26191
+	for <bygg@cafax.se>; Tue, 21 Aug 2001 11:56:37 +0200 (CEST)
+Sender: pelle@d1o902.telia.com
+Message-ID: <3B822EEA.3A2701AD@telia.com>
+Date: Tue, 21 Aug 2001 11:50:34 +0200
+From: Pelle K <pelle.keyser@telia.com>
+X-Mailer: Mozilla 4.72 [en] (X11; I; FreeBSD 4.0-RELEASE i386)
+X-Accept-Language: en
+MIME-Version: 1.0
+To: bygg@cafax.se
+Subject: virginia
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+
+ Jag har äntligen äntligen hittat
+ halfway up virginia!
+ Bara så du vet  :)
+ Tack för tipset.
+ 
+ // /
+
+21-Jan-2001 13:43:39-GMT,1802;000000000001
+Return-Path: <paf@paf.se>
+Received: from naptop.autonomica.se (flaptop.liman.sunet.se [193.10.90.102])
+	by nic.cafax.se (8.12.0.Beta17/8.12.0.Beta13) with ESMTP id f7LChb8I004129
+	for <inet2001-network@paf.se>; Tue, 21 Aug 2001 14:43:37 +0200 (MEST)
+Received: from localhost (localhost [127.0.0.1])
+	by naptop.autonomica.se (8.12.0.Beta1/8.12.0.Beta1) with ESMTP id f7LChmHA001066;
+	Tue, 21 Aug 2001 14:43:49 +0200 (MEST)
+Date: Tue, 21 Aug 2001 14:43:48 +0200 (MEST)
+Message-Id: <20010821.144348.65657859.liman@autonomica.se>
+To: pia.sandstrom@exponova.se
+Cc: inet2001-network@paf.se
+Subject: Re: Connecivity - INET 2001
+From: Lars-Johan Liman <liman@autonomica.se>
+In-Reply-To: <CCA75A85D676D511A0FE0002A5871E290A9B23@ODEN>
+References: <CCA75A85D676D511A0FE0002A5871E290A9B23@ODEN>
+X-Mailer: Mew version 2.0 on Emacs 20.7 / Mule 4.0 (HANANOEN)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by nic.cafax.se id f7LChd8I004130
+Keywords: inet2001
+
+pia.sandstrom@exponova.se:
+> Hi 
+> Heard that Patrik is not in good shape and wonder if you guys can help
+> with an financial status for INET connectivity.
+
+Patrik is temporarily out of shape due to food poisoning, but is
+recovering well, and is likely to reply to e-mail within a few days.
+
+The only one, beside Patrik, who has any economic overview to my
+knowledge, is Peter Nöu. Let's see if he responds to this.
+
+				Cheers,
+				  /Liman
+#----------------------------------------------------------------------
+# Lars-Johan Liman		! E-mail: liman@autonomica.se
+# Senior Systems Specialist     ! HTTP  : //www.autonomica.se/
+# Autonomica AB, Stockholm 	! Voice : +46 8 - 615 85 72
+#----------------------------------------------------------------------
+
+21-Jan-2001 14:22:44-GMT,2372;000000000001
+Return-Path: <paf@paf.se>
+Received: from cisco.com (nordic.cisco.com [64.103.48.45])
+	by nic.cafax.se (8.12.0.Beta17/8.12.0.Beta13) with ESMTP id f7LDMf8I004812
+	for <inet2001-network@paf.se>; Tue, 21 Aug 2001 15:22:41 +0200 (MEST)
+Received: from [192.168.1.14] (ssh-ams1.cisco.com [144.254.74.55])
+	by cisco.com (8.8.8+Sun/8.8.8) with ESMTP id PAA25495;
+	Tue, 21 Aug 2001 15:22:35 +0200 (MET DST)
+Date: Tue, 21 Aug 2001 15:18:40 +0200
+From: =?ISO-8859-1?Q?Patrik_F=E4ltstr=F6m?= <paf@cisco.com>
+To: Lars-Johan Liman <liman@autonomica.se>, pia.sandstrom@exponova.se,
+   Richard Perlman <perl@lucent.com>
+cc: inet2001-network@paf.se
+Subject: Re: Connecivity - INET 2001
+Message-ID: <72284.998407120@localhost>
+In-Reply-To: <20010821.144348.65657859.liman@autonomica.se>
+References: <CCA75A85D676D511A0FE0002A5871E290A9B23@ODEN>
+ <20010821.144348.65657859.liman@autonomica.se>
+X-Mailer: Mulberry/2.1.0b3 (Mac OS X)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disp

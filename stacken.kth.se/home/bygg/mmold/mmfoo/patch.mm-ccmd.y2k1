@@ -1,0 +1,107 @@
+Date: Mon Jan  8 11:18:45 2001
+From: Melissa Metz <melissa@columbia.edu>
+
+Here is the 2001 patch for MM and CCMD, to stop the dates of messages
+from creeping back to 31-Dec-2000.  You need to recompile ccmd and
+then recompile mm based on that.  You can test the date code with the
+test program in the ccmd directory:
+
+  Test> date 1-jan-2001
+  to time & back: Mon Jan  1 00:00:01 2001
+  Test> date 1-jan-2002
+  to time & back: Tue Jan  1 00:00:01 2002
+  Test> date 1-jan-2003
+  to time & back: Wed Jan  1 00:00:01 2003
+  Test> date 1-jan-2004
+  to time & back: Thu Jan  1 00:00:01 2004
+  Test> date 1-jan-2005
+  to time & back: Sat Jan  1 00:00:01 2005
+
+Make sure the time&back version still shows Jan 1.
+
+To fix the dates on an affected mail file, copy them into babyl format
+and back.  For mtxt format files, e.g. ~/mail.txt:
+
+  MM> move /babyl ~/mail.babyl all
+  MM> expunge
+  MM> get ~/mail.babyl
+  MM> move /mtxt ~/mail.txt all
+  MM> expunge
+  MM> get ~/mail.txt
+
+For mbox files, e.g. ~/mbox:
+
+  MM> move /babyl ~/mail.babyl all
+  MM> expunge
+  MM> get ~/mail.babyl
+  MM> move /mbox ~/mbox all
+  MM> expunge
+  MM> get ~/mbox
+
+					Melissa Metz
+					Unix Systems Group
+
+*** cmmisc.c	1990/11/13 16:50:29	1.22
+--- cmmisc.c	2001/01/05 16:55:18
+***************
+*** 270,283 ****
+  long
+  datime_to_time(dt) datime *dt; {
+    long t;
+!   int i;
+    static int months[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+    int isaleap;
+  
+!   t = dt->_dtyr - 2000;			/* num years */
+!   isaleap = ((!(t%4) && t%100) || !(t%400));
+!   t = t/4 + t*365 - t/100 + t/400;	/* num days */
+!   t += 30*365 + 30/4;			/* subtract num of days in 1900-1970 */
+    for ( i = 0; i < dt->_dtmon; i++)
+      t += months[i];
+    t += dt->_dtday;
+--- 270,288 ----
+  long
+  datime_to_time(dt) datime *dt; {
+    long t;
+!   int i,y;
+    static int months[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+    int isaleap;
+  
+!   y = dt->_dtyr - 2000;			/* num years */
+!   isaleap = ((!(y%4) && y%100) || !(y%400));
+!   t = 30*365 + 30/4;			/* start w/num of days in 1970-1999 */
+!   t += y*365;				/* add/subtr num days since/til 2000 */
+!   if (y>0) {				/* count leap day in 2000 */
+!     y+=3;				/* weird round-off stuff */
+!   }
+!   t += y/4 - y/100 + y/400;		/* add/subtr leap days since/til 2000*/
+! 
+    for ( i = 0; i < dt->_dtmon; i++)
+      t += months[i];
+    t += dt->_dtday;
+
+
+*** test.c	1990/11/13 16:51:20	1.27
+--- test.c	2001/01/05 16:02:31
+***************
+*** 672,677 ****
+--- 672,678 ----
+    int tz;
+    tzinf *tzi,*dttzinf();
+    char *tzname,tzsign;
++   long t;
+  
+    if (helpflg) {
+      cmxprintf("parse a%s%s%s\n", !(flags&DTP_NTI) ? " time" : "",
+***************
+*** 707,712 ****
+--- 708,715 ----
+      else
+        cmxprintf("%s\n",dtblk._dtdst==0?tzi->_tznam:tzi->_tzdnm);
+    }
++   t = datime_to_time(dt);
++   cmxprintf("to time & back: %s\n", ctime(&t));
+  }
+      
+  /*
+

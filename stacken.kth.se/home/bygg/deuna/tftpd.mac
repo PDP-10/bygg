@@ -1,0 +1,364 @@
+title	tftpd -- simple tftp daemon.
+search	jobdat, uuosym, macten
+
+search	udpsym
+opdef udp.[call[sixbit 'udp.']]
+
+.text	"/symseg:low/locals"
+
+define bug.(msg),<
+	jrst[	outstr[ asciz 'msg']
+		outstr[ byte (7) 15, 12, 0]
+		monrt.
+		exit]
+>
+
+define errmsg(code, text),<
+	..len==0
+	irpc text,<..len==..len+1>
+	move	t1,[byte (16) 5,code]
+	movem	t1,buffer
+	movei	t1,..len+1
+	move	t2,[point 7,[asciz "text"]]
+	movei	t4,..len+1
+	move	t5,[point 8,buffer+1]
+	extend	t1,[movslj]
+	 jfcl
+	movei	t1,..len+5
+	movem	t1,argblk+.udcnt
+	movei	t1,buffer
+	movem	t1,argblk+.udbuf
+	movei	t1,.udwri
+	movem	t1,argblk+.udfnc
+	movei	t1,argblk
+	udp.	t1,
+	 jfcl
+	popj	p,
+>
+
+udp==1				;I/O channel for UDP:
+dsk==2				;(temp) I/O channel for disk files.
+
+t1==1
+t2==2
+t3==3
+t4==4
+t5==5
+t6==6
+
+p==17
+
+pdl:	block	<pdllen==^D100>
+
+argblk:	block	.udlen
+
+	buflen==<^D512 + ^D4>
+
+buffer:	block	<buflen + 3> / 4
+
+dskibh:	block	3
+
+vector:!
+vecudp:	exp	udpint, 0, 0, 0
+vecdsk: exp	dskint, 0, 0, 0
+vectmr:	exp	tmrint, 0, 0, 0
+
+udpflg:	exp	0		;Interrupt flag for UPD:
+tmrflg:	exp	0		;Interrupt flag for timer.
+dskflg:	exp	0		;(temp) Interrupt flag for DSK:
+
+slploc:	block	1		;Holds <sleep t1,> or <jfcl>.
+
+seq:	block	1		;Sequence number of output data.
+
+file:	exp	6, path		;Lookup block.
+zbeg==.
+f.nam:	block	1		;Parsed file name.
+f.ext:	block	1		;Parsed extension.
+	block	1		;Junk.
+f.siz:	block	1		;Size, from lookup.
+
+f.dev:	block	1		;Parsed device.
+path:!	block	2		;Couple of words.
+f.ppn:	block	1		;Parsed PPN.
+f.pth:	block	6		;Parsed list of SFD's.
+zend==.-1
+
+tftpd:	jfcl
+	reset
+	move	p,[
+		iowd pdllen, pdl]
+	movei	t1,vector
+	piini.	t1,
+	 bug.	"Can't init PSI system."
+	movx	t1,ps.fon
+	pisys.	t1,
+	 bug.	"Can't turn PSI system on."
+	open	udp,[
+		exp	.iobyt+uu.aio
+		sixbit	"udp"
+		xwd	0,0]
+	 bug.	"Can't open UDP:"
+	move	t1,[
+		ps.fac+[exp	udp
+			xwd	<vecudp-vector>,ps.rid
+			xwd	0,0]]
+	pisys.	t1,
+	 bug.	"Can't add UDP: to PSI system."
+
+	movei	t1,.udset
+	movem	t1,argblk+.udfnc;Function code.
+	movei	t1,udp
+	movem	t1,argblk+.uddev;Channel.
+	setzm	argblk+.udlad	;Unspecified local address.
+	movei	t1,^D69		;TFTP port number.
+	movem	t1,argblk+.udlpr
+	setom	argblk+.udrad	;ARGH, this is a bug.
+	setom	argblk+.udrpr	;ARGH, this is a bug.
+	movei	t1,argblk
+	udp.	t1,
+	 bug.	"Can't set parameters for UDP:"
+
+loop:	movx	t1,<sleep t1,>
+	movem	t1,slploc
+	skipe	udpflg		;Any UDP: activity?
+	 pushj	p,udphnd	; Maybe, handle it.
+	skipe	tmrflg		;Timer tick?
+	 pushj	p,tmrhnd	; Yes, handle it.
+	skipe	dskflg		;Any disk activity?
+	 pushj	p,dskhnd	; Think so, handle it.
+	movei	t1,^D60		;One minute.
+	xct	slploc		;Execute the sleep.
+	jrst	loop		;Back to work.
+
+udphnd:	setzm	udpflg		;Clear interrupt flag.
+udph.2:	movei	t1,.udrea
+	movem	t1,argblk+.udfnc
+	movei	t1,udp
+	movem	t1,argblk+.uddev
+	movei	t1,buffer
+	movem	t1,argblk+.udbuf
+	movei	t1,buflen
+	movem	t1,argblk+.udcnt
+	movei	t1,argblk
+	udp.	t1,		;Try to read next datagram.
+	 popj	p,
+	movei	t1,.udset	;Since we most certainly want to talk to -
+	movem	t1,argblk+.udfnc; this guy again, -
+	movei	t1,argblk	; set him up as remote.
+	udp.	t1,
+	 bug.	"Can't set remote address/port."
+	pushj	p,prdata	;(temp) print stats from datagram.
+	ldb	t1,[point 16,buffer, 15]
+	caile	t1,5
+	 movei	t1,0
+	pushj	p,@[
+		exp op.ill, op.rrq, op.wrq, op.data, op.ack, op.err](t1)
+	jrst	udph.2		;Loop for more.
+
+op.ill:
+op.wrq:
+op.dat:
+op.err:	popj	p,
+
+tmrhnd:	setzm	tmrflg		;Clear request flag.
+
+	; Handle timing here.
+
+	popj	p,		;Done.
+
+dskhnd:	setzm	dskflg		;Clear request flag.
+
+	; Try to do disk i/o here.
+
+	popj	p,		;Done.
+
+udpint:	setom	udpflg
+	jrst	dismis
+
+tmrint:	setom	tmrflg
+	jrst	dismis
+
+dskint:	;Find process that owns interrupting channel.
+	setom	dskflg
+dismis:	movem	t1,slploc
+	movx	t1,<jfcl>
+	exch	t1,slploc
+	debrk.
+	 jfcl
+	popj	p,
+
+prdec:	idivi	t1,^D10
+	push	p,t2
+	skipe	t1
+	 pushj	p,prdec
+	pop	p,t2
+	addi	t2,"0"
+	outchr	t2
+	popj	p,
+
+pripa:	push	p,t1
+	ldb	t1,[point 8,(p),7]
+	pushj	p,prdec
+	pushj	p,prper
+	ldb	t1,[point 8,(p),15]
+	pushj	p,prdec
+	pushj	p,prper
+	ldb	t1,[point 8,(p),23]
+	pushj	p,prdec
+	pushj	p,prper
+	ldb	t1,[point 8,(p),31]
+	pushj	p,prdec
+	pop	p,(p)
+	popj	p,
+
+pcrlf:	outstr[	byte (7) 15, 12, 0]
+	popj	p,
+
+prper:	outchr[	exp "."]
+	popj	p,
+
+prdata:	outstr[	asciz "Datagram ("]
+	move	t1,argblk+.udcnt
+	pushj	p,prdec
+	outstr[	asciz " bytes) from "]
+	move	t1,argblk+.udrad
+	pushj	p,pripa
+	outstr[ asciz " port "]
+	move	t1,argblk+.udrpr
+	pushj	p,prdec
+	pushj	p,pcrlf
+	outstr[	asciz "TFTP opcode = "]
+	ldb	t1,[point 16,buffer, 15]
+	pushj	p,prdec
+	pushj	p,pcrlf	
+	popj	p,
+
+op.ack:	skipg	f.siz		;More to send?
+	 popj	p,		; No, rejoin loop, accept more queries.
+
+ack.2:	jrst	snddat		;Yes, go fill next buffer.
+
+nxtbyt:	sosge	f.siz		;Any more?
+	 popj	p,		; We don't think so.
+nxt.2:	sosge	dskibh+.bfctr
+	 jrst[	in dsk,
+		 jrst	nxt.2
+		popj	p,]
+	ildb	t1,dskibh+.bfptr
+	aos	(p)
+	popj	p,
+
+op.rrq:	move	t4,[point 8, buffer, 15]
+	outstr[	asciz "filename = "]
+rrq.2:	ildb	t1,t4
+	jumpe	t1,rrq.3
+	outchr	t1
+	jrst	rrq.2
+
+rrq.3:	outstr[	asciz ", mode = "]
+rrq.4:	ildb	t1,t4
+	jumpe	t1,rrq.5
+	outchr	t1
+	jrst	rrq.4
+
+rrq.5:	pushj	p,pcrlf
+	move	t4,[point 8, buffer, 15]
+	pushj	p,filprs
+	movx	t1,.ioasc
+	move	t2,f.dev
+	movx	t3,<0,,dskibh>
+	open	dsk,t1
+	 jrst[	errmsg(1, <Can't open device>)
+		popj	p,]
+	lookup	dsk,file
+	 jrst[	errmsg(1, <Can't lookup file>)
+		popj	p,]
+	movei	t1,5
+	imulm	t1,f.siz	;Size is in bytes now.
+	setzm	seq		;Init sequence number.
+
+snddat:	movei	t1,3		;Opcode 3 = data.
+	dpb	t1,[point 16, buffer, 15]
+	aos	t1,seq		;Next seqence number.
+	dpb	t1,[point 16, buffer, 31]
+	movei	t3,0		;Byte count, 0 so far.
+	move	t4,[point 8, buffer+1]
+snd.2:	caige	t3,^D512	;Filled a buffer?
+	 pushj	p,nxtbyt	; No, get next byte.
+	  jrst	snd.9		;  Full or no more, quit now.
+	idpb	t1,t4		;Store in buffer.
+	aoja	t3,snd.2	;Count and loop.
+
+snd.9:	addi	t3,4		;Include TFTP header size.
+	movem	t3,argblk+.udcnt
+	movei	t1,buffer
+	movem	t1,argblk+.udbuf
+	movei	1,.udwri
+	movem	1,argblk+.udfnc
+	movei	1,argblk
+	udp.	1,
+	 halt
+	popj	p,
+
+; t1/ char.
+; t2/ state.
+; t3/ scratch.
+; t4/ input pointer.
+; t5/ number.
+; t6/ word.
+
+filprs:	move	t1,[zbeg,,zbeg+1]
+	setzb	t2,zbeg
+	blt	t1,zend
+	movsi	t3,-6
+	movx	t1,<sixbit 'dsk'>
+	movem	t1,f.dev
+fillup:	pushj	p,atom
+	cain	t1,":"
+	 movei	t2,4
+	xct[	skipe	f.nam
+		hllzm	t6,f.ext
+		hrlm	t5,f.ppn
+		aobjn	t3,[
+			xct[	hrrm	t5,f.ppn
+				movem	t6,f.pth
+				movem	t6,f.pth+1
+				movem	t6,f.pth+2
+				movem	t6,f.pth+3
+				movem	t6,f.pth+4]-1(t3)
+			jrst	.+1]
+		movem	t6,f.dev](t2)
+	 tdza	t2,t2
+	  movem	t6,f.nam
+	cain	t1,"."
+	 aoja	t2,fillup
+	caie	t1,"<"
+	 cain	t1,"["
+	  movei	t2,2
+	cain	t1,","
+	 movei	t2,3
+	jumpn	t1,fillup
+	popj	p,
+
+atom:	setzb	t5,t6
+	push	p,[point 6,t6]
+atom.2:	ildb	t1,t4
+	cail	t1,141
+	 trz	t1,40
+	caig	t1,"Z"
+	 caige	t1,"A"
+	caig	t1,"9"
+	 caige	t1,"0"
+	  jrst	atom.4
+	lsh	t5,3
+	tro	t5,-"0"(t1)
+	trc	t1,40
+	trnn	t6,77
+	 idpb	t1,(p)
+	jrst	atom.2
+
+atom.4:	pop	p,(p)
+	popj	p,
+
+end	tftpd

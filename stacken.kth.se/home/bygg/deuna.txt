@@ -1,0 +1,30 @@
+First, there is a new version of backwr.  This new version supports input
+files in ANSI-ASCII, with or without newline -> CRLF conversion, and also
+files in CORE-DUMP format.  This last format may solve the problem people
+have had with transferring binary files.
+
+See ftp://ftp.stacken.kth.se/pub/pdp10/backwr/
+
+I have also made a slight modification to simh:
+
+This implements, for the PDP10, a DEUNA (ethernet) card on the unibus.
+The mod consists of the following files:
+
+pdp10_deuna.c   - interface to the pdp10 emulator.
+dec_deuna.c     - the actual card emulating code.
+eth_dummy.c     - ethernet backend, as in /dev/null.
+eth_bpf.c       - ethernet backend that talks bpf.
+
+See ftp://ftp.stacken.kth.se/pub/pdp10/simh-deuna/
+
+I would right now label this code as early beta, but is has transferred
+packets with some success, as in "the pdp10 has answerd arp queries".
+
+There are many things still missing from the deuna code.
+
+It should be an easy task to write pdp11_deuna.c, anyone interested?
+
+The IP stack for Tops-10 is not yet in such a shape that I would label
+it fit for human consumption.
+
+--Johnny

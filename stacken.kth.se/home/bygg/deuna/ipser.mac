@@ -1,0 +1,293 @@
+title	ipser -- IP4 handling, datagram reassembly, and ICMP.
+
+search	f, s
+search	ip4sym
+
+ipser::	entry ipser
+
+	$reloc
+	$low
+
+nxtid:	exp	0		;Next IP id to use.
+
+	$high
+
+;*
+;* IPv4 header format.
+;*
+
+repeat 0,<
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |Version|  IHL  |Type of Service|          Total Length         |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |         Identification        |Flags|      Fragment Offset    |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  Time to Live |    Protocol   |         Header Checksum       |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                       Source Address                          |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                    Destination Address                        |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                    Options                    |    Padding    |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+	defstr ih.vrs, 0,  0,  4
+	defstr ih.ihl, 0,  4,  4
+	defstr ih.tos, 0,  8,  8
+	defstr ih.len, 0, 16, 16
+	defstr ih.id,  1,  0, 16
+	defstr ih.df,  1, 17,  1
+	defstr ih.mf,  1, 18,  1
+	defstr ih.fo,  1, 19, 13
+	defstr ih.frg, 1, 18, 18	;MF flag + offset * 16.
+	defstr ih.ttl, 2,  0,  8
+	defstr ih.pro, 2,  8,  8
+	defstr ih.csm, 2, 16, 16
+	defstr ih.sa,  3,  0, 36	;Source, left justified FW.
+	defstr ih.da,  4,  0, 36	;Destination, left justified FW.
+>;end repeat 0
+
+repeat 0,<
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |     Type      |     Code      |          Checksum             |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                       type specific data                      |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                       type specific data                      |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                       type specific data                      |       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+>;end repeat 0
+
+    defstr ic.typ, 0,  0,  8
+    defstr ic.cod, 0,  8,  8
+    defstr ic.csm, 0, 16, 16
+
+define protocols,<
+	x 1,  icmpin
+	x 6,  tcpin##
+	x 17, udpin##
+>;protocols
+
+define x(prot, handler),<dec prot>
+pronum:	protocols
+procnt==.-pronum
+
+define x(prot, handler),<exp handler>
+prodsp:	protocols
+
+; Here to do final fixup of an outgoing packet.
+
+ipout::	move	t1,ift.me##	;Get pointer to "self" interface.
+	move	t1,if.num(t1)	;Get index of interface.
+	movem	t1,pd.ifn(p1)	;Set up in descriptor.
+
+	movei	t1,^D255	;Set up max. TTL.
+	stor.	t1,ih.ttl,(p2)
+
+	movei	p4,0		;Initial checksum.
+	stor.	p4,ih.csm,(p2)	;Zero out old checksum, just in case.
+	movei	t1,^D20		;IP header length.
+	movei	t2,(p2)		;IP header address.
+	pushj	p,csmbts##	;Checksum the header.
+	pushj	p,csmdon##	;Done checksumming.
+	stor.	p4,ih.csm,(p2)	;Store updated checksum.
+
+	jrst	iprout##	;Send packet on it's merry way.
+
+; Here with a datagram for the local IP stack.
+;   P1/  descriptor pointer.
+;   P2/  IP header.
+
+ipin::	load.	t1,ih.vrs,(p2)	;Get IP version number.
+	caie	t1,4		;IP version 4?
+	 jrst	givpd##		; No.
+	load.	t1,ih.frg,(p2)	;Get fragment info.
+	jumpn	t1,reass	;Fragmented?  Go reassemble.
+
+	;* XXX Parse and handle options. (?)
+
+ipin.1:	load.	t1,ih.ihl,(p2)	;Get header length in 32-bit words.
+	move	p3,t1		;Get a copy, -
+	add	p3,p2		; and make a pointer to next level data.
+	load.   t1,ih.pro,(p2)	;Get protocol type.
+	movsi	t2,-procnt	;Get number of known protocols.
+ipin.2:	camn	t1,pronum(t2)	;Is this our protocol?
+	 jrst	@prodsp(t2)	; Yes, dispatch.
+	aobjn	t2,ipin.2	;No, maybe loop.
+
+;* here we have an unknown protocol.  Send ICMP.
+
+	movei	t1,3		;Destination unreachable, -
+	movei	t2,2		; "protocol unreachable".
+	jrst	icmp.e		;Go generate icmp error.
+
+; Here when we have a fragment. Try to reassemble something. If success-
+; ful, go to ipin:: again with full datagram.
+
+reass:	jrst	givpd##		;Right now, super-simple algorithm.
+
+; Here with an ICMP datagram for us.  Handle ICMP echo, and nothing else.
+; When we come here:
+;   p1/  descriptor pointer.
+;   p2/  IP header.
+;   p3/  ICMP header.
+
+icmpin:
+	;* Verify ICMP checksum.
+
+	;* Send copies of this to all interested jobs.
+
+	;* The dispatch below should handle more types.
+
+	load.	t1,ic.typ,(p3)	;Get ICMP type.
+	caie	t1,^D8		;Is this ICMP echo?
+	 jrst	givpd##		; No, sorry.
+	pushj	p,swpipa##	;Yes, swap source with destination.
+	movei	t1,0
+	stor.	t1,ic.typ,(p3)	;Change ICMP type to "echo reply".
+	load.	t1,ic.csm,(p3)	;Get checksum.
+	addi	t1,^D8*^D256	;Increment lh byte by eight.
+	caile	t1,177777	;Check for overflow.
+	 subi	t1,177777	; Don't overflow.
+	stor.	t1,ic.csm,(p3)	;Restore updated checksum.
+	jrst	ipout		;Send packet.
+
+; Here to generate ICMP in response to a datagram.  Calling sequence:
+;
+; p1/ pointer to packet descriptor.
+; t1/ ICMP type.
+; t2/ ICMP code.
+
+icmp.e::
+
+	;* Check for situations where we are not to send ICMP errors:
+	;*  - In response to an ICMP error message.
+	;*  - In response to an IP broadcast/multicast addr.
+	;*  - In response to a link-level broadcast.
+	;*  - In response to a non-initial fragment.
+	;*  - In response to a datagram from a:
+	;*    - zero address.
+	;*    - loopback address.
+	;*    - broadcast/multicast address.
+	;*    - Class E address.
+
+;*	move	p2,p1		;Keep a pointer to the old datagram.
+
+	;* compute size of outgoing datagram:
+	;*   new internet header (20 byte) +
+	;*   ICMP header (8 bytes) +
+	;*   old header + options (20 + n bytes) +
+	;*   beginning of next header, if any (8 bytes).
+
+	load.	t1,ih.ihl,(p2)	;Get header length of offender, -
+	lsh	t1,2		; times 4, -
+	addi	t1,^D8		; plus eight bytes of next layer.
+	camge	t1,pd.len(p1)	;Do we have that many bytes?
+	 move	t1,pd.len(p1)	; No, make do with what we have.
+	addi	t1,^D8		;Include space for an ICMP header.
+	pushj	p,makipd	;Make an IP packet descriptor.
+	 jrst	ice.99		; Can't, just toss the old one.
+
+	;* fill in ICMP header and copy selected parts of original
+	;* datagram.  Send it out.
+
+ice.99:	move	p1,p2		;Get pointer to original packet.
+	jrst	givpd##		;Toss it, and return.
+
+;* Here to start constructing a new IP packet. Call with length in t1.
+;*
+;* Skip returns packet descriptor in p1 and data pointer in p2 if successful.
+;* Returns (non-skip) zero in p1 if not.
+
+makipd::movei	t2,^D20		;Header length, no options.
+	addi	t1,(t2)		;Make total length.
+	push	p,t1		;Save total length.
+	push	p,t2		;Save header length.
+	pushj	p,getpd##	;Get a new packet descriptor.
+	 jrst	ttpopj##	; No? Restore T1/T2 and return.
+	move	p2,pd.ptr(p1)	;P1 = packet descr, P2 = data.
+	pop	p,t2		;Restore header length.
+	pop	p,t1		;Restore length.
+	stor.	t1,ih.len,(p2)	;Store total length, while we have it.
+	movei	t1,4		;IP version number.
+	stor.	t1,ih.vrs,(p2)
+	movei	p3,3(t2)	;Compute number of header words.
+	lsh	p3,-2
+	stor.	p3,ih.ihl,(p2)
+	add	p3,p2		;Make a pointer to next level data.
+	aos	t1,nxtid	;Next free ID number.
+	stor.	t1,ih.id, (p2)
+	movei	t1,0		;Zero some data:
+	stor.	t1,ih.frg,(p2)	;  - fragment offset & bits.
+	stor.	t1,ih.tos,(p2)	;  - TOS field.
+;;;	stor.	t1,ih.csm,(p2)	;  - Checksum.
+;;;	stor.	t1,ih.pro,(p2)	;  - Protocol.
+
+	jrst	cpopj1##	;Skip return.
+
+repeat 0,<
+
+	Summary of Message Types
+
+	    0  Echo Reply
+
+	    3  Destination Unreachable, Code:
+
+		  0 = net unreachable;
+
+		  1 = host unreachable;
+
+		  2 = protocol unreachable;
+
+		  3 = port unreachable;
+
+		  4 = fragmentation needed and DF set;
+
+		  5 = source route failed.
+
+	    4  Source Quench
+
+	    5  Redirect
+
+	    8  Echo
+
+	   11  Time Exceeded
+
+	   12  Parameter Problem
+
+	   13  Timestamp
+
+	   14  Timestamp Reply
+
+	   15  Information Request
+
+	   16  Information Reply
+
+>;end repeat 0
+
+repeat 0,<
+
+ICMP pseudo header: None.
+
+TCP pseudo header:
+
+                     +--------+--------+--------+--------+
+                     |           Source Address          |
+                     +--------+--------+--------+--------+
+                     |         Destination Address       |
+                     +--------+--------+--------+--------+
+                     |  zero  |  PTCL  |    TCP Length   |
+                     +--------+--------+--------+--------+
+
+>;end repeat 0
+
+end

@@ -1,0 +1,1192 @@
+TITLE	UTRACE -- Trace UUO usage for a program.
+SUBTTL	Symbols and such junk.
+SEARCH	JOBDAT,UUOSYM,MACTEN
+;
+; Copyright (C) 1983 by Johnny Eriksson.
+;
+SALL
+
+; Registers:
+
+F==0				;Flags.
+T1==1				;Temporary register.
+T2==2				;  .  .  .
+T3==3				;  .  .  .
+T4==4				;  .  .  .
+C==5				;Character AC.
+E==6				;Eff. addr, used by GETWDU and PUTWDU.
+
+; Register 7 is free.
+
+ER==10				;Error code to return to user.
+OP==11				;Opcode of UUO.
+AC==12				;AC field of UUO.
+EA==13				;Eff. address of UUO.
+CL==14				;Class of current UUO.
+PC==15				;User PC at trap.
+IB==16				;Interrupt base register.
+P==17				;Stack pointer.
+
+; Flags in register F:
+
+F.PRNT==1B0			;If this is off, don't print anything.
+F.NSKP==1B1			;Don't print any <SKIP>/<> info after UUO.
+F.CALL==1B2			;Current UUO is a CALL.
+F.CALI==1B3			;Current UUO is a CALLI.
+F.TTCL==1B4			;Current UUO is a TTCALL.
+F.PHYO==1B5			;Current CALLI has UU.PHY set.
+F.PINI==1B6			;User has done PIINI.
+F.PION==1B7			;Users PI system is on.
+F.FORC==1B8			;Force terminal buffer before XCT'ing UUO.
+SUBTTL  Start of program
+
+.PSECT	UTRACE,720K
+
+UTRACE:	SKIPE	INITF		;Already initialized?
+	 JRST	DIALOG		; Yes, go enter a silly user dialog.
+	SETOM	INITF		;No, but we are soon...
+	JSR	SAVCTX		;Save user context.
+	MOVE	T1,.JBSA	;Get the original start address.
+	HRRZM	T1,PRGSTA	;Save for our own purpouse.
+	ADDI	T1,1		;Bump one for CCL handling.
+	HRRZM	T1,PRGCCL	;Save this one too.
+	MOVEI	T1,USTART	;Load our start address.
+	HRRM	T1,.JBSA	;Fix up .JBSA to go thru us.
+	MOVE	T1,.JBREN	;Get the original reenter address.
+	HRRZM	T1,PRGREE	;Save for our own purpouses.
+	MOVEI	T1,UREENT	;Load our reenter address.
+	HRRM	T1,.JBREN	;Fix up .JBREN to go thru us.
+	MOVE	T1,.JBDDT	;Get a copy of .JBDDT.
+	HRRZM	T1,DDTSTA	;Save DDT start address.
+	HLRZM	T1,DDTEND	;Save DDT end address.
+	HRRI	T1,UTRACE	;Get our start address.
+	HRLI	T1,TRCEND	;Get our final address.
+	SETDDT	T1,		;Set ourselves as DDT.
+	JSR	RESCTX		;Restore user context.
+	OUTSTR[	ASCIZ	/
+UTRACE initialized.
+/]
+	MONRT.			;Init done now, use regual start command.
+
+; If he types CONTINUE, fall into dialog.
+
+DIALOG:	JSR	SAVCTX		;Save user context.
+	MOVE	P,[		;Set up the stack pointer.
+		IOWD	PDLLEN,PDL]
+	PUSHJ	P,VIDEOI	;Go init the video handler.
+NXTCMD:	SETZM	TAHCNT		;Forget all type-ahead.
+REPARS:	SKIPN	EOLPTR		;Can we do erase to end of line?
+	 JRST[	OUTSTR	CRLF	;  No, go to next line -
+		JRST	PARS.2]	;  .. and continue in ugly mode.
+	OUTCHR[	EXP	.CHCRT]	;Print a <CR>, to get to beginning of line.
+	OUTSTR	@EOLPTR		;Erase the line.
+PARS.2:	MOVE	P,[		;(Re)load stack pointer.
+		IOWD	PDLLEN,PDL]
+	SETZM	TAHGET		;Wipe the get pointer.
+	OUTSTR[	ASCIZ /UTRACE - /]
+	MOVEI	T4,CMDHLP	;Load address of help text.
+	JSP	T1,DOCMD	;Do a command, dispatch.
+	XWD	.CHCRT,NXTCMD	;Ignore <CR>.
+	XWD	.CHCNZ,CMXIT2	;^Z does exit without confirmation.
+	XWD	"D",CMDDDT	;D enters DDT.
+	XWD	"E",CMDXIT	;E does exit.
+	XWD	"L",CMDLOG	;L controls logging.
+	XWD	"S",CMDS	;S starts program.
+	XWD	0,0
+
+CMDHLP:	ASCIZ	/ One of the following:
+?,  DDT,  Exit,  Log,  Start/
+
+
+
+GETCH:	MOVE	C,TAHCNT	;Get type-ahead count.
+	SUB	C,TAHGET	;Subtract amount we have read.
+	JUMPG	C,GT.TAH	;Eat from type ahead if there is any.
+	INCHRW	C		;Get a character from user.
+	CAIN	C,.CHCRT	;<CR>?
+	 INCHRW	1(P)		; Yes, eat LF. (Always OK 2 munge above stack)
+	CAIN	C,.CHCNU	;Control-U?
+	 JRST	GT.ERA		; Yes, erase line & restart.
+	CAIE	C,.CHCNW	;Common DEC "delete-word" character?
+	 CAIN	C,.CHDEL	; Or rubout?
+	  JRST	GT.RUB		;  Yes, delete last char, if any.
+	CAIN	C,"?"		;Wants help?
+	 JRST	GT.HLP		; Yes, go give him help.
+	PUSH	P,T1		;Save an accumulator.
+	AOS	T1,TAHCNT	;Count up the put pointer, and get a copy.
+	MOVEM	C,TAHBUF-1(T1)	;Store character in type-ahead buffer.
+	MOVEM	T1,TAHGET	;Make get pointer equal to put pointer.
+	POP	P,T1		;Restore accumulator T1.
+GT.RTU:	CAIL	C,"a"		;Lower case letter?
+	 CAILE	C,"z"		;  .  .  .  .  .
+	  POPJ	P,		;  Nope, return.
+	SUBI	C,"a"-"A"	;Yes, upcase it.
+	POPJ	P,		;Then return.
+
+GT.ERA:	SKIPN	EOLPTR		;In video mode?
+	 OUTSTR[ASCIZ	/^U/]	; No, show the delete operation in this way.
+	JRST	NXTCMD		;Go for another command.
+
+GT.RUB:	SOSG	TAHCNT		;Here on rubout, delete last character.
+	 JRST	GT.ERA		; If we took the last char, emulate ^U instead.
+	SKIPN	EOLPTR		;Are we in video mode?
+	 OUTSTR[ASCIZ	/^W/]	; No, give user a hint 'bout what is going on.
+	JRST	REPARS		;Then reparse the line
+
+GT.HLP:	OUTSTR	(T4)		;Print help message from T4.
+	SETZM	TAHGET		;Wipe the type-ahead get pointer.
+	SKIPE	EOLPTR		;Are we in video mode?
+	 OUTSTR	CRLF		; Yes, we need a new line here.
+	JRST	REPARS		;Reparse the command line.
+
+GT.TAH:	AOS	C,TAHGET	;Increment the get pointer, and have a copy.
+	MOVE	C,TAHBUF-1(C)	;Get the character from buffer.
+	OUTCHR	C		;Print the character.
+	JRST	GT.RTU		;Go upcase character in C, and return.
+
+DOCMD:	PUSHJ	P,GETCH		;Get a command character.
+CMDLUP:	HLRZ	T2,(T1)		;Get character from table.
+	JUMPE	T2,CMDL.2	;End of table?  Go give a help message.
+	CAIE	C,(T2)		;Is this it?
+	 AOJA	T1,CMDLUP	; No, bump counter and loop.
+	HRRZ	T2,(T1)		;Get routine from table.
+	JRST	(T2)		;Go to routine.
+
+CMDL.2:	SOS	TAHCNT		;Character not in table, remove it from the -
+	OUTCHR[	EXP .CHBEL]	; type ahead buffer, and beep the user.
+	OUTSTR[	ASCIZ	/ Type "?" for help./]
+	SKIPE	EOLPTR		;Are we in video mode?
+	 OUTSTR	CRLF		; Yes, we need a newline here.
+	JRST	REPARS		;Reparse all up to offending character.
+
+CONFRM:	MOVEI	T4,[		;Load pointer to help message.
+		ASCIZ	/ Confirm with carraige return/]
+	JSP	T1,DOCMD	;Dispatch on a command character.
+	XWD	.CHCRT,.POPJ	;<CR> means return from subroutine.
+	XWD	0,0		;Terminate table.
+
+CRLF:	BYTE(7)	.CHCRT,.CHLFD,.CHNUL
+
+
+
+CMDDDT:	OUTSTR[	ASCIZ	"DT "]
+	PUSHJ	P,CONFRM	;Let him confirm the command.
+	SKIPN	DDTSTA		;Any DDT there?
+	 JRST	NODDT		; Nope, go tell him.
+	JSR	RESCTX		;Yes.  Restore user context.
+	JRST	@DDTSTA		;Go to DDT.
+
+NODDT:	OUTSTR[	ASCIZ	/
+?No DDT loaded.
+/]
+	JRST	NXTCMD		;Back for another command.
+
+CMDXIT:	OUTSTR[	ASCIZ	"xit (to monitor) "]
+	PUSHJ	P,CONFRM	;Get user confirmation.
+CMXIT2:	JSR	RESCTX		;Get user context.
+	MONRT.			;Exit to monitor.
+	JSR	SAVCTX		;Save user context.
+	JRST	NXTCMD		;Loop for more commands.
+
+CMDLOG:	OUTSTR[	ASCIZ	"og (on) "]
+	MOVEI	T4,LOGHLP	;Load help message pointer.
+	JSP	T1,DOCMD	;Dispatch on a command character.
+	XWD	"F",CMDL.F	;F logs on file.
+	XWD	"T",CMDL.T	;T logs on terminal.
+	XWD	0,0		;Terminate table.
+
+LOGHLP:	ASCIZ	/ One of the following:
+File,  Terminal/
+
+CMDL.F:	OUTSTR[	ASCIZ	"ile (DSK:UTRACE.LOG) "]
+	PUSHJ	P,CONFRM	;Let user confirm command.
+	OUTSTR[	ASCIZ	"?Sorry, command not yet ready.
+"]
+	JRST	NXTCMD		;Until someday...
+
+CMDL.T:	OUTSTR[	ASCIZ	"erminal "]
+	SETZM	DGFLAG		;Clear the digit flag.
+	SETZM	NUMBER		;Clear number to be.
+CMTLUP:	MOVEI	T4,CTHLP1	;Assume no digits typed in, get first msg.
+	SKIPE	DGFLAG		;Can it be correct?
+	 MOVEI	T4,CTHLP2	; Nope, use another help message.
+	JSP	T1,DOCMD	;Dispatch on a command character.
+	XWD	.CHCRT,CMTL.E	;<CR> means done, go fix things up.
+	XWD	"0",CMTL.D	;Digit...
+	XWD	"1",CMTL.D	;Digit...
+	XWD	"2",CMTL.D	;Digit...
+	XWD	"3",CMTL.D	;Digit...
+	XWD	"4",CMTL.D	;Digit...
+	XWD	"5",CMTL.D	;Digit...
+	XWD	"6",CMTL.D	;Digit...
+	XWD	"7",CMTL.D	;Digit...
+	XWD	0,0		;Terminate table.
+
+CTHLP1:	ASCIZ	/ Octal terminal number
+  or Confirm for controlling terminal./
+CTHLP2:	ASCIZ	/ Octal terminal number, terminate with CR./
+
+CMTL.D:	SETOM	DGFLAG		;We have seen digits now.
+	MOVE	T1,NUMBER	;Get number embryo.
+	LSH	T1,3		;Make room for another octal digit.
+	IORI	T1,-"0"(C)	;Add in next digit.
+	MOVEM	T1,NUMBER	;Store number again.
+	JRST	CMTLUP		;Back to read-in loop.
+
+CMTL.E:	MOVE	T1,NUMBER	;Get number we did build.
+	ADDI	T1,.UXTRM	;Convert into an UDX.
+	SKIPN	DGFLAG		;Did we really type a number?
+	 SETO	T1,		; No, change to default UDX (= our terminal)
+	MOVEM	T1,LOGUDX	;Save logging UDX.
+	JRST	NXTCMD		;Go for next command.
+
+CMDS:	OUTSTR[	ASCIZ	"tart (program at) "]
+	MOVEI	T4,STAHLP
+	JSP	T1,DOCMD
+	XWD	.CHCRT,CMDSS2	;CR defaults to "S", without confirmation.
+	XWD	"A",CMDS.A	;"A" starts at arbitary address.
+	XWD	"C",CMDS.C	;"C" starts at CCL entry point.
+	XWD	"R",CMDS.R	;"R" starts at the reenter address.
+	XWD	"S",CMDS.S	;"S" starts at normal start address.
+	XWD	0,0		;Terminate table.
+
+STAHLP:	ASCIZ	/ One of the following:
+Address,  CCL-entry-point,  Reenter-address,  Start-address
+  or confirm with Carriage return./
+
+CMDS.A:	OUTSTR[	ASCIZ	"ddress "]
+	MOVEI	T4,ADRHLP	;Load help message.
+	PUSHJ	P,RDNUM		;Read an octal number.
+	JUMPL	T1,CMDSS2	;Just return here defaults to ordinary start.
+	HRRM	T1,.+2		;Fix up an instruction.  (** kludge **)
+	JSR	RESCTX		;Restore user context.
+	JRST	000000		;** Go to user, with fixed instruction **
+
+ADRHLP:	ASCIZ	" Octal start address "
+
+CMDS.C:	OUTSTR[	ASCIZ	"CL-entry-point "]
+	PUSHJ	P,CONFRM	;Give noise words, and confirm.
+	JSR	RESCTX		;Restore user context.
+	JRST	USTART+1	;Start with offset.
+
+CMDS.R:	OUTSTR[	ASCIZ	"eenter-address "]
+	PUSHJ	P,CONFRM	;Give noise words, and confirm.
+	JSR	RESCTX		;Restore user context.
+	JRST	UREENT		;Go to reenter code.
+
+CMDS.S:	OUTSTR[	ASCIZ	"tart-address "]
+	PUSHJ	P,CONFRM	;Give noise words, and confirm.
+CMDSS2:	JSR	RESCTX		;Restore use context
+	JRST	USTART		;Go start the program
+
+RDNUM:	SETZM	DGFLAG		;Clear the digit flag.
+	SETZM	NUMBER		;Clear number to be.
+RDNLUP:	JSP	T1,DOCMD	;Dispatch on a command character.
+	XWD	.CHCRT,RNUM.E	;<CR> means done, go fix things up.
+	XWD	"0",RNUM.D	;Digit...
+	XWD	"1",RNUM.D	;Digit...
+	XWD	"2",RNUM.D	;Digit...
+	XWD	"3",RNUM.D	;Digit...
+	XWD	"4",RNUM.D	;Digit...
+	XWD	"5",RNUM.D	;Digit...
+	XWD	"6",RNUM.D	;Digit...
+	XWD	"7",RNUM.D	;Digit...
+	XWD	0,0		;Terminate table.
+
+RNUM.D:	SETOM	DGFLAG		;We have seen digits now.
+	MOVE	T1,NUMBER	;Get number embryo.
+	LSH	T1,3		;Make room for another octal digit.
+	IORI	T1,-"0"(C)	;Add in next digit.
+	MOVEM	T1,NUMBER	;Store number again.
+	JRST	RDNLUP		;Back to read-in loop.
+
+RNUM.E:	MOVE	T1,NUMBER	;Get number we did build.
+	SKIPN	DGFLAG		;Did we really type a number?
+	 SETO	T1,		; No, load a negative value.
+	POPJ	P,		;Return with number in T1.
+
+DGFLAG:	BLOCK	1		;The digit flag.
+NUMBER:	BLOCK	1		;The number we are reading in.
+SUBTTL  Video handling of rubout.
+
+VIDEOI:	SETZM	EOLPTR		;Clear pointer to erase-2-end-of-line string.
+	MOVE	T1,[
+		XWD	2,[
+			EXP	.TOTRM
+			EXP	-1]]
+	TRMOP.	T1,		;Get SIXBIT terminal name from monitor.
+	 POPJ	P,		; Well, just lose, then.
+	MOVSI	T2,-CRTLEN	;Get AOBJN pointer to terminal name table.
+	CAME	T1,CRTNAM(T2)	;Match?
+	 AOBJN	T2,.-1		; Not on this one, loop if more.
+	JUMPGE	T2,.POPJ	;Done all of the table?
+	MOVE	T1,CRTEOL(T2)	;No, get EOL pointer from another table.
+	MOVEM	T1,EOLPTR	;Set up for video handling later.
+	POPJ	P,		;All done now, just return.
+
+.CHLBR=="["			;Define a symbol for this character.
+
+DEFINE	TERMS<
+	X(EL1521,<BYTE(7) .CHCRB>)
+	X(HP2648,<BYTE(7) .CHESC,"K">)
+	X(VC414 ,<BYTE(7) .CHESC,.CHCNO>)
+	X(VT52  ,<BYTE(7) .CHESC,"K">)
+	X(VT100 ,<BYTE(7) .CHESC,.CHLBR,"K">)
+	X(ANSI  ,<BYTE(7) .CHESC,.CHLBR,"K">)
+>;End of supported terminals.
+
+DEFINE	X(NAM,EOL),<SIXBIT "'NAM'">
+
+CRTNAM:	TERMS
+CRTLEN==.-CRTNAM
+
+DEFINE	X(NAM,EOL),<EXP[EOL]>
+
+CRTEOL:	TERMS
+SUBTTL  Start and Reenter emulation.
+
+USTART:	JRST	USTA.0		;Go do normal start.
+USTA.1:	JSR	INITME		;Here on CCL entry, pass run offset on.
+	JRST	@PRGCCL		;Go to user program.
+
+USTA.0:	JSR	INITME		;Here on normal entry.
+	JRST	@PRGSTA		;Go to user program.
+
+UREENT:	JSR	INITME		;Here on REENTER command.
+	JRST	@PRGREE		;Go to user reenter point.
+
+INITME:	BLOCK	1		;Called with a JSR instruction.
+	JSR	SAVCTX		;Save user context.
+	MOVE	P,[		;Set up our stack pointer.
+		IOWD	PDLLEN,PDL]
+	SETZ	F,		;Clear our flags.
+	PUSHJ	P,PSION		;Init the PSI system.
+	JSR	RESCTX		;Restore user context.
+	JRSTF	@INITME		;Return.
+
+PSION:	MOVEI	T1,VECTOR	;Load address of PSI vector.
+	PIINI.	T1,		;Init PSI system.
+	 JFCL			; Well, this can't happen...
+	MOVEI	T1,UUOTRP	;Load addres of trap handler.
+	MOVEM	T1,VECUUO+.PSVNP;Save as new PC.
+	MOVX	T1,PS.VDS	;Load flag. (ignore while in trap routine)
+	MOVEM	T1,VECUUO+.PSVFL;Save in vector. (flag word)
+	MOVE	T1,[
+		PS.FAC+PS.FON+EXP[
+			EXP	.PCUUO
+			XWD	<VECUUO-VECTOR>,0
+			XWD	3,0]]
+	PISYS.	T1,		;Add condition.
+	 JFCL			; Ouch!
+	TXZ	F,F.PINI	;Remember that the PSI system is off.
+	SETZM	PSILVL+0	;Clear IB pointer for level 0.
+	SETZM	PSILVL+1	;Clear IB pointer for level 1.
+	SETZM	PSILVL+2	;Clear IB pointer for level 2.
+	POPJ	P,		;Return to caller.
+
+SUBTTL  UUO entry and return.
+
+UUOTRP:	JSR	SAVCTX		;Save user context.
+	PUSHJ	P,CLASS		;Classify the UUO, get some other info.
+	PUSHJ	P,WRINST	;Write instruction.
+	TXNE	F,F.FORC	;Need to use the force now?
+	 PUSHJ	P,WRDUMP	; Yes, dump out the terminal buffer.
+	PUSHJ	P,(CL)		;Dispach according to class.
+	PUSHJ	P,WRSKIP	;Go write <SKIP>/<>.
+	PUSHJ	P,WRDUMP	;Dump out terminal output buffer.
+	JSR	RESCTX		;Restore user context.
+	SKIPE	.SKIP.		;Did UUO skip?
+	 AOS	V.OPC		; Yes, bump return PC for user.
+	DEBRK.			;Dismiss interrupt.
+	 JFCL			; This can't happen.
+	JRSTF	@V.OPC		;Why not try...
+
+SUBTTL  UUO classification.
+
+CLASS:	LDB	OP,[POINT ^D9,V.UUO,^D8] ;Get the Opcode.
+	LDB	AC,[POINT ^D4,V.UUO,^D12] ;Load the AC number.
+	HRRZ	EA,V.UUO	;Load effective address.
+	HRRZ	PC,V.OPC	;Load old PC.
+	TXZ	F,F.CALL!F.CALI!F.TTCL!F.NSKP!F.PRNT!F.FORC ;Clear some flags.
+	CAML	PC,DDTSTA	;Is the UUO done inside the real DDT?
+	 CAMLE	PC,DDTEND
+	  TXO	F,F.PRNT	;  No, turn on the print flag.
+	MOVEI	CL,ANY%		;Load default handler.
+	CAIN	OP,40		;Is it a CALL?
+	 JRST	CLS.40		; Yes, go check further.
+	CAIN	OP,41		;Is this the INIT UUO?
+	 MOVEI	CL,INIT%	; Yes, load another handler.
+	CAIN	OP,47		;Is it a CALLI?
+	 JRST	CLS.47		; Yes, can be special.
+	CAIN	OP,51		;Is this a TTCALL?
+	 TXO	F,F.TTCL	; Yes, lite a flag.
+	POPJ	P,		;All done, return.
+
+CLS.40:	TXO	F,F.CALL	;Remember for WRINST.
+	MOVE	E,EA		;Copy effective address.
+	PUSHJ	P,GETWDU	;Get users argument.
+	CAMN	T1,[SIXBIT /RESET/]
+	 MOVEI	CL,RESET%
+	CAMN	T1,[SIXBIT /SETDDT/]
+	 MOVEI	CL,SETDD%
+	CAMN	T1,[SIXBIT /CORE/]
+	 MOVEI	CL,CORE%
+	CAMN	T1,[SIXBIT /EXIT/]
+	 TXO	F,F.FORC	; If EXIT, force terminal buffer first.
+	CAME	T1,[SIXBIT /SLEEP/]
+	 CAMN	T1,[SIXBIT /HIBER/]
+	  TXO	F,F.FORC	;  If SLEEP or HIBER, also remember the force.
+	POPJ	P,		;All done, return.
+
+REPEAT 0,<
+	MOVSI	T2,-C40LEN	;Get AOBJN pointer to tables.
+	CAMN	T1,C40NAM(T2)	;Is this our instruction?
+	 XCT	C40ACTION(T2)	; Yes, do something.
+	AOBJN	T2,.-2		;Loop over table.
+	POPJ	P,		;All done.
+
+DEFINE	C40<
+	X(RESET, <MOVEI CL,RESET%>)
+	X(SETDDT,<MOVEI CL,SETDD%>)
+	X(CORE,  <MOVEI CL,CORE%>)
+	X(EXIT,  <TXO F,F.FORCE>)
+	X(SLEEP, <TXO F,F.FORCE>)
+	X(HIBER, <TXO F,F.FORCE>)
+>;End C40
+
+C40NAM:	DEFINE	X(A,B),<EXP SIXBIT /A/>
+	C40
+C40ACT:	DEFINE	X(A,B),<B>
+	C40
+
+>;End REPEAT 0
+
+CLS.47:	TXO	F,F.CALI	;Remember for WRINST.
+	TXO	F,F.PHYO	;Assume UU.PHY set.
+	MOVE	T1,EA		;Get a copy of eff. address.
+	TXCE	T1,1B18!1B19	;Is bit 18 and bit 19 both zero?
+	 TXCN	T1,1B18!1B19	; Or both one?
+	  TXZA	F,F.PHYO	;  Yep, clear physical only flag.
+	   TXC	EA,UU.PHY	;   Nope, keep F.PHYO on and flip UU.PHY in EA.
+	CAIN	EA,0		;Is this CALLI 0?  (RESET)
+	 MOVEI	CL,RESET%
+	CAIN	EA,2		;Is this CALLI 2?  (SETDDT)
+	 MOVEI	CL,SETDD%
+	CAIN	EA,11		;Is this CALLI 11?  (CORE)
+	 MOVEI	CL,CORE%
+	CAIN	EA,12		;Is this CALLI 12?  (EXIT)
+	 TXO	F,F.FORC	; Yes, ask for the force.
+	CAIE	EA,31		;Is this CALLI 31?  (SLEEP)
+	 CAIN	EA,72		; Or maybe CALLI 72?  (HIBER)
+	  TXO	F,F.FORC	;  Yes, we need the force.
+	CAIN	EA,135		;Is this CALLI 135?  (PIINI.)
+	 MOVEI	CL,PIINI%
+	CAIN	EA,136		;Is this CALLI 136?  (PISYS.)
+	 MOVEI	CL,PISYS%
+	CAIN	EA,137		;Is this CALLI 137?  (DEBRK.)
+	 MOVEI	CL,DEBRK%
+	CAIN	EA,140		;Is this CALLI 140?  (PISAV.)
+	 MOVEI	CL,PISAV%
+	CAIN	EA,141		;Is this CALLI 141?  (PIRST.)
+	 MOVEI	CL,PIRST%
+	CAIN	EA,212		;Is this CALLI 212?  (PIBLK.)
+	 MOVEI	CL,PIBLK%
+	POPJ	P,
+
+SUBTTL  UUO handling.
+
+; Handle "any" UUO here.
+
+ANY%:	JSR	RESCTX		;Restore user context.
+	SETOM	.SKIP.		;Assume UUO will skip.
+	XCT	V.UUO		;Execute the UUO.
+	 SETZM	.SKIP.		; Non-skip, clear flag.
+	JSR	SAVCTX		;Save user context again.
+	POPJ	P,		;Return.
+
+; Special simulation of INIT UUO here.
+
+INIT%:	MOVEI	E,-1(PC)	;Get address of user instruction.
+	PUSHJ	P,GETWDU	;Get user instruction.
+	MOVEM	T1,I.INIT	;Set up in our code.
+	MOVEI	E,(PC)		;Get address of user device.
+	PUSHJ	P,GETWDU	;Get user device.
+	MOVEM	T1,I.DEVI	;Store device name.
+	MOVEI	E,1(PC)		;Get address of user buffer pointers.
+	PUSHJ	P,GETWDU	;Get user pointers.
+	MOVEM	T1,I.BUFF	;Store buffer pointers.
+	MOVEI	T1,2
+	ADDM	T1,V.OPC	;Bump old PC two steps.
+	JSR	RESCTX		;Restore user context.
+	SETOM	.SKIP.		;Assume UUO will skip.
+I.INIT:	BLOCK	1		;Holds INIT channel, mode
+I.DEVI:	BLOCK	1		;Holds device to INIT.
+I.BUFF:	BLOCK	1		;Holds buffer pointers.
+	 SETZM	.SKIP.		; UUO did not skip.
+	JSR	SAVCTX		;Save user context.
+	POPJ	P,		;All done, return.
+
+; Special handling of CALLI 0 (RESET) here.
+
+RESET%:	RESET			;Do a reset UUO.
+	PUSHJ	P,PSION		;We did clear out the PSI system...
+	SETZM	.SKIP.		;We did not skip.
+	POPJ	P,		;Return after sucessfull UUO.
+
+; Special handling of CALLI 2 (SETDDT) here.
+
+SETDD%:	MOVE	T1,USRACS(AC)	;Get user AC contents.
+	HRRZM	T1,DDTSTA	;Save right half.
+	HLRZM	T1,DDTEND	;Save left half.
+	SETZM	.SKIP.		;SETDDT does not skip.
+	POPJ	P,
+
+; Special handling of CALLI 11 (CORE) here.
+
+CORE%:	HRRZ	T1,USRACS(AC)	;Get user low seg argument.
+	JUMPE	T1,ANY%		;Not munging low seg is always OK.
+	CAMLE	T1,.JBREL	;Expanding core?
+	 JRST	ANY%		; Yes, that's OK too.
+
+; ** Need more work here.
+
+	SETOM	.SKIP.		;Fake a skip return.
+	POPJ	P,		;Just ignore the UUO.
+
+; Special handling of CALLI 135 (PIINI.) here.
+
+PIINI%:	PUSHJ	P,PSION		;Reset all of users PSI system.
+	TXO	F,F.PINI	;Remember user has done PIINI.
+	HRRZ	T1,USRACS(AC)	;Get contents of user AC.
+	MOVEM	T1,USRVEC	;Remember user PSI vector base.
+	SETOM	.SKIP.		;Fake skip return from UUO.
+	POPJ	P,		;That's all, folks!
+
+; Special handling of CALLI 136 (PISYS.) here.
+
+PISYS%:	MOVEI	ER,PSPND%	;*** (PIINI. UUO not done)
+	TXNN	F,F.PINI	;Is PIINI. UUO done?
+	 JRST	ERCODE		; No, give error return.
+	HRRZ	E,USRACS(AC)	;Get user AC contents.
+	JUMPE	E,ANY%		;No arg block, must be OK.
+	PUSHJ	P,GETWDU	;Get first word.
+	ADDI	T1,-.PCUUO	;Check that he don't try to trap UUO's.
+	MOVEI	ER,PSPRV%	;*** (Privilige failure)
+	JUMPE	T1,ERCODE	;He was, we must give him an error return.
+	HRRZ	E,USRACS(AC)	;Get his right half again.
+	ADDI	E,1		;Bump one, point to second word.
+	PUSHJ	P,GETWDU	;Get the word.
+	HLRZ	T4,T1		;Get left half.
+	MOVEI	T3,(T4)		;Get a copy to T3.
+	LSH	T4,-2		;Divide by four.
+	MOVEI	ER,PSIVO%	;*** (Invalid Vector Offset)
+	CAIL	T4,PSISIZE	;Range check vector offset.
+	 JRST	ERCODE
+	IMULI	T4,IBSIZE	;Get size of interrupt control block.
+	MOVEI	IB,IBVEC(T4)	;Load address of the slot we shall use.
+	MOVEI	T1,(IB)		;Load destination for BLT.  (Block to be)
+	HRLI	T1,IBPROT	;Load source.  (Prototype block)
+	BLT	T1,IBSIZE-1(IB) ;Copy the prototype block.
+	HRRM	IB,IB.MVI(IB)	;Fix up the MOVEI instruction.
+	MOVEM	IB,VECTOR+.PSVNP(T3) ;Set up routine to be the control block.
+	MOVEM	T3,IB.OFS(IB)	;Set up our vector offset.
+	HRRZ	E,USRACS(AC)	;Get user AC again...
+	ADDI	E,2		;Set up to get third word.
+	PUSHJ	P,GETWDU	;I am NOT minding my own biznizz...
+	HLRZ	T1,T1		;Only left half is interesting.
+	MOVEI	ER,PSPTL%	;*** (Priority Too Large)
+	CAILE	T1,2		;The highest level he may use.
+	 JRST	ERCODE
+	MOVEM	T1,IB.LVL(IB)	;Keep info about level.
+	JRST	ANY%		;Perform rest as any UUO.
+
+ERCODE:	MOVEM	ER,USRACS(AC)	;Put code in user AC.
+	SETZM	.SKIP.		;No skip return.
+	POPJ	P,		;Just ordinary return.
+
+REPEAT 0,<
+
+PISYS%:
+
+>;End of REPEAT 0
+
+; Special handling of CALLI 212 (PIBLK.) here.
+
+PIBLK%:	MOVEI	ER,PSNIN%	;*** (Not Initialized)
+	TXNN	F,F.PINI	;Is it on?
+	 JRST	ERCODE		; Nope, bad return.
+	MOVEI	T1,2
+	SKIPN	IB,PSILVL(T1)	;Any interrupt in progress here?
+	 SOJGE	T1,.-1		; No, loop back.
+	MOVEI	ER,PSNIP%	;*** (No Interrupt in Progress)
+	JUMPE	IB,ERCODE	;No interrupt anywhere, propagate error.
+	MOVE	T1,USRVEC	;Get address of user vector.
+	ADD	T1,IB.OFS(IB)	;Add offset to block.
+	MOVEM	T1,USRACS(AC)	;Give to user AC.
+	SETOM	.SKIP.
+	POPJ	P,		;Skip return.
+
+; Special handling of CALLI 137 (DEBRK.) here.
+
+DEBRK%:	SETOM	.SKIP.		;Either skip return, or no return at all.
+	SETZ	IB,		;Load a zero.
+	MOVEI	T1,2		;Load max number of user PSI levels.
+DBRK.1:	EXCH	IB,PSILVL(T1)	;Get IB pointer for some level.
+	JUMPN	IB,DBRK.2	;Found an active level, go process.
+	SOJGE	T1,DBRK.1	;Decrement and loop if more levels.
+	POPJ	P,		;No level active, nothing to peel off.
+
+DBRK.2:	MOVE	T2,IB.OFS(IB)	;Get vector offset for this level.
+	MOVEI	E,.PSVOP(T2)	;Make offset to his old-pc for this level.
+	ADD	E,USRVEC	;Add in his base address.
+	PUSHJ	P,GETWDU	;Get the word.
+	MOVEM	T1,VECTOR+.PSVOP(T2) ;Store in our vector, he may have changed.
+	MOVEI	T1,XDEBRK	;Load address of our dismiss routine.
+	EXCH	T1,V.OPC	;Get and replace old return address.
+	DEBRK.			;Peel off one interrupt level.
+	 JFCL			; We can never get here.
+XDEBRK:	EXCH	T1,V.OPC	;Get here with one level less, restore old PC.
+	TXO	F,F.NSKP	;Don't print <SKIP> on this UUO.
+	POPJ	P,		;This returns to our code, at *his* level!
+
+; Special handling of CALLI 140 (PISAV.) here.
+
+PISAV%:	JRST	ANY%		;***Not yet implemented***
+
+; Special handling of CALLI 141 (PIRST.) here.
+
+PIRST%:	JRST	ANY%		;***Not yet implemented***
+
+SUBTTL  Routines for interrupt handling.
+
+; Define the "interrupt control block" that we must have.
+
+IBPROT::PHASE	0
+	JSR	SAVCTX		;;Save user context.
+IB.MVI:!MOVEI	IB,0		;;Load IB to point to right interrupt block.
+	JRST	GENINT		;;Do some bookkeeping, then go to user.
+IB.OFS:!EXP	0		;;Vector offsets for this block.
+IB.LVL:!EXP	0		;;Level of this block.
+IBSIZE:!			;;Size of interrupt control block.
+DEPHASE
+
+; This routine does bookkeeping, then goes to the user routine.
+
+GENINT:	MOVE	T3,IB.OFS(IB)	;Get user vector offset.
+	ADD	T3,USRVEC	;Add in user base, make T3 point to user slot.
+	MOVE	T4,IB.OFS(IB)	;Get our vector offset.
+	ADDI	T4,VECTOR	;Add in our base, make T4 point to our slot.
+	MOVEI	E,.PSVNP(T3)	;Make E point to desired user PC.
+	PUSHJ	P,GETWDU	;Get the word.
+	HRRM	T1,PSIJMP	;Fix up the JRST instruction below.
+	MOVE	T1,.PSVOP(T4)
+	MOVEI	E,.PSVOP(T3)
+	PUSHJ	P,PUTWDU	;Give user .PSVOP word from vector.
+	MOVE	T1,.PSVFL(T4)
+	MOVEI	E,.PSVFL(T3)
+	PUSHJ	P,PUTWDU	;Give user .PSVFL word from vector.
+	MOVE	T1,.PSVIS(T4)
+	MOVEI	E,.PSVIS(T3)
+	PUSHJ	P,PUTWDU	;Give user .PSVIS word from vector.
+	MOVE	T1,IB.LVL(IB)	;Get level for this interrupt.
+	MOVEM	IB,PSILVL(T1)	;Keep info 'bout what is going on.
+	PUSHJ	P,LOGINT	;Go print a line to the log.
+	JSR	RESCTX		;Restore user context.
+PSIJMP:!JRST	0		;Go to user. (Instruction gets fixed up above)
+
+SUBTTL  Log an interrupt.
+
+; Here to log the interrupt.  Call with:
+; 	IB/  Pointing to interrupt control block.
+;	T3/  Pointing to user vector slot.
+
+LOGINT:	MOVEI	T1,[		;Load pointer to string.
+		ASCIZ	"
+** Software interrupt at level "]
+	PUSHJ	P,WRSTRG	;Write it to the log.
+	MOVE	T1,IB.LVL(IB)	;Get level from control block.
+	PUSHJ	P,WROCT		;Write it. (Can only be 0, 1 or 2, octal is OK)
+	MOVEI	T1,[
+		ASCIZ	"
+** Reason is "]
+	PUSHJ	P,WRSTRG	;Write a new line and start of next line.
+	MOVEI	E,.PSVFL(T3)	;Load address to user flag word.
+	PUSHJ	P,GETWDU	;Get the word.
+	TXNN	T1,1B18		;I/O interrupt?
+	 JRST	LOGDEV		; Yes, go print device name and reason.
+	MOVNI	T1,1(T1)	;Get offset in table of names.
+	MOVE	T1,NIOTAB(T1)	;Get pointer to suitable string.
+	JRST	WRSTRG		;Write the string, and return.
+
+NIOTAB:	EXP[	ASCIZ	"time limit exeeded."]		;-1
+	EXP[	ASCIZ	"timer interrupt."]		;-2
+	EXP[	ASCIZ	"^C typed on terminal."]	;-3
+	EXP[	ASCIZ	"monitor call intercept."]	;-4
+	EXP[	ASCIZ	"illegal instruction."]		;-5
+	EXP[	ASCIZ	"illegal memory reference."]	;-6
+	EXP[	ASCIZ	"address check."]		;-7
+	EXP[	ASCIZ	"arithmetic exception."]	;-10
+	EXP[	ASCIZ	"push down list overflow."]	;-11
+	EXP[	ASCIZ	"NSP. UUO interrupt."]		;-12
+	EXP[	ASCIZ	"NEX memory reference."]	;-13
+	EXP[	ASCIZ	"clock tick."]			;-14
+	EXP[	ASCIZ	"fatal error in job."]		;-15
+	EXP[	ASCIZ	"external fatal error."]	;-16
+	EXP[	ASCIZ	"KSYS warning."]		;-17
+	EXP[	ASCIZ	"dataset status change."]	;-20
+	EXP[	ASCIZ	"ATTACH or DETACH"]		;-21
+	EXP[	ASCIZ	"WAKE executed."]		;-22
+	EXP[	ASCIZ	"address break."]		;-23
+	EXP[	ASCIZ	"IPCF packet ready."]		;-24
+	EXP[	ASCIZ	"DECnet event occured."]	;-25
+	EXP[	ASCIZ	"ENQ/DEQ resource available."]	;-26
+	EXP[	ASCIZ	"network topology change."]	;-27
+	EXP[	ASCIZ	"cross job interrupt."]		;-30
+	EXP[	ASCIZ	"date/time changed."]		;-31
+	EXP[	ASCIZ	"out-of-band character"]	;-32
+	EXP[	ASCIZ	"reserved to customer (1)"]	;-33
+	EXP[	ASCIZ	"reserved to customer (2)"]	;-34
+	EXP[	ASCIZ	"SCS event"]			;-35
+	EXP[	ASCIZ	"ethernet event"]		;-36
+
+LOGDEV:	TLZ	T1,-1		;Wipe left half of T1.
+	JFFO	T1,LGDV.2	;Get bit number of first set bit.
+	POPJ	P,		;Maybe more fancy error handling later.
+
+LGDV.2:	MOVE	T1,IORTAB-^D19(T2) ;Get string pointer from I/O reason table.
+	PUSHJ	P,WRSTRG	;Write the string.
+	MOVEI	T1,[ASCIZ " on "]
+	PUSHJ	P,WRSTRG	;Write the common end of string.
+	MOVEI	E,.PSVIS(T3)	;Load address to status word.
+	PUSHJ	P,GETWDU	;Get the status word.
+	HLRZ	T1,T1		;Get UDX or channel number in left half.
+	DEVNAM	T1,		;Translate to device name.
+	 MOVE	T1,['??????']	; Some super-simple error handling here.
+	PUSHJ	P,WRSIXB	;Write sixbit device name.
+	MOVEI	C,":"		;Load a terminating colon.
+	JRST	WRCHAR		;Write it, and return.
+
+IORTAB:	EXP[	ASCIZ	"input done"]		;1B19
+	EXP[	ASCIZ	"output done"]		;1B20
+	EXP[	ASCIZ	"end-of-file"]		;1B21
+	EXP[	ASCIZ	"input error"]		;1B22
+	EXP[	ASCIZ	"output error"]		;1B23
+	EXP[	ASCIZ	"device off-line"]	;1B24
+	EXP[	ASCIZ	"device full"]		;1B25
+	EXP[	ASCIZ	"quota exceeded"]	;1B26
+	EXP[	ASCIZ	"I/O wait"]		;1B27
+	EXP[	ASCIZ	"device on-line"]	;1B28
+	EXP[	ASCIZ	"RIB has changed"]	;1B29
+	EXP[	ASCIZ	"device hung"]		;1B30
+	EXP[	ASCIZ	"reel switch"]		;1B31
+	EXP[	ASCIZ	"input available"]	;1B32
+	EXP[	ASCIZ	"- 1B33 -"]
+	EXP[	ASCIZ	"- 1B34 -"]
+	EXP[	ASCIZ	"- 1B35 -"]
+SUBTTL  Context handling routines.
+
+; Save and restore user context.
+
+SAVCTX:	BLOCK	1		;JSR here.
+	MOVEM	17,USRACS+17	;Save user AC 17
+	MOVX	17,<0,,USRACS>	;Load BLT pointer
+	BLT	17,USRACS+16	;Save the rest.
+	MOVX	17,<OWNACS,,0>	;Load next BLT pointer.
+	BLT	17,17		;Load down tracer AC's.
+	JRSTF	@SAVCTX		;Return.
+
+RESCTX:	BLOCK	1		;JSR here.
+	MOVEM	17,OWNACS+17	;Save tracer AC 17
+	MOVX	17,<0,,OWNACS>	;Load BLT pointer
+	BLT	17,OWNACS+16	;Save the rest.
+	MOVX	17,<USRACS,,0>	;Load BLT pointer
+	BLT	17,17		;Restore all user AC's
+	JRSTF	@RESCTX		;Return.
+
+; Get a word from user address space.
+; Called with user address in E, returns contents in T1.
+
+GETWDU:	CAIG	E,17		;In the accumulators?
+	 SKIPA	T1,USRACS(E)	; Yes, get from save area.
+	  MOVE	T1,(E)		;  No, get from core.
+	POPJ	P,		;Return.
+
+; Put a word in user address space.
+; Called with user address in E and new contents in T1.
+
+PUTWDU:	CAIG	E,17		;In the accumulators?
+	 MOVEM	T1,USRACS(E)	; Yes, put in save area.
+	CAILE	E,20		;Above the accumulators?
+	 MOVEM	T1,(E)		; Yes, put in core.
+	POPJ	P,		;Return.
+SUBTTL  Output routines.
+
+WRINST:	TXNN	F,F.PRNT	;Print this instruction?
+	 POPJ	P,		; Nope, return quiet.
+	PUSHJ	P,WRCRLF	;Give a newline.
+	MOVEI	T1,-1(PC)	;Get PC at trap.
+	PUSHJ	P,WROCT		;Write it out.
+	MOVEI	C,"/"		;Load a slash.
+	PUSHJ	P,WRCHAR	;Write it out.
+	PUSHJ	P,WRTAB		;Write a tab.
+	TXNE	F,F.CALI	;Is this a CALLI?
+	 JRST	WRCALI		; Yes, special handling.
+	TXNE	F,F.TTCL	;Is this a TTCALL?
+	 JRST	WRTTCL		; Yes, we do them special.
+WRANY:	MOVE	T1,UUONAM-40(OP);Get SIXBIT name of UUO.
+	PUSHJ	P,WRSIXB	;Write sixbit word.
+	PUSHJ	P,WRTAB		;Write a tab.
+	PUSHJ	P,WRAC		;Write AC field, if any.
+WREA:	MOVE	T1,EA		;Assume not CALL, load effective address.
+	TXNN	F,F.CALL	;Is this a CALL?
+	 JRST	WROCT		; No, just go off and write octal address.
+	MOVEI	T1,[ASCIZ "[SIXBIT /"]
+	PUSHJ	P,WRSTRG	;Write first part of literal.
+	MOVE	E,EA		;Get address of user argument.
+	PUSHJ	P,GETWDU	;Get word from user.
+	PUSHJ	P,WRSIXB	;Write SIXBIT word.
+	MOVEI	T1,[ASCIZ "/]"]
+	JRST	WRSTRG		;Write last part of literal, and return.
+
+WRCALI:	CAILE	EA,CALLEN	;In range for our table?
+	 JRST	WRANY		; No, go write as any instruction.
+	MOVE	T1,CALNAM(EA)	;Yes, get SIXBIT name.
+	PUSHJ	P,WRSIXB	;Write it out.
+	PUSHJ	P,WRTAB		;Write a tab.
+	PUSHJ	P,WRAC		;Go write any AC field.
+	TXNN	F,F.PHYO	;UU.PHY set?
+	 POPJ	P,		; No, return now.
+	MOVEI	T1,[ASCIZ "UU.PHY"]
+	JRST	WRSTRG		;Tell user 'bout physical flag.
+
+WRTTCL:	MOVE	T1,TTCNAM(AC)	;Get TTCALL name, in SIXBIT.
+	PUSHJ	P,WRSIXB	;Write it out.
+	PUSHJ	P,WRTAB		;Write a tab.
+	JRST	WREA		;Finish off with eff. address.
+
+; Subroutine to write out AC field, if non-zero.
+
+WRAC:	SKIPN	T1,AC		;Get AC field, if any.
+	 POPJ	P,		; None, return.
+	PUSHJ	P,WROCT		;Write in octal.
+	MOVEI	C,","		;Load a delimiting comma.
+	JRST	WRCHAR		;Go write it out.
+
+WRSIXB:	LDB	C,[POINT 6,T1,5];Load next sixbit character from T1
+	ADDI	C,"A"-'A'	;Make ASCII.
+	PUSHJ	P,WRCHAR	;Write character.
+	LSH	T1,6		;Shift one char, in zeroes.
+	JUMPN	T1,WRSIXB	;Loop if more in word.
+	POPJ	P,		;All done!
+
+WRTAB:	MOVEI	C,.CHTAB	;Load a horizontal tab.
+	JRST	WRCHAR		;Go write it out.
+
+WRCRLF:	MOVEI	T1,CRLF		;Load address of newline sequence.
+	JRST	WRSTRG		;Go write it out.
+
+WRCHAR:	SOSGE	WR.CNT		;Room in buffer?
+	 JRST[	PUSHJ	P,WRDUMP; Nope, go dump out buffer.
+		JRST	WRCHAR]	; Then loop back and try again.
+	IDPB	C,WR.BPT	;Yes, store character.
+	POPJ	P,		;Return.
+
+WRSKIP:	TXNE	F,F.PRNT	;Are we printing?
+	 TXNE	F,F.NSKP	; Yes, shall we tell user, or skip?
+	  POPJ	P,		;  No, keep quiet, and return.
+	MOVEI	T1,[		;Assume non-skip return
+		ASCIZ	" <>"]
+	SKIPE	.SKIP.		;Was it?
+	 MOVEI	T1,[		; No, change our mind.
+		ASCIZ	" <SKIP>"]
+	JRST	WRSTRG		;Go write the string.
+
+WRDUMP:	PUSH	P,T1		;We must save the registers.
+	SKIPN	TOBUFR		;** Kludgy ** is buffer enpty?
+	 JRST	DUMP.2		; Yes, just fix up the pointers.
+	PUSH	P,T2		;Save, save, save...
+	PUSH	P,T3
+	PUSH	P,T4
+	MOVX	T1,<3,,T2>	;Load TRMOP. argument pointer.
+	MOVEI	T2,.TOOUS	;Output string on terminal.
+	MOVE	T3,LOGUDX	;UDX for target terminal.
+	MOVEI	T4,TOBUFR	;Address of string.
+	TRMOP.	T1,		;Dump out the string.
+	 JFCL			; Well... U got any better idea?
+	POP	P,T4		;Restore, restore, restore...
+	POP	P,T3
+	POP	P,T2
+DUMP.2:	SETZM	TOBUFR		;Clear first word of buffer.
+	MOVX	T1,<TOBUFR,,TOBUFR+1> ;Load BLT pointer.
+	BLT	T1,TOBUFR+TBFSIZ-1 ;Zap rest of buffer.
+	MOVEI	T1,<TBFSIZ*5>-1	;Load size of buffer, minus one.  (ASCIZ)
+	MOVEM	T1,WR.CNT	;Set up new count.
+	MOVX	T1,<POINT 7,TOBUFR>
+	MOVEM	T1,WR.BPT	;Set up new byte pointer to buffer start.
+	POP	P,T1		;Restore T1.
+	POPJ	P,		;Return fresh.
+
+WROCT:	IDIVI	T1,^D8		;Standard recursive number printer.
+	ADDI	T2,"0"
+	PUSH	P,T2
+	SKIPE	T1
+	 PUSHJ	P,WROCT
+	POP	P,C
+	JRST	WRCHAR
+
+WRSTRG:	HRLI	T1,(POINT 7)	;Make a byte pointer.
+WSTR.1:	ILDB	C,T1		;Load next byte.
+	JUMPE	C,.POPJ		;Return if empty.
+	PUSHJ	P,WRCHAR	;Write character.
+	JRST	WSTR.1		;Loop back for more characters.
+.POPJ:	POPJ	P,		;Return, all done.
+
+SUBTTL  Data area.
+
+INITF:	BLOCK	1		;Init flag.  Non-zero means init done.
+.SKIP.:	BLOCK	1		;Non-zero if UUO did skip.
+PRGSTA:	BLOCK	1		;Holds RH(.JBSA)
+PRGCCL:	BLOCK	1		;Holds RH(.JBSA)+1
+PRGREE:	BLOCK	1		;Holds RH(.JBREN)
+DDTSTA:	BLOCK	1		;Holds RH(.JBDDT)
+DDTEND:	BLOCK	1		;Holds LH(.JBDDT)
+
+TAHCNT:	BLOCK	1		;Count of command decoder type-ahead chars.
+TAHGET:	BLOCK	1		;Get pointer for emptying type-ahead buffer.
+TAHBUF:	BLOCK	20		;The type-ahead buffer, one char in each word.
+EOLPTR:	BLOCK	1		;Pointer to erase-2-end-of-line string.
+
+
+TOBUFR:	BLOCK	<TBFSIZ==^D20>	;Terminal output buffer.
+WR.CNT:	BLOCK	1		;Count of free space in above.
+WR.BPT:	BLOCK	1		;Byte pointer to above.
+LOGUDX:	EXP	-1		;UDX for logging.  (Default to contr. term.)
+
+PDL:	BLOCK	<PDLLEN==30>	;Our stack.
+
+USRACS:	BLOCK	20		;User AC save area.
+OWNACS:	BLOCK	20		;Own AC save area.
+
+PSISIZE==100			;Max number of user PSI slots we can handle.
+
+PSILVL:	BLOCK	3		;Pointers to IB's for level 0, 1 and 2.
+IBVEC:	BLOCK	PSISIZ*IBSIZE	;Interrupt control block vector.
+USRVEC:	BLOCK	1		;Points to user PSI vector base.
+VECTOR: BLOCK	4*PSISIZ	;Simulate user PSI vector here.
+VECUUO: BLOCK	4		;Slot for UUO trapping.
+V.UUO=VECUUO+.PSVIS		;Common name.
+V.OPC=VECUUO+.PSVOP		;Also common name.
+
+SUBTTL  Tables.
+
+UUONAM:	SIXBIT	/CALL/		;Opcode 040
+	SIXBIT	/INIT/		;Opcode 041
+	SIXBIT	/42/		;Opcode 042
+	SIXBIT	/43/		;Opcode 043
+	SIXBIT	/44/		;Opcode 044
+	SIXBIT	/45/		;Opcode 045
+	SIXBIT	/46/		;Opcode 046
+	SIXBIT	/CALLI/		;Opcode 047
+	SIXBIT	/OPEN/		;Opcode 050
+	SIXBIT	/TTCALL/	;Opcode 051
+	SIXBIT	/52/		;Opcode 052
+	SIXBIT	/53/		;Opcode 053
+	SIXBIT	/54/		;Opcode 054
+	SIXBIT	/RENAME/	;Opcode 055
+	SIXBIT	/IN/		;Opcode 056
+	SIXBIT	/OUT/		;Opcode 057
+	SIXBIT	/SETSTS/	;Opcode 060
+	SIXBIT	/STATO/		;Opcode 061
+	SIXBIT	/GETSTS/	;Opcode 062
+	SIXBIT	/STATZ/		;Opcode 063
+	SIXBIT	/INBUF/		;Opcode 064
+	SIXBIT	/OUTBUF/	;Opcode 065
+	SIXBIT	/INPUT/		;Opcode 066
+	SIXBIT	/OUTPUT/	;Opcode 067
+	SIXBIT	/CLOSE/		;Opcode 070
+	SIXBIT	/RELEAS/	;Opcode 071
+	SIXBIT	/MTAPE/		;Opcode 072
+	SIXBIT	/UGETF/		;Opcode 073
+	SIXBIT	/USETI/		;Opcode 074
+	SIXBIT	/USETO/		;Opcode 075
+	SIXBIT	/LOOKUP/	;Opcode 076
+	SIXBIT	/ENTER/		;Opcode 077
+	SIXBIT	/UJEN/		;Opcode 100
+UUOLEN==.-UUONAM		;Length of UUO name table
+
+TTCNAM:	SIXBIT	/INCHRW/	;TTCALL 0,
+	SIXBIT	/OUTCHR/	;TTCALL 1,
+	SIXBIT	/INCHRS/	;TTCALL 2,
+	SIXBIT	/OUTSTR/	;TTCALL 3,
+	SIXBIT	/INCHWL/	;TTCALL 4,
+	SIXBIT	/INCHSL/	;TTCALL 5,
+	SIXBIT	/GETLCH/	;TTCALL 6,
+	SIXBIT	/SETLCH/	;TTCALL 7,
+	SIXBIT	/RESCAN/	;TTCALL 10,
+	SIXBIT	/CLRBFI/	;TTCALL 11,
+	SIXBIT	/CLRBFO/	;TTCALL 12,
+	SIXBIT	/SKPINC/	;TTCALL 13,
+	SIXBIT	/SKPINL/	;TTCALL 14,
+	SIXBIT	/IONEOU/	;TTCALL 15,
+TTCLEN==.-TTCNAM		;Length of TTCALL name table.
+
+CALNAM:	SIXBIT	/RESET/		;CALLI 0
+	SIXBIT	/DDTIN/		;CALLI 1
+	SIXBIT	/SETDDT/	;CALLI 2
+	SIXBIT	/DDTOUT/	;CALLI 3
+	SIXBIT	/DEVCHR/	;CALLI 4
+	SIXBIT	/DDTGT/		;CALLI 5
+	SIXBIT	/GETCHR/	;CALLI 6
+	SIXBIT	/DDTRL/		;CALLI 7
+	SIXBIT	/WAIT/		;CALLI 10
+	SIXBIT	/CORE/		;CALLI 11
+	SIXBIT	/EXIT/		;CALLI 12
+	SIXBIT	/UTPCLR/	;CALLI 13
+	SIXBIT	/DATE/		;CALLI 14
+	SIXBIT	/LOGIN/		;CALLI 15
+	SIXBIT	/APRENB/	;CALLI 16
+	SIXBIT	/LOGOUT/	;CALLI 17
+	SIXBIT	/SWITCH/	;CALLI 20
+	SIXBIT	/REASSI/	;CALLI 21
+	SIXBIT	/TIMER/		;CALLI 22
+	SIXBIT	/MSTIME/	;CALLI 23
+	SIXBIT	/GETPPN/	;CALLI 24
+	SIXBIT	/TRPSET/	;CALLI 25
+	SIXBIT	/TRPJEN/	;CALLI 26
+	SIXBIT	/RUNTIM/	;CALLI 27
+	SIXBIT	/PJOB/		;CALLI 30
+	SIXBIT	/SLEEP/		;CALLI 31
+	SIXBIT	/SETPOV/	;CALLI 32
+	SIXBIT	/PEEK/		;CALLI 33
+	SIXBIT	/GETLIN/	;CALLI 34
+	SIXBIT	/RUN/		;CALLI 35
+	SIXBIT	/SETUWP/	;CALLI 36
+	SIXBIT	/REMAP/		;CALLI 37
+	SIXBIT	/GETSEG/	;CALLI 40
+	SIXBIT	/GETTAB/	;CALLI 41
+	SIXBIT	/SPY/		;CALLI 42
+	SIXBIT	/SETNAM/	;CALLI 43
+	SIXBIT	/TMPCOR/	;CALLI 44
+	SIXBIT	/DSKCHR/	;CALLI 45
+	SIXBIT	/SYSSTR/	;CALLI 46
+	SIXBIT	/JOBSTR/	;CALLI 47
+	SIXBIT	/STRUUO/	;CALLI 50
+	SIXBIT	/SYSPHY/	;CALLI 51
+	SIXBIT	/FRECHN/	;CALLI 52
+	SIXBIT	/DEVTYP/	;CALLI 53
+	SIXBIT	/DEVSTS/	;CALLI 54
+	SIXBIT	/DEVPPN/	;CALLI 55
+	SIXBIT	/SEEK/		;CALLI 56
+	SIXBIT	/RTTRP/		;CALLI 57
+	SIXBIT	/LOCK/		;CALLI 60
+	SIXBIT	/JOBSTS/	;CALLI 61
+	SIXBIT	/LOCATE/	;CALLI 62
+	SIXBIT	/WHERE/		;CALLI 63
+	SIXBIT	/DEVNAM/	;CALLI 64
+	SIXBIT	/CTLJOB/	;CALLI 65
+	SIXBIT	/GOBSTR/	;CALLI 66
+	SIXBIT	/ACTIVA/	;CALLI 67
+	SIXBIT	/DEACTI/	;CALLI 70
+	SIXBIT	/HPQ/		;CALLI 71
+	SIXBIT	/HIBER/		;CALLI 72
+	SIXBIT	/WAKE/		;CALLI 73
+	SIXBIT	/CHGPPN/	;CALLI 74
+	SIXBIT	/SETUUO/	;CALLI 75
+	SIXBIT	/DEVGEN/	;CALLI 76
+	SIXBIT	/OTHUSR/	;CALLI 77
+	SIXBIT	/CHKACC/	;CALLI 100
+	SIXBIT	/DEVSIZ/	;CALLI 101
+	SIXBIT	/DAEMON/	;CALLI 102
+	SIXBIT	/JOBPEK/	;CALLI 103
+	SIXBIT	/ATTACH/	;CALLI 104
+	SIXBIT	/DAEFIN/	;CALLI 105
+	SIXBIT	/FRCUUO/	;CALLI 106
+	SIXBIT	/DEVLNM/	;CALLI 107
+	SIXBIT	/PATH./		;CALLI 110
+	SIXBIT	/METER./	;CALLI 111
+	SIXBIT	/MTCHR./	;CALLI 112
+	SIXBIT	/JBSET./	;CALLI 113
+	SIXBIT	/POKE./		;CALLI 114
+	SIXBIT	/TRMNO./	;CALLI 115
+	SIXBIT	/TRMOP./	;CALLI 116
+	SIXBIT	/RESDV./	;CALLI 117
+	SIXBIT	/UNLOK./	;CALLI 120
+	SIXBIT	/DISK./		;CALLI 121
+	SIXBIT	/DVRST./	;CALLI 122
+	SIXBIT	/DVURS./	;CALLI 123
+	SIXBIT	/XTTSK./	;CALLI 124
+	SIXBIT	/CAL11./	;CALLI 125
+	SIXBIT	/MTAID./	;CALLI 126
+	SIXBIT	/IONDX./	;CALLI 127
+	SIXBIT	/CNECT./	;CALLI 130
+	SIXBIT	/MVHDR./	;CALLI 131
+	SIXBIT	/ERLST./	;CALLI 132
+	SIXBIT	/SENSE./	;CALLI 133
+	SIXBIT	/CLRST./	;CALLI 134
+	SIXBIT	/PIINI./	;CALLI 135
+	SIXBIT	/PISYS./	;CALLI 136
+	SIXBIT	/DEBRK./	;CALLI 137
+	SIXBIT	/PISAV./	;CALLI 140
+	SIXBIT	/PIRST./	;CALLI 141
+	SIXBIT	/IPCFR./	;CALLI 142
+	SIXBIT	/IPCFS./	;CALLI 143
+	SIXBIT	/IPCFQ./	;CALLI 144
+	SIXBIT	/PAGE./		;CALLI 145
+	SIXBIT	/SUSET./	;CALLI 146
+	SIXBIT	/COMPT./	;CALLI 147
+	SIXBIT	/SCHED./	;CALLI 150
+	SIXBIT	/ENQ./		;CALLI 151
+	SIXBIT	/DEQ./		;CALLI 152
+	SIXBIT	/ENQC./		;CALLI 153
+	SIXBIT	/TAPOP./	;CALLI 154
+	SIXBIT	/FILOP./	;CALLI 155
+	SIXBIT	/CAL78./	;CALLI 156
+	SIXBIT	/NODE./		;CALLI 157
+	SIXBIT	/ERRPT./	;CALLI 160
+	SIXBIT	/ALLOC./	;CALLI 161
+	SIXBIT	/PERF./		;CALLI 162
+	SIXBIT	/DIAG./		;CALLI 163
+	SIXBIT	/DVPHY./	;CALLI 164
+	SIXBIT	/GTNTN./	;CALLI 165
+	SIXBIT	/GTXTN./	;CALLI 166
+	SIXBIT	/ACCT./		;CALLI 167
+	SIXBIT	/DTE./		;CALLI 170
+	SIXBIT	/DEVOP./	;CALLI 171
+	SIXBIT	/SPPRM./	;CALLI 172
+	SIXBIT	/MERGE./	;CALLI 173
+	SIXBIT	/UTRP./		;CALLI 174
+	SIXBIT	/PIJBI./	;CALLI 175
+	SIXBIT	/SNOOP./	;CALLI 176
+	SIXBIT	/TSK./		;CALLI 177
+	SIXBIT	/KDP./		;CALLI 200
+	SIXBIT	/QUEUE./	;CALLI 201
+	SIXBIT	/RECON./	;CALLI 202
+	SIXBIT	/PITMR./	;CALLI 203
+	SIXBIT	/ACCLG./	;CALLI 204
+	SIXBIT	/NSP./		;CALLI 205
+	SIXBIT	/NTMAN./	;CALLI 206
+	SIXBIT	/DNET./		;CALLI 207
+	SIXBIT	/SAVE./		;CALLI 210
+	SIXBIT	/CMAND./	;CALLI 211
+	SIXBIT	/PIBLK./	;CALLI 212
+	SIXBIT	/SCS./		;CALLI 213
+	SIXBIT	/SEBLK./	;CALLI 214
+	SIXBIT	/CTX./		;CALLI 215
+	SIXBIT	/PIFLG./	;CALLI 216
+	SIXBIT	/IPCFM./	;CALLI 217
+	SIXBIT	/LLMOP./	;CALLI 220
+	SIXBIT	/LATOP./	;CALLI 221
+	SIXBIT	/KNIBT./	;CALLI 222
+	SIXBIT	/CHTRN./	;CALLI 223
+	SIXBIT	/ETHNT./	;CALLI 224
+	SIXBIT	/ENTVC./	;CALLI 225
+	SIXBIT	/NETOP./	;CALLI 226
+CALLEN==.-CALNAM		;Length of CALLI name table.
+
+LIT				;Expand literals here.
+
+TRCEND==.
+
+.ENDPS				;End of PSECT.
+
+END				;End of whole program.
